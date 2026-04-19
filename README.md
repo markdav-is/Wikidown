@@ -8,7 +8,8 @@ Wikidown bundles:
 - **`wikidown` CLI** — dotnet tool for AI agents and humans to maintain pages.
 - **`wikidown-mcp`** — stdio MCP server so Claude / Copilot / other agents can
   edit the wiki. See [`samples/mcp/`](./samples/mcp/) for drop-in configs.
-- **Agent configs** — drop-in Claude Code and GitHub Copilot setups.
+- **Agent configs** — drop-in Claude Code and GitHub Copilot setups; see
+  [`agents/`](./agents/).
 - **Wikidown Web** — a Blazor WASM PWA editor that commits directly to GitHub
   or Azure DevOps via REST (no backend). Hosted on GitHub Pages.
 - **Wikidown Site** — the product/marketing page (also on GitHub Pages).

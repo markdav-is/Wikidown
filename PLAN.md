@@ -53,7 +53,13 @@ Blazor WASM PWA editor + marketing site hosted on GitHub Pages.
    - Wiki root via `--root`, `WIKIDOWN_ROOT` env, or default `./docs`.
    - Sample configs for Claude Code (`.mcp.json`) and Claude Desktop.
    - Verified by stdio smoke test (initialize → tools/list → tools/call).
-3. **Agents** — Claude + Copilot configs that use the MCP + CLI. *(next)*
+3. **Agents** — Claude + Copilot configs that use the MCP + CLI. *(shipped)*
+   - `agents/claude/` — subagent (`wikidown-editor`), skill, CLAUDE.md snippet.
+   - `agents/copilot/` — `.github/copilot-instructions.md`, `wikidown.chatmode.md`,
+     and `.vscode/mcp.json`.
+   - `agents/README.md` documents where each file goes in a downstream repo.
+   - In-repo dogfood: installed all configs at `.claude/`, `.github/`,
+     `.vscode/`, `.mcp.json`, plus a root `CLAUDE.md`.
 4. **WASM editor PWA** — editor, Device Flow, PAT, REST commits (GitHub + ADO).
 5. **Marketing site + GH Pages deploy** — landing page + workflow.
 6. **Self-hosted /docs demo + CI polish** — dogfood + green builds.

@@ -1,0 +1,11 @@
+{
+  "servers": {
+    "wikidown": {
+      "type": "stdio",
+      "command": "wikidown-mcp",
+      "env": {
+        "WIKIDOWN_ROOT": "${workspaceFolder}/docs"
+      }
+    }
+  }
+}
