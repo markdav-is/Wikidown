@@ -1,0 +1,14 @@
+# Getting Started
+
+Welcome to Wikidown. This folder is itself a Wikidown-format wiki.
+
+## Format quick reference
+
+- Page file on disk: `Getting-Started.md`; rendered title: `Getting Started`.
+- Subpages go in a folder with the same base name next to the page file.
+- Ordering lives in `.order` — one page base-name per line.
+- Links use the title path: `[Format](/Getting-Started/Format)`.
+
+## Next
+
+- [Format](/Getting-Started/Format)

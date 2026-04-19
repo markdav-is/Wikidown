@@ -1,0 +1,31 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - name: Restore
+        run: dotnet restore Wikidown.sln
+      - name: Build
+        run: dotnet build Wikidown.sln --configuration Release --no-restore
+      - name: Test
+        run: dotnet test Wikidown.sln --configuration Release --no-build --logger "trx;LogFileName=test-results.trx"
+      - name: Pack CLI
+        run: dotnet pack src/Wikidown.Cli/Wikidown.Cli.csproj --configuration Release --no-build -o artifacts
+      - name: Upload CLI package
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wikidown-cli-nupkg
+          path: artifacts/*.nupkg
+          if-no-files-found: warn

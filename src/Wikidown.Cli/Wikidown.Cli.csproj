@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Wikidown.Cli</RootNamespace>
+    <AssemblyName>wikidown</AssemblyName>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>wikidown</ToolCommandName>
+    <PackageId>Wikidown.Cli</PackageId>
+    <Description>CLI for maintaining an ADO-Wiki-compatible /docs folder.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Wikidown.Core\Wikidown.Core.csproj" />
+  </ItemGroup>
+</Project>

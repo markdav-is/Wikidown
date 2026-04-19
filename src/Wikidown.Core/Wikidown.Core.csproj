@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <PackageId>Wikidown.Core</PackageId>
+    <Description>Read and write Azure DevOps Wiki–compatible pages on disk.</Description>
+  </PropertyGroup>
+</Project>
