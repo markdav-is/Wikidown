@@ -1,13 +1,151 @@
 @page "/browse"
 @page "/browse/{*Path}"
+@inject ConnectionStore Store
+@inject BackendResolver Backends
+@inject NavigationManager Nav
+@using Wikidown.Core
+@using Wikidown.Web.Services
 
 <PageTitle>Browse — Wikidown</PageTitle>
 
-<h1>Browse</h1>
+@if (_conn is null)
+{
+    <h1>Browse</h1>
+    <p>No wiki connected. <a href="connect">Connect one</a>.</p>
+}
+else
+{
+    <div class="browse-layout">
+        <aside class="browse-tree">
+            <div class="browse-tree-head">
+                <strong>@_conn.Owner/@_conn.Repo</strong>
+                <span class="text-muted small">@@@_conn.Branch</span>
+            </div>
+            @if (_loadingTree)
+            {
+                <p class="text-muted">Loading tree…</p>
+            }
+            else if (_treeError is { } terr)
+            {
+                <div class="alert alert-danger py-2">@terr</div>
+            }
+            else if (_pages.Count == 0)
+            {
+                <p class="text-muted">No pages found at <code>/@_conn.DocsPath</code>.</p>
+            }
+            else
+            {
+                <ul class="tree">
+                    @foreach (var p in _pages)
+                    {
+                        <li>
+                            <a href="@($"browse{p.ToLinkPath()}")" class="@(IsActive(p) ? "active" : null)">
+                                @p.Name.Title
+                                <span class="text-muted small">@p.ToLinkPath()</span>
+                            </a>
+                        </li>
+                    }
+                </ul>
+            }
+        </aside>
 
-<p>Path: <code>@(Path ?? "/")</code></p>
-<p class="text-muted">Page tree + content rendering lands with the provider work in chunks 4b–4d.</p>
+        <main class="browse-page">
+            @if (_currentPath is null)
+            {
+                <h1>Browse</h1>
+                <p>Pick a page from the tree.</p>
+            }
+            else if (_loadingPage)
+            {
+                <p class="text-muted">Loading @_currentPath.ToLinkPath()…</p>
+            }
+            else if (_pageError is { } perr)
+            {
+                <h1>@_currentPath.Name.Title</h1>
+                <div class="alert alert-danger py-2">@perr</div>
+            }
+            else if (_currentPage is { } loaded)
+            {
+                <h1>@loaded.Path.Name.Title</h1>
+                <p class="text-muted small">@loaded.Path.ToLinkPath()</p>
+                <pre class="page-raw">@loaded.Markdown</pre>
+                <p class="text-muted small">Markdown rendering lands in chunk 4d.</p>
+            }
+        </main>
+    </div>
+}
 
 @code {
     [Parameter] public string? Path { get; set; }
+
+    private WikiConnection? _conn;
+    private IReadOnlyList<PagePath> _pages = Array.Empty<PagePath>();
+    private bool _loadingTree;
+    private string? _treeError;
+
+    private PagePath? _currentPath;
+    private RemotePage? _currentPage;
+    private bool _loadingPage;
+    private string? _pageError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _conn = await Store.LoadAsync();
+        if (_conn is not null) await LoadTreeAsync();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_conn is null) return;
+        var parsed = string.IsNullOrEmpty(Path) ? null : PagePath.Parse("/" + Path);
+        if (Equals(parsed, _currentPath)) return;
+        _currentPath = parsed;
+        await LoadPageAsync();
+    }
+
+    private async Task LoadTreeAsync()
+    {
+        if (_conn is null) return;
+        _loadingTree = true;
+        _treeError = null;
+        try
+        {
+            var backend = Backends.For(_conn.Provider);
+            _pages = await backend.WalkAsync(_conn);
+        }
+        catch (Exception ex)
+        {
+            _treeError = $"Tree load failed: {ex.Message}";
+            _pages = Array.Empty<PagePath>();
+        }
+        finally
+        {
+            _loadingTree = false;
+        }
+    }
+
+    private async Task LoadPageAsync()
+    {
+        if (_conn is null || _currentPath is null) { _currentPage = null; return; }
+        _loadingPage = true;
+        _pageError = null;
+        _currentPage = null;
+        try
+        {
+            var backend = Backends.For(_conn.Provider);
+            _currentPage = await backend.ReadPageAsync(_conn, _currentPath);
+        }
+        catch (Exception ex)
+        {
+            _pageError = ex.Message;
+        }
+        finally
+        {
+            _loadingPage = false;
+        }
+    }
+
+    private bool IsActive(PagePath p) =>
+        _currentPath is not null &&
+        string.Equals(p.ToLinkPath(), _currentPath.ToLinkPath(), StringComparison.Ordinal);
 }

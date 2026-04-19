@@ -61,8 +61,10 @@ Blazor WASM PWA editor + marketing site hosted on GitHub Pages.
    - In-repo dogfood: installed all configs at `.claude/`, `.github/`,
      `.vscode/`, `.mcp.json`, plus a root `CLAUDE.md`.
 4. **WASM editor PWA** — editor, Device Flow, PAT, REST commits. *(in progress)*
-   - 4a: `Wikidown.Web` scaffold + PWA manifest + shell/routing.
-   - 4b: GitHub provider (Device Flow + PAT), read-only browse.
+   - 4a: `Wikidown.Web` scaffold + PWA manifest + shell/routing. *(shipped)*
+   - 4b: GitHub provider (PAT), read-only browse. *(shipped, Device Flow
+     deferred — GitHub `/login/device/code` lacks CORS, so pure-browser flow
+     needs a proxy; will revisit in 4f.)*
    - 4c: ADO provider (PAT), read-only browse.
    - 4d: Markdown editor + CommonMark preview.
    - 4e: REST commits (GitHub Contents API + ADO Push) + conflict detection.

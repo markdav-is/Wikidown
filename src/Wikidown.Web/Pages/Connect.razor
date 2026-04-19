@@ -1,20 +1,114 @@
 @page "/connect"
+@inject ConnectionStore Store
+@inject NavigationManager Nav
+@using Wikidown.Web.Services
 
 <PageTitle>Connect — Wikidown</PageTitle>
 
 <h1>Connect a wiki</h1>
 
-<p>Pick where your <code>/docs</code> lives. Wiring comes in later chunks.</p>
+<p>Your token stays in this browser (<code>localStorage</code>). No backend.</p>
 
-<div class="provider-grid">
-    <div class="provider-card">
-        <h2>GitHub</h2>
-        <p>Sign in via Device Flow, or paste a Personal Access Token.</p>
-        <button class="btn btn-secondary" disabled>Coming in chunk 4b</button>
+@if (Store.Current is { } existing)
+{
+    <div class="alert alert-info">
+        <strong>Connected:</strong> @existing.Display
+        <button class="btn btn-sm btn-outline-secondary ms-3" @onclick="DisconnectAsync">Disconnect</button>
+        <a class="btn btn-sm btn-primary ms-2" href="browse">Browse</a>
     </div>
-    <div class="provider-card">
-        <h2>Azure DevOps</h2>
-        <p>Paste an ADO Personal Access Token.</p>
-        <button class="btn btn-secondary" disabled>Coming in chunk 4c</button>
+}
+
+<h2>GitHub</h2>
+<p>
+    Paste a <a target="_blank" rel="noopener" href="https://github.com/settings/tokens?type=beta">fine-grained Personal Access Token</a>
+    scoped to the repo that holds your <code>/docs</code> folder, with
+    <em>Contents: Read &amp; Write</em>.
+</p>
+<p class="text-muted small">
+    Full GitHub OAuth (Device Flow) needs a small proxy because GitHub's
+    <code>/login/device/code</code> endpoint blocks browser CORS. It's planned
+    for a later chunk.
+</p>
+
+<form class="provider-form" @onsubmit="ConnectGitHubAsync" @onsubmit:preventDefault>
+    <div class="mb-2">
+        <label class="form-label" for="gh-owner">Owner</label>
+        <input id="gh-owner" class="form-control" @bind="_owner" placeholder="octocat" required />
     </div>
-</div>
+    <div class="mb-2">
+        <label class="form-label" for="gh-repo">Repository</label>
+        <input id="gh-repo" class="form-control" @bind="_repo" placeholder="my-wiki" required />
+    </div>
+    <div class="row">
+        <div class="col-sm-6 mb-2">
+            <label class="form-label" for="gh-branch">Branch</label>
+            <input id="gh-branch" class="form-control" @bind="_branch" placeholder="main" required />
+        </div>
+        <div class="col-sm-6 mb-2">
+            <label class="form-label" for="gh-docs">Docs path</label>
+            <input id="gh-docs" class="form-control" @bind="_docs" placeholder="docs" required />
+        </div>
+    </div>
+    <div class="mb-2">
+        <label class="form-label" for="gh-token">Personal access token</label>
+        <input id="gh-token" type="password" class="form-control" @bind="_token" required autocomplete="off" />
+    </div>
+
+    @if (_error is { } err)
+    {
+        <div class="alert alert-danger py-2">@err</div>
+    }
+
+    <button type="submit" class="btn btn-primary" disabled="@_busy">
+        @(_busy ? "Connecting…" : "Connect")
+    </button>
+</form>
+
+<h2 class="mt-4">Azure DevOps</h2>
+<p class="text-muted">Wiring comes in chunk 4c.</p>
+
+@code {
+    private string _owner = "";
+    private string _repo = "";
+    private string _branch = WikiConnection.DefaultBranch;
+    private string _docs = WikiConnection.DefaultDocsPath;
+    private string _token = "";
+    private string? _error;
+    private bool _busy;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Store.LoadAsync();
+    }
+
+    private async Task ConnectGitHubAsync()
+    {
+        _error = null;
+        _busy = true;
+        try
+        {
+            var conn = new WikiConnection(
+                WikiProvider.GitHub,
+                _token.Trim(),
+                _owner.Trim(),
+                _repo.Trim(),
+                string.IsNullOrWhiteSpace(_branch) ? WikiConnection.DefaultBranch : _branch.Trim(),
+                string.IsNullOrWhiteSpace(_docs) ? WikiConnection.DefaultDocsPath : _docs.Trim('/'));
+            await Store.SaveAsync(conn);
+            Nav.NavigateTo("browse");
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task DisconnectAsync()
+    {
+        await Store.ClearAsync();
+    }
+}
