@@ -20,12 +20,14 @@ jobs:
         run: dotnet build Wikidown.sln --configuration Release --no-restore
       - name: Test
         run: dotnet test Wikidown.sln --configuration Release --no-build --logger "trx;LogFileName=test-results.trx"
-      - name: Pack CLI
-        run: dotnet pack src/Wikidown.Cli/Wikidown.Cli.csproj --configuration Release --no-build -o artifacts
-      - name: Upload CLI package
+      - name: Pack
+        run: |
+          dotnet pack src/Wikidown.Cli/Wikidown.Cli.csproj --configuration Release --no-build -o artifacts
+          dotnet pack src/Wikidown.Mcp/Wikidown.Mcp.csproj --configuration Release --no-build -o artifacts
+      - name: Upload packages
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: wikidown-cli-nupkg
+          name: wikidown-nupkgs
           path: artifacts/*.nupkg
           if-no-files-found: warn

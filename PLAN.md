@@ -47,8 +47,13 @@ Blazor WASM PWA editor + marketing site hosted on GitHub Pages.
    - xUnit tests for PageName / PagePath / OrderFile / WikiRepository.
    - CI workflow: restore/build/test/pack.
    - Seed `/docs` with Getting-Started + Format pages and `.order` files.
-2. **MCP server** — expose Core tools over stdio MCP. *(next)*
-3. **Agents** — Claude + Copilot configs that use the MCP + CLI.
+2. **MCP server** — expose Core tools over stdio MCP. *(shipped)*
+   - `wikidown-mcp` dotnet tool, stdio transport, `ModelContextProtocol` 1.2.0.
+   - 9 tools: `wiki_list/read/write/new/move/delete/reorder/search/walk`.
+   - Wiki root via `--root`, `WIKIDOWN_ROOT` env, or default `./docs`.
+   - Sample configs for Claude Code (`.mcp.json`) and Claude Desktop.
+   - Verified by stdio smoke test (initialize → tools/list → tools/call).
+3. **Agents** — Claude + Copilot configs that use the MCP + CLI. *(next)*
 4. **WASM editor PWA** — editor, Device Flow, PAT, REST commits (GitHub + ADO).
 5. **Marketing site + GH Pages deploy** — landing page + workflow.
 6. **Self-hosted /docs demo + CI polish** — dogfood + green builds.

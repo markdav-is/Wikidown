@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Wikidown.Mcp</RootNamespace>
+    <AssemblyName>wikidown-mcp</AssemblyName>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>wikidown-mcp</ToolCommandName>
+    <PackageId>Wikidown.Mcp</PackageId>
+    <Description>MCP stdio server exposing Wikidown.Core tools to AI agents.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Wikidown.Core\Wikidown.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="ModelContextProtocol" Version="1.2.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.0" />
+  </ItemGroup>
+</Project>

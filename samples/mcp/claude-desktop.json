@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "wikidown": {
+      "command": "wikidown-mcp",
+      "env": {
+        "WIKIDOWN_ROOT": "/absolute/path/to/your/repo/docs"
+      }
+    }
+  }
+}
