@@ -10,7 +10,6 @@ TestResults/
 
 ## Node / WASM tooling
 node_modules/
-dist/
 .parcel-cache/
 
 ## OS / editor

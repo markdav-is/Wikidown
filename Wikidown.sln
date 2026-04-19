@@ -11,6 +11,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{827E0CD3-B72
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Wikidown.Mcp", "src\Wikidown.Mcp\Wikidown.Mcp.csproj", "{6FB1C49A-3602-4820-A486-FD9651AEDD5C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Wikidown.Web", "src\Wikidown.Web\Wikidown.Web.csproj", "{2C37C876-5040-4D2E-956B-FB6D7A6CA54C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -69,11 +71,24 @@ Global
 		{6FB1C49A-3602-4820-A486-FD9651AEDD5C}.Release|x64.Build.0 = Release|Any CPU
 		{6FB1C49A-3602-4820-A486-FD9651AEDD5C}.Release|x86.ActiveCfg = Release|Any CPU
 		{6FB1C49A-3602-4820-A486-FD9651AEDD5C}.Release|x86.Build.0 = Release|Any CPU
+		{2C37C876-5040-4D2E-956B-FB6D7A6CA54C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2C37C876-5040-4D2E-956B-FB6D7A6CA54C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2C37C876-5040-4D2E-956B-FB6D7A6CA54C}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{2C37C876-5040-4D2E-956B-FB6D7A6CA54C}.Debug|x64.Build.0 = Debug|Any CPU
+		{2C37C876-5040-4D2E-956B-FB6D7A6CA54C}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{2C37C876-5040-4D2E-956B-FB6D7A6CA54C}.Debug|x86.Build.0 = Debug|Any CPU
+		{2C37C876-5040-4D2E-956B-FB6D7A6CA54C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2C37C876-5040-4D2E-956B-FB6D7A6CA54C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2C37C876-5040-4D2E-956B-FB6D7A6CA54C}.Release|x64.ActiveCfg = Release|Any CPU
+		{2C37C876-5040-4D2E-956B-FB6D7A6CA54C}.Release|x64.Build.0 = Release|Any CPU
+		{2C37C876-5040-4D2E-956B-FB6D7A6CA54C}.Release|x86.ActiveCfg = Release|Any CPU
+		{2C37C876-5040-4D2E-956B-FB6D7A6CA54C}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{6FB1C49A-3602-4820-A486-FD9651AEDD5C} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{2C37C876-5040-4D2E-956B-FB6D7A6CA54C} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 	EndGlobalSection
 EndGlobal

@@ -1,0 +1,13 @@
+@page "/browse"
+@page "/browse/{*Path}"
+
+<PageTitle>Browse — Wikidown</PageTitle>
+
+<h1>Browse</h1>
+
+<p>Path: <code>@(Path ?? "/")</code></p>
+<p class="text-muted">Page tree + content rendering lands with the provider work in chunks 4b–4d.</p>
+
+@code {
+    [Parameter] public string? Path { get; set; }
+}

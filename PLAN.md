@@ -60,7 +60,13 @@ Blazor WASM PWA editor + marketing site hosted on GitHub Pages.
    - `agents/README.md` documents where each file goes in a downstream repo.
    - In-repo dogfood: installed all configs at `.claude/`, `.github/`,
      `.vscode/`, `.mcp.json`, plus a root `CLAUDE.md`.
-4. **WASM editor PWA** — editor, Device Flow, PAT, REST commits (GitHub + ADO).
+4. **WASM editor PWA** — editor, Device Flow, PAT, REST commits. *(in progress)*
+   - 4a: `Wikidown.Web` scaffold + PWA manifest + shell/routing.
+   - 4b: GitHub provider (Device Flow + PAT), read-only browse.
+   - 4c: ADO provider (PAT), read-only browse.
+   - 4d: Markdown editor + CommonMark preview.
+   - 4e: REST commits (GitHub Contents API + ADO Push) + conflict detection.
+   - 4f: Offline/PWA cache polish + draft persistence.
 5. **Marketing site + GH Pages deploy** — landing page + workflow.
 6. **Self-hosted /docs demo + CI polish** — dogfood + green builds.
 

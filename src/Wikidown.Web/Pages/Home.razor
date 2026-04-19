@@ -1,0 +1,25 @@
+@page "/"
+
+<PageTitle>Wikidown</PageTitle>
+
+<div class="hero">
+    <h1>Wikidown</h1>
+    <p class="lead">
+        An Azure-DevOps-Wiki-compatible wiki that lives in <code>/docs</code> of your
+        code repo. Edit in the browser, commit straight to GitHub or Azure DevOps.
+    </p>
+    <p>
+        <a class="btn btn-primary" href="connect">Open a wiki</a>
+    </p>
+</div>
+
+<h2>How it works</h2>
+<ol>
+    <li>Sign in with GitHub Device Flow or paste a PAT for GitHub / Azure DevOps.</li>
+    <li>Pick the repo (and branch) that holds your <code>/docs</code> folder.</li>
+    <li>Browse, edit, and save pages — the app commits via REST.</li>
+</ol>
+
+<p class="text-muted small">
+    Your token stays in the browser. No backend; everything runs client-side.
+</p>
