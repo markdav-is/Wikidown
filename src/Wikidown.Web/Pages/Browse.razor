@@ -3,6 +3,8 @@
 @inject ConnectionStore Store
 @inject BackendResolver Backends
 @inject NavigationManager Nav
+@inject ISnackbar Snackbar
+@inject IDialogService Dialogs
 @using Wikidown.Core
 @using Wikidown.Web.Services
 
@@ -111,15 +113,35 @@ else
                             </MudPaper>
                         </MudItem>
                         <MudItem xs="12">
+                            <MudTextField @bind-Value="_commitMessage" Variant="Variant.Outlined"
+                                          Label="Commit message" FullWidth="true" />
+                        </MudItem>
+                        @if (_conflictMessage is { } conflict)
+                        {
+                            <MudItem xs="12">
+                                <MudAlert Severity="Severity.Warning" ShowCloseIcon="true"
+                                          CloseIconClicked="@(() => _conflictMessage = null)">
+                                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3">
+                                        <MudText>@conflict</MudText>
+                                        <MudSpacer />
+                                        <MudButton Size="Size.Small" Variant="Variant.Filled"
+                                                   Color="Color.Warning" OnClick="ReloadFromRemote">
+                                            Reload remote
+                                        </MudButton>
+                                    </MudStack>
+                                </MudAlert>
+                            </MudItem>
+                        }
+                        <MudItem xs="12">
                             <MudStack Row="true" Spacing="2">
                                 <MudButton Variant="Variant.Filled" Color="Color.Primary"
                                            StartIcon="@Icons.Material.Filled.Save"
-                                           Disabled="true"
-                                           title="Commit support lands in chunk 4e">
-                                    Save (coming in 4e)
+                                           Disabled="@(!HasChanges || _saving)"
+                                           OnClick="SaveAsync">
+                                    @(_saving ? "Saving…" : "Save")
                                 </MudButton>
                                 <MudButton Variant="Variant.Outlined" OnClick="DiscardDraft"
-                                           Disabled="@(!HasChanges)">
+                                           Disabled="@(!HasChanges || _saving)">
                                     Reset
                                 </MudButton>
                                 @if (HasChanges)
@@ -159,6 +181,9 @@ else
 
     private bool _editMode;
     private string _draft = string.Empty;
+    private string _commitMessage = string.Empty;
+    private bool _saving;
+    private string? _conflictMessage;
 
     private bool HasChanges =>
         _currentPage is { } p && !string.Equals(_draft, p.Markdown, StringComparison.Ordinal);
@@ -176,6 +201,7 @@ else
         if (Equals(parsed, _currentPath)) return;
         _currentPath = parsed;
         _editMode = false;
+        _conflictMessage = null;
         await LoadPageAsync();
     }
 
@@ -211,6 +237,7 @@ else
             var backend = Backends.For(_conn.Provider);
             _currentPage = await backend.ReadPageAsync(_conn, _currentPath);
             _draft = _currentPage.Markdown;
+            _commitMessage = $"Update {_currentPath.Name.Title}";
         }
         catch (Exception ex)
         {
@@ -225,12 +252,61 @@ else
     private void OnToggleEdit(bool value)
     {
         _editMode = value;
-        if (_editMode && _currentPage is { } p) _draft = p.Markdown;
+        _conflictMessage = null;
+        if (_editMode && _currentPage is { } p)
+        {
+            _draft = p.Markdown;
+            if (string.IsNullOrWhiteSpace(_commitMessage) && _currentPath is not null)
+                _commitMessage = $"Update {_currentPath.Name.Title}";
+        }
     }
 
     private void DiscardDraft()
     {
         if (_currentPage is { } p) _draft = p.Markdown;
+        _conflictMessage = null;
+    }
+
+    private async Task SaveAsync()
+    {
+        if (_conn is null || _currentPath is null || _currentPage is null) return;
+        if (!HasChanges) return;
+
+        _saving = true;
+        _conflictMessage = null;
+        try
+        {
+            var backend = Backends.For(_conn.Provider);
+            var msg = string.IsNullOrWhiteSpace(_commitMessage)
+                ? $"Update {_currentPath.Name.Title}"
+                : _commitMessage.Trim();
+            var result = await backend.WritePageAsync(_conn, new CommitRequest(
+                _currentPath, _draft, _currentPage.Sha, msg));
+
+            _currentPage = _currentPage with { Markdown = _draft, Sha = result.NewSha };
+            Snackbar.Add($"Saved {_currentPath.Name.Title}", Severity.Success);
+        }
+        catch (WikiConflictException conflict)
+        {
+            _conflictMessage = conflict.Message;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Save failed: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private async Task ReloadFromRemote()
+    {
+        var keep = _draft;
+        await LoadPageAsync();
+        // Keep the user's pending edits in the editor so they can hand-merge.
+        _draft = keep;
+        _conflictMessage = null;
     }
 
     private static string RepoLabel(WikiConnection c) => c.Provider switch

@@ -2,14 +2,19 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
+using System.Text.Json;
 using Wikidown.Core;
 
 namespace Wikidown.Web.Services;
 
-// Read-only GitHub Contents/Trees API wrapper. Commit support lands in chunk 4e.
 public sealed class GitHubBackend(HttpClient http) : IWikiBackend
 {
     private const string ApiBase = "https://api.github.com";
+
+    private static readonly JsonSerializerOptions JsonOpts = new(JsonSerializerDefaults.Web)
+    {
+        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
+    };
 
     public WikiProvider Provider => WikiProvider.GitHub;
 
@@ -17,7 +22,7 @@ public sealed class GitHubBackend(HttpClient http) : IWikiBackend
         WikiConnection conn, string folderRelPath, CancellationToken ct = default)
     {
         var path = Combine(conn.DocsPath, folderRelPath);
-        var url = $"{ApiBase}/repos/{conn.Owner}/{conn.Repo}/contents/{Uri.EscapeDataString(path).Replace("%2F", "/")}?ref={Uri.EscapeDataString(conn.Branch)}";
+        var url = $"{ApiBase}/repos/{conn.Owner}/{conn.Repo}/contents/{EscapePath(path)}?ref={Uri.EscapeDataString(conn.Branch)}";
         using var req = Authenticated(HttpMethod.Get, url, conn.Token);
         using var res = await http.SendAsync(req, ct);
 
@@ -47,7 +52,7 @@ public sealed class GitHubBackend(HttpClient http) : IWikiBackend
         WikiConnection conn, PagePath page, CancellationToken ct = default)
     {
         var path = Combine(conn.DocsPath, page.ToFilePath().Replace('\\', '/'));
-        var url = $"{ApiBase}/repos/{conn.Owner}/{conn.Repo}/contents/{Uri.EscapeDataString(path).Replace("%2F", "/")}?ref={Uri.EscapeDataString(conn.Branch)}";
+        var url = $"{ApiBase}/repos/{conn.Owner}/{conn.Repo}/contents/{EscapePath(path)}?ref={Uri.EscapeDataString(conn.Branch)}";
         using var req = Authenticated(HttpMethod.Get, url, conn.Token);
         using var res = await http.SendAsync(req, ct);
 
@@ -64,7 +69,6 @@ public sealed class GitHubBackend(HttpClient http) : IWikiBackend
     public async Task<IReadOnlyList<PagePath>> WalkAsync(
         WikiConnection conn, CancellationToken ct = default)
     {
-        // Get default branch commit SHA first so we can use the tree recursively.
         var branchUrl = $"{ApiBase}/repos/{conn.Owner}/{conn.Repo}/branches/{Uri.EscapeDataString(conn.Branch)}";
         using (var req = Authenticated(HttpMethod.Get, branchUrl, conn.Token))
         using (var res = await http.SendAsync(req, ct))
@@ -96,6 +100,41 @@ public sealed class GitHubBackend(HttpClient http) : IWikiBackend
         }
     }
 
+    public async Task<CommitResult> WritePageAsync(
+        WikiConnection conn, CommitRequest request, CancellationToken ct = default)
+    {
+        var path = Combine(conn.DocsPath, request.Page.ToFilePath().Replace('\\', '/'));
+        var url = $"{ApiBase}/repos/{conn.Owner}/{conn.Repo}/contents/{EscapePath(path)}";
+
+        var body = new GhPutRequest(
+            Message: request.CommitMessage,
+            Content: Convert.ToBase64String(Encoding.UTF8.GetBytes(request.Markdown)),
+            Branch: conn.Branch,
+            Sha: request.ExpectedSha);
+
+        using var req = Authenticated(HttpMethod.Put, url, conn.Token);
+        req.Content = JsonContent.Create(body, options: JsonOpts);
+        using var res = await http.SendAsync(req, ct);
+
+        if (res.StatusCode == HttpStatusCode.Conflict ||
+            (res.StatusCode == HttpStatusCode.UnprocessableEntity && request.ExpectedSha is not null))
+        {
+            throw new WikiConflictException(
+                "GitHub rejected the commit because the page changed on the server. Reload to merge.");
+        }
+
+        if (!res.IsSuccessStatusCode)
+        {
+            var detail = await res.Content.ReadAsStringAsync(ct);
+            throw new InvalidOperationException(
+                $"GitHub commit failed ({(int)res.StatusCode}): {Trim(detail)}");
+        }
+
+        var payload = await res.Content.ReadFromJsonAsync<GhPutResponse>(cancellationToken: ct)
+                      ?? throw new InvalidOperationException("empty commit response");
+        return new CommitResult(payload.Content.Sha ?? string.Empty);
+    }
+
     private static HttpRequestMessage Authenticated(HttpMethod method, string url, string token)
     {
         var req = new HttpRequestMessage(method, url);
@@ -104,6 +143,9 @@ public sealed class GitHubBackend(HttpClient http) : IWikiBackend
         req.Headers.Add("X-GitHub-Api-Version", "2022-11-28");
         return req;
     }
+
+    private static string EscapePath(string path) =>
+        Uri.EscapeDataString(path).Replace("%2F", "/");
 
     private static string Combine(string basePath, string relPath)
     {
@@ -114,9 +156,13 @@ public sealed class GitHubBackend(HttpClient http) : IWikiBackend
         return $"{a}/{b}";
     }
 
+    private static string Trim(string s) => s.Length > 200 ? s[..200] + "…" : s;
+
     private sealed record GhContent(string Name, string Path, string Type, string? Sha, string? Content, string? Encoding);
     private sealed record GhBranch(GhCommit Commit);
     private sealed record GhCommit(string Sha);
     private sealed record GhTree(string Sha, List<GhTreeEntry> Tree, bool Truncated);
     private sealed record GhTreeEntry(string Path, string Type, string Sha);
+    private sealed record GhPutRequest(string Message, string Content, string Branch, string? Sha);
+    private sealed record GhPutResponse(GhContent Content);
 }

@@ -72,6 +72,9 @@ Blazor WASM PWA editor + marketing site hosted on GitHub Pages.
      Browse page has read mode (rendered) and edit mode (side-by-side editor +
      live preview). Save button is staged disabled — wired in 4e.
    - 4e: REST commits (GitHub Contents API + ADO Push) + conflict detection.
+     *(shipped)* GitHub uses PUT contents with file blob `sha`; ADO push uses
+     branch `oldObjectId` plus a pre-flight item read to detect file-level
+     drift. Conflicts surface a "Reload remote" banner in the editor.
    - 4f: Offline/PWA cache polish + draft persistence.
 5. **Marketing site + GH Pages deploy** — landing page + workflow.
 6. **Self-hosted /docs demo + CI polish** — dogfood + green builds.
