@@ -1,0 +1,176 @@
+@inject ConnectionStore ConnStore
+@inject DraftStore Drafts
+@inject BackendResolver Backends
+@inject NavigationManager Nav
+@inject ISnackbar Snackbar
+@using Wikidown.Core
+@using Wikidown.Web.Services
+@implements IDisposable
+
+<MudBadge Content="@_drafts.Count" Color="Color.Warning"
+          Visible="@(_drafts.Count > 0)" Overlap="true" Bordered="true">
+    <MudMenu Icon="@Icons.Material.Filled.Drafts" Color="Color.Inherit"
+             AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight"
+             Dense="true" title="Drafts">
+        @if (_conn is null)
+        {
+            <MudMenuItem Disabled="true">Connect a wiki to track drafts</MudMenuItem>
+        }
+        else if (_drafts.Count == 0)
+        {
+            <MudMenuItem Disabled="true">No drafts on this device</MudMenuItem>
+        }
+        else
+        {
+            <MudText Typo="Typo.overline" Class="px-4 py-1" Color="Color.Default">
+                @_drafts.Count draft@(_drafts.Count == 1 ? "" : "s")
+            </MudText>
+            <MudDivider />
+            @foreach (var p in _drafts)
+            {
+                var entry = p;
+                <MudMenuItem OnClick="@(() => Open(entry))">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Style="min-width:18rem">
+                        <MudIcon Icon="@Icons.Material.Filled.Edit" Size="Size.Small" Color="Color.Warning" />
+                        <MudStack Spacing="0" Style="min-width:0">
+                            <MudText Typo="Typo.body2" Style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+                                @entry.Name.Title
+                            </MudText>
+                            <MudText Typo="Typo.caption" Color="Color.Default"
+                                     Style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+                                @entry.ToLinkPath()
+                            </MudText>
+                        </MudStack>
+                        <MudSpacer />
+                        <div @onclick:stopPropagation="true" style="display:flex;gap:4px">
+                            <MudTooltip Text="Save to remote">
+                                <MudIconButton Icon="@Icons.Material.Filled.Save" Size="Size.Small"
+                                               Color="Color.Primary"
+                                               Disabled="@_saving.Contains(entry)"
+                                               OnClick="@(() => SaveOne(entry))" />
+                            </MudTooltip>
+                            <MudTooltip Text="Discard draft">
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small"
+                                               Disabled="@_saving.Contains(entry)"
+                                               OnClick="@(() => DiscardOne(entry))" />
+                            </MudTooltip>
+                        </div>
+                    </MudStack>
+                </MudMenuItem>
+            }
+            <MudDivider />
+            <MudMenuItem OnClick="SaveAll" Disabled="@(_saving.Count > 0)">
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                    <MudIcon Icon="@Icons.Material.Filled.CloudUpload" Size="Size.Small" Color="Color.Primary" />
+                    <MudText Typo="Typo.body2">Save all</MudText>
+                </MudStack>
+            </MudMenuItem>
+        }
+    </MudMenu>
+</MudBadge>
+
+@code {
+    private WikiConnection? _conn;
+    private List<PagePath> _drafts = new();
+    private readonly HashSet<PagePath> _saving = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        Drafts.Changed += OnDraftsChanged;
+        await RefreshAsync();
+    }
+
+    private void OnDraftsChanged() => _ = InvokeAsync(RefreshAsync);
+
+    private async Task RefreshAsync()
+    {
+        _conn = await ConnStore.LoadAsync();
+        _drafts = _conn is null ? new() : (await Drafts.ListAsync(_conn)).ToList();
+        StateHasChanged();
+    }
+
+    private void Open(PagePath p) => Nav.NavigateTo($"browse{p.ToLinkPath()}");
+
+    private async Task SaveOne(PagePath p)
+    {
+        if (_conn is null) return;
+        if (!_saving.Add(p)) return;
+        StateHasChanged();
+        try
+        {
+            await CommitAsync(_conn, p);
+        }
+        catch (WikiConflictException)
+        {
+            Snackbar.Add($"{p.Name.Title}: remote changed. Open to resolve.", Severity.Warning);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Save {p.Name.Title} failed: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _saving.Remove(p);
+            await RefreshAsync();
+        }
+    }
+
+    private async Task DiscardOne(PagePath p)
+    {
+        if (_conn is null) return;
+        await Drafts.ClearAsync(_conn, p);
+        Snackbar.Add($"Discarded draft for {p.Name.Title}", Severity.Info);
+    }
+
+    private async Task SaveAll()
+    {
+        if (_conn is null) return;
+        var snapshot = _drafts.ToList();
+        foreach (var p in snapshot)
+        {
+            if (_saving.Contains(p)) continue;
+            _saving.Add(p);
+            StateHasChanged();
+            try
+            {
+                await CommitAsync(_conn, p);
+            }
+            catch (WikiConflictException)
+            {
+                Snackbar.Add($"{p.Name.Title}: remote changed. Open to resolve.", Severity.Warning);
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Save {p.Name.Title} failed: {ex.Message}", Severity.Error);
+            }
+            finally
+            {
+                _saving.Remove(p);
+            }
+        }
+        await RefreshAsync();
+    }
+
+    private async Task CommitAsync(WikiConnection conn, PagePath entry)
+    {
+        var draft = await Drafts.LoadAsync(conn, entry);
+        if (draft is null)
+        {
+            await Drafts.ClearAsync(conn, entry);
+            return;
+        }
+        var backend = Backends.For(conn.Provider);
+        var remote = await backend.ReadPageAsync(conn, entry);
+        if (string.Equals(draft, remote.Markdown, StringComparison.Ordinal))
+        {
+            await Drafts.ClearAsync(conn, entry);
+            return;
+        }
+        await backend.WritePageAsync(conn, new CommitRequest(
+            entry, draft, remote.Sha, $"Update {entry.Name.Title}"));
+        await Drafts.ClearAsync(conn, entry);
+        Snackbar.Add($"Saved {entry.Name.Title}", Severity.Success);
+    }
+
+    public void Dispose() => Drafts.Changed -= OnDraftsChanged;
+}
