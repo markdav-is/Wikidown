@@ -6,8 +6,14 @@
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>wikidown</ToolCommandName>
     <PackageId>Wikidown.Cli</PackageId>
-    <Description>CLI for maintaining an ADO-Wiki-compatible /docs folder.</Description>
+    <Title>Wikidown CLI</Title>
+    <Description>Command-line tool for maintaining an Azure-DevOps-Wiki-compatible /docs folder. List, read, write, move, reorder, and search pages while keeping .order files consistent.</Description>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+    <None Include="..\..\LICENSE" Pack="true" PackagePath="\" />
+  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Wikidown.Core\Wikidown.Core.csproj" />
   </ItemGroup>
