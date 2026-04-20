@@ -75,7 +75,13 @@ Blazor WASM PWA editor + marketing site hosted on GitHub Pages.
      *(shipped)* GitHub uses PUT contents with file blob `sha`; ADO push uses
      branch `oldObjectId` plus a pre-flight item read to detect file-level
      drift. Conflicts surface a "Reload remote" banner in the editor.
-   - 4f: Offline/PWA cache polish + draft persistence.
+   - 4f: Offline/PWA cache polish + draft persistence. *(shipped)*
+     `DraftStore` keeps in-progress page edits in localStorage per
+     `(provider, owner, project, repo, branch, page)`; the editor restores
+     them on reload (with a "use remote" escape hatch) and clears them on
+     successful commit. `NetworkStatus` listens to `online`/`offline` events
+     via a small JS shim and surfaces an offline chip in the AppBar; Save is
+     disabled while offline.
 5. **Marketing site + GH Pages deploy** — landing page + workflow.
 6. **Self-hosted /docs demo + CI polish** — dogfood + green builds.
 
