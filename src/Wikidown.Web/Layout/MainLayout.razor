@@ -1,6 +1,4 @@
 @inherits LayoutComponentBase
-@inject Wikidown.Web.Services.NetworkStatus Net
-@implements IDisposable
 
 <MudThemeProvider Theme="_theme" IsDarkMode="false" />
 <MudPopoverProvider />
@@ -15,13 +13,6 @@
             <MudLink Href="" Color="Color.Inherit" Underline="Underline.None">Wikidown</MudLink>
         </MudText>
         <MudSpacer />
-        @if (!Net.IsOnline)
-        {
-            <MudChip T="string" Color="Color.Warning" Size="Size.Small" Class="mr-3"
-                     Icon="@Icons.Material.Filled.CloudOff">
-                Offline
-            </MudChip>
-        }
         <MudLink Href="https://github.com/markdav-is/Wikidown" Target="_blank"
                  Color="Color.Inherit" Underline="Underline.None">
             <MudIcon Icon="@Icons.Custom.Brands.GitHub" />
@@ -57,19 +48,5 @@
         }
     };
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            Net.Changed += OnNetChanged;
-            await Net.InitializeAsync();
-            StateHasChanged();
-        }
-    }
-
-    private void OnNetChanged() => InvokeAsync(StateHasChanged);
-
     private void ToggleDrawer() => _drawerOpen = !_drawerOpen;
-
-    public void Dispose() => Net.Changed -= OnNetChanged;
 }

@@ -17,7 +17,6 @@ builder.Services.AddMudServices();
 
 builder.Services.AddScoped<ConnectionStore>();
 builder.Services.AddScoped<DraftStore>();
-builder.Services.AddScoped<NetworkStatus>();
 builder.Services.AddScoped<IWikiBackend, GitHubBackend>();
 builder.Services.AddScoped<IWikiBackend, AzureDevOpsBackend>();
 builder.Services.AddScoped<BackendResolver>();

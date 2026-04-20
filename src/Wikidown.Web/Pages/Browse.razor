@@ -6,8 +6,6 @@
 @inject ISnackbar Snackbar
 @inject IDialogService Dialogs
 @inject DraftStore Drafts
-@inject NetworkStatus Net
-@implements IDisposable
 @using Wikidown.Core
 @using Wikidown.Web.Services
 
@@ -156,7 +154,7 @@ else
                             <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
                                 <MudButton Variant="Variant.Filled" Color="Color.Primary"
                                            StartIcon="@Icons.Material.Filled.Save"
-                                           Disabled="@(!HasChanges || _saving || !Net.IsOnline)"
+                                           Disabled="@(!HasChanges || _saving)"
                                            OnClick="SaveAsync">
                                     @(_saving ? "Saving…" : "Save")
                                 </MudButton>
@@ -169,13 +167,6 @@ else
                                     <MudChip T="string" Color="Color.Warning" Size="Size.Small"
                                              Icon="@Icons.Material.Filled.Edit">
                                         Unsaved changes
-                                    </MudChip>
-                                }
-                                @if (!Net.IsOnline)
-                                {
-                                    <MudChip T="string" Color="Color.Default" Size="Size.Small"
-                                             Icon="@Icons.Material.Filled.CloudOff">
-                                        Offline — drafts are kept locally
                                     </MudChip>
                                 }
                             </MudStack>
@@ -219,7 +210,6 @@ else
     protected override async Task OnInitializedAsync()
     {
         _conn = await Store.LoadAsync();
-        Net.Changed += OnNetChanged;
         if (_conn is not null) await LoadTreeAsync();
     }
 
@@ -234,10 +224,6 @@ else
         _draftRestored = false;
         await LoadPageAsync();
     }
-
-    private void OnNetChanged() => InvokeAsync(StateHasChanged);
-
-    public void Dispose() => Net.Changed -= OnNetChanged;
 
     private async Task LoadTreeAsync()
     {
