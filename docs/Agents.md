@@ -28,6 +28,4 @@ Copy each file to the matching path in your repo. The
 maps each source file to its destination. Once installed, the agents call the
 `wiki_*` MCP tools so `.order` files and link targets stay consistent.
 
-## new
-New stuff
 
