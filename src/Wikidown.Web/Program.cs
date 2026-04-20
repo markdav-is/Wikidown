@@ -14,6 +14,7 @@ builder.Services.AddScoped(sp => new HttpClient
 
 builder.Services.AddScoped<ConnectionStore>();
 builder.Services.AddScoped<IWikiBackend, GitHubBackend>();
+builder.Services.AddScoped<IWikiBackend, AzureDevOpsBackend>();
 builder.Services.AddScoped<BackendResolver>();
 
 await builder.Build().RunAsync();

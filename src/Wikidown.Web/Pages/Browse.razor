@@ -18,7 +18,7 @@ else
     <div class="browse-layout">
         <aside class="browse-tree">
             <div class="browse-tree-head">
-                <strong>@_conn.Owner/@_conn.Repo</strong>
+                <strong>@RepoLabel(_conn)</strong>
                 <span class="text-muted small">@@@_conn.Branch</span>
             </div>
             @if (_loadingTree)
@@ -148,4 +148,10 @@ else
     private bool IsActive(PagePath p) =>
         _currentPath is not null &&
         string.Equals(p.ToLinkPath(), _currentPath.ToLinkPath(), StringComparison.Ordinal);
+
+    private static string RepoLabel(WikiConnection c) => c.Provider switch
+    {
+        WikiProvider.AzureDevOps => $"{c.Owner}/{c.Project}/{c.Repo}",
+        _ => $"{c.Owner}/{c.Repo}",
+    };
 }
