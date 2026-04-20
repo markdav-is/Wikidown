@@ -66,7 +66,11 @@ Blazor WASM PWA editor + marketing site hosted on GitHub Pages.
      deferred — GitHub `/login/device/code` lacks CORS, so pure-browser flow
      needs a proxy; will revisit in 4f.)*
    - 4c: ADO provider (PAT), read-only browse. *(shipped)*
-   - 4d: Markdown editor + CommonMark preview.
+   - 4d: MudBlazor migration + markdown editor + CommonMark preview. *(shipped)*
+     UI uses MudBlazor 8.15. Markdown rendered with
+     `RamType0.Markdig.Renderers.MudBlazor` (no JS DOM manipulation, KaTeX-ready).
+     Browse page has read mode (rendered) and edit mode (side-by-side editor +
+     live preview). Save button is staged disabled — wired in 4e.
    - 4e: REST commits (GitHub Contents API + ADO Push) + conflict detection.
    - 4f: Offline/PWA cache polish + draft persistence.
 5. **Marketing site + GH Pages deploy** — landing page + workflow.

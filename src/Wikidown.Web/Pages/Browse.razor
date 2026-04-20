@@ -10,69 +10,138 @@
 
 @if (_conn is null)
 {
-    <h1>Browse</h1>
-    <p>No wiki connected. <a href="connect">Connect one</a>.</p>
+    <MudText Typo="Typo.h4" GutterBottom="true">Browse</MudText>
+    <MudAlert Severity="Severity.Info">
+        No wiki connected. <MudLink Href="connect">Connect one</MudLink>.
+    </MudAlert>
 }
 else
 {
-    <div class="browse-layout">
-        <aside class="browse-tree">
-            <div class="browse-tree-head">
-                <strong>@RepoLabel(_conn)</strong>
-                <span class="text-muted small">@@@_conn.Branch</span>
-            </div>
-            @if (_loadingTree)
-            {
-                <p class="text-muted">Loading tree…</p>
-            }
-            else if (_treeError is { } terr)
-            {
-                <div class="alert alert-danger py-2">@terr</div>
-            }
-            else if (_pages.Count == 0)
-            {
-                <p class="text-muted">No pages found at <code>/@_conn.DocsPath</code>.</p>
-            }
-            else
-            {
-                <ul class="tree">
-                    @foreach (var p in _pages)
-                    {
-                        <li>
-                            <a href="@($"browse{p.ToLinkPath()}")" class="@(IsActive(p) ? "active" : null)">
-                                @p.Name.Title
-                                <span class="text-muted small">@p.ToLinkPath()</span>
-                            </a>
-                        </li>
-                    }
-                </ul>
-            }
-        </aside>
+    <MudGrid Spacing="3">
+        <MudItem xs="12" md="4" lg="3">
+            <MudPaper Class="pa-3" Outlined="true">
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mb-2">
+                    <MudIcon Icon="@Icons.Material.Filled.FolderOpen" />
+                    <MudStack Spacing="0">
+                        <MudText Typo="Typo.subtitle2">@RepoLabel(_conn)</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Default">@@@_conn.Branch · /@_conn.DocsPath</MudText>
+                    </MudStack>
+                </MudStack>
 
-        <main class="browse-page">
+                @if (_loadingTree)
+                {
+                    <MudProgressCircular Indeterminate="true" Size="Size.Small" />
+                }
+                else if (_treeError is { } terr)
+                {
+                    <MudAlert Severity="Severity.Error" Dense="true">@terr</MudAlert>
+                }
+                else if (_pages.Count == 0)
+                {
+                    <MudText Typo="Typo.body2" Color="Color.Default">
+                        No pages found at <code>/@_conn.DocsPath</code>.
+                    </MudText>
+                }
+                else
+                {
+                    <MudNavMenu Class="wd-tree">
+                        @foreach (var p in _pages)
+                        {
+                            <MudNavLink Href="@($"browse{p.ToLinkPath()}")"
+                                        Match="NavLinkMatch.All"
+                                        Icon="@Icons.Material.Filled.Article">
+                                @p.Name.Title
+                            </MudNavLink>
+                        }
+                    </MudNavMenu>
+                }
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" md="8" lg="9">
             @if (_currentPath is null)
             {
-                <h1>Browse</h1>
-                <p>Pick a page from the tree.</p>
+                <MudPaper Class="pa-6" Outlined="true">
+                    <MudText Typo="Typo.h5">Pick a page</MudText>
+                    <MudText>Choose a page from the tree to view or edit it.</MudText>
+                </MudPaper>
             }
             else if (_loadingPage)
             {
-                <p class="text-muted">Loading @_currentPath.ToLinkPath()…</p>
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                    <MudProgressCircular Indeterminate="true" Size="Size.Small" />
+                    <MudText>Loading @_currentPath.ToLinkPath()…</MudText>
+                </MudStack>
             }
             else if (_pageError is { } perr)
             {
-                <h1>@_currentPath.Name.Title</h1>
-                <div class="alert alert-danger py-2">@perr</div>
+                <MudText Typo="Typo.h4">@_currentPath.Name.Title</MudText>
+                <MudAlert Severity="Severity.Error">@perr</MudAlert>
             }
             else if (_currentPage is { } loaded)
             {
-                <h1>@loaded.Path.Name.Title</h1>
-                <p class="text-muted small">@loaded.Path.ToLinkPath()</p>
-                <pre class="page-raw">@loaded.Markdown</pre>
-                <p class="text-muted small">Markdown rendering lands in chunk 4d.</p>
+                <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-2">
+                    <MudStack Spacing="0">
+                        <MudText Typo="Typo.h4">@loaded.Path.Name.Title</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Default">@loaded.Path.ToLinkPath()</MudText>
+                    </MudStack>
+                    <MudSpacer />
+                    <MudToggleIconButton Toggled="@_editMode" ToggledChanged="@OnToggleEdit"
+                                         Icon="@Icons.Material.Filled.Edit" Color="@Color.Default"
+                                         ToggledIcon="@Icons.Material.Filled.Visibility"
+                                         ToggledColor="@Color.Primary"
+                                         title="Toggle edit mode" />
+                </MudStack>
+
+                @if (_editMode)
+                {
+                    <MudGrid Spacing="2">
+                        <MudItem xs="12" md="6">
+                            <MudPaper Outlined="true" Class="pa-2 wd-editor-pane">
+                                <MudTextField @bind-Value="_draft" Variant="Variant.Outlined"
+                                              Lines="20" FullWidth="true" AutoGrow="false"
+                                              Label="Markdown"
+                                              InputMode="@InputMode.text"
+                                              DebounceInterval="150" />
+                            </MudPaper>
+                        </MudItem>
+                        <MudItem xs="12" md="6">
+                            <MudPaper Outlined="true" Class="pa-3 wd-preview-pane wd-page-md">
+                                <MudMarkdown Value="@_draft" />
+                            </MudPaper>
+                        </MudItem>
+                        <MudItem xs="12">
+                            <MudStack Row="true" Spacing="2">
+                                <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                           StartIcon="@Icons.Material.Filled.Save"
+                                           Disabled="true"
+                                           title="Commit support lands in chunk 4e">
+                                    Save (coming in 4e)
+                                </MudButton>
+                                <MudButton Variant="Variant.Outlined" OnClick="DiscardDraft"
+                                           Disabled="@(!HasChanges)">
+                                    Reset
+                                </MudButton>
+                                @if (HasChanges)
+                                {
+                                    <MudChip T="string" Color="Color.Warning" Size="Size.Small"
+                                             Icon="@Icons.Material.Filled.Edit">
+                                        Unsaved changes
+                                    </MudChip>
+                                }
+                            </MudStack>
+                        </MudItem>
+                    </MudGrid>
+                }
+                else
+                {
+                    <MudPaper Outlined="true" Class="pa-4 wd-page-md">
+                        <MudMarkdown Value="@loaded.Markdown" />
+                    </MudPaper>
+                }
             }
-        </main>
-    </div>
+        </MudItem>
+    </MudGrid>
 }
 
 @code {
@@ -88,6 +157,12 @@ else
     private bool _loadingPage;
     private string? _pageError;
 
+    private bool _editMode;
+    private string _draft = string.Empty;
+
+    private bool HasChanges =>
+        _currentPage is { } p && !string.Equals(_draft, p.Markdown, StringComparison.Ordinal);
+
     protected override async Task OnInitializedAsync()
     {
         _conn = await Store.LoadAsync();
@@ -100,6 +175,7 @@ else
         var parsed = string.IsNullOrEmpty(Path) ? null : PagePath.Parse("/" + Path);
         if (Equals(parsed, _currentPath)) return;
         _currentPath = parsed;
+        _editMode = false;
         await LoadPageAsync();
     }
 
@@ -126,7 +202,7 @@ else
 
     private async Task LoadPageAsync()
     {
-        if (_conn is null || _currentPath is null) { _currentPage = null; return; }
+        if (_conn is null || _currentPath is null) { _currentPage = null; _draft = string.Empty; return; }
         _loadingPage = true;
         _pageError = null;
         _currentPage = null;
@@ -134,6 +210,7 @@ else
         {
             var backend = Backends.For(_conn.Provider);
             _currentPage = await backend.ReadPageAsync(_conn, _currentPath);
+            _draft = _currentPage.Markdown;
         }
         catch (Exception ex)
         {
@@ -145,9 +222,16 @@ else
         }
     }
 
-    private bool IsActive(PagePath p) =>
-        _currentPath is not null &&
-        string.Equals(p.ToLinkPath(), _currentPath.ToLinkPath(), StringComparison.Ordinal);
+    private void OnToggleEdit(bool value)
+    {
+        _editMode = value;
+        if (_editMode && _currentPage is { } p) _draft = p.Markdown;
+    }
+
+    private void DiscardDraft()
+    {
+        if (_currentPage is { } p) _draft = p.Markdown;
+    }
 
     private static string RepoLabel(WikiConnection c) => c.Provider switch
     {

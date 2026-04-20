@@ -1,138 +1,141 @@
 @page "/connect"
 @inject ConnectionStore Store
 @inject NavigationManager Nav
+@inject ISnackbar Snackbar
 @using Wikidown.Web.Services
 
 <PageTitle>Connect — Wikidown</PageTitle>
 
-<h1>Connect a wiki</h1>
-
-<p>Your token stays in this browser (<code>localStorage</code>). No backend.</p>
+<MudText Typo="Typo.h4" GutterBottom="true">Connect a wiki</MudText>
+<MudText Class="mb-4">
+    Your token stays in this browser (<code>localStorage</code>). No backend.
+</MudText>
 
 @if (Store.Current is { } existing)
 {
-    <div class="alert alert-info">
-        <strong>Connected:</strong> @existing.Display
-        <button class="btn btn-sm btn-outline-secondary ms-3" @onclick="DisconnectAsync">Disconnect</button>
-        <a class="btn btn-sm btn-primary ms-2" href="browse">Browse</a>
-    </div>
+    <MudAlert Severity="Severity.Info" Class="mb-4">
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3">
+            <MudText><strong>Connected:</strong> @existing.Display</MudText>
+            <MudSpacer />
+            <MudButton Variant="Variant.Outlined" Size="Size.Small" OnClick="DisconnectAsync">
+                Disconnect
+            </MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small" Href="browse">
+                Browse
+            </MudButton>
+        </MudStack>
+    </MudAlert>
 }
 
-<h2>GitHub</h2>
-<p>
-    Paste a <a target="_blank" rel="noopener" href="https://github.com/settings/tokens?type=beta">fine-grained Personal Access Token</a>
-    scoped to the repo that holds your <code>/docs</code> folder, with
-    <em>Contents: Read &amp; Write</em>.
-</p>
-<p class="text-muted small">
-    Full GitHub OAuth (Device Flow) needs a small proxy because GitHub's
-    <code>/login/device/code</code> endpoint blocks browser CORS. It's planned
-    for a later chunk.
-</p>
+<MudTabs Outlined="true" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-6">
+    <MudTabPanel Text="GitHub" Icon="@Icons.Custom.Brands.GitHub">
+        <MudText Class="mb-3">
+            Paste a
+            <MudLink Href="https://github.com/settings/tokens?type=beta" Target="_blank">
+                fine-grained Personal Access Token
+            </MudLink>
+            scoped to the repo that holds your <code>/docs</code> folder, with
+            <em>Contents: Read &amp; Write</em>.
+        </MudText>
+        <MudText Typo="Typo.caption" Class="mb-3" Color="Color.Default">
+            GitHub OAuth Device Flow needs a small proxy because GitHub's
+            <code>/login/device/code</code> endpoint blocks browser CORS — planned for a later chunk.
+        </MudText>
 
-<form class="provider-form" @onsubmit="ConnectGitHubAsync" @onsubmit:preventDefault>
-    <div class="mb-2">
-        <label class="form-label" for="gh-owner">Owner</label>
-        <input id="gh-owner" class="form-control" @bind="_ghOwner" placeholder="octocat" required />
-    </div>
-    <div class="mb-2">
-        <label class="form-label" for="gh-repo">Repository</label>
-        <input id="gh-repo" class="form-control" @bind="_ghRepo" placeholder="my-wiki" required />
-    </div>
-    <div class="row">
-        <div class="col-sm-6 mb-2">
-            <label class="form-label" for="gh-branch">Branch</label>
-            <input id="gh-branch" class="form-control" @bind="_ghBranch" placeholder="main" required />
-        </div>
-        <div class="col-sm-6 mb-2">
-            <label class="form-label" for="gh-docs">Docs path</label>
-            <input id="gh-docs" class="form-control" @bind="_ghDocs" placeholder="docs" required />
-        </div>
-    </div>
-    <div class="mb-2">
-        <label class="form-label" for="gh-token">Personal access token</label>
-        <input id="gh-token" type="password" class="form-control" @bind="_ghToken" required autocomplete="off" />
-    </div>
+        <EditForm Model="_gh" OnValidSubmit="ConnectGitHubAsync">
+            <MudGrid Spacing="3">
+                <MudItem xs="12" sm="6">
+                    <MudTextField @bind-Value="_gh.Owner" Label="Owner" Required="true"
+                                  Placeholder="octocat" Variant="Variant.Outlined" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField @bind-Value="_gh.Repo" Label="Repository" Required="true"
+                                  Placeholder="my-wiki" Variant="Variant.Outlined" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField @bind-Value="_gh.Branch" Label="Branch" Required="true"
+                                  Placeholder="main" Variant="Variant.Outlined" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField @bind-Value="_gh.Docs" Label="Docs path" Required="true"
+                                  Placeholder="docs" Variant="Variant.Outlined" />
+                </MudItem>
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="_gh.Token" Label="Personal access token"
+                                  InputType="InputType.Password" Required="true"
+                                  Variant="Variant.Outlined" />
+                </MudItem>
+                @if (_ghError is { } gerr)
+                {
+                    <MudItem xs="12"><MudAlert Severity="Severity.Error">@gerr</MudAlert></MudItem>
+                }
+                <MudItem xs="12">
+                    <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled"
+                               Color="Color.Primary" Disabled="@_ghBusy">
+                        @(_ghBusy ? "Connecting…" : "Connect")
+                    </MudButton>
+                </MudItem>
+            </MudGrid>
+        </EditForm>
+    </MudTabPanel>
 
-    @if (_ghError is { } gerr)
-    {
-        <div class="alert alert-danger py-2">@gerr</div>
-    }
+    <MudTabPanel Text="Azure DevOps" Icon="@Icons.Material.Filled.Cloud">
+        <MudText Class="mb-3">
+            Use a PAT with <em>Code: Read &amp; Write</em> on the repo that holds your
+            <code>/docs</code> folder.
+        </MudText>
 
-    <button type="submit" class="btn btn-primary" disabled="@_ghBusy">
-        @(_ghBusy ? "Connecting…" : "Connect")
-    </button>
-</form>
-
-<h2 class="mt-4">Azure DevOps</h2>
-<p>
-    Use a <a target="_blank" rel="noopener" href="https://dev.azure.com">PAT</a>
-    with <em>Code: Read &amp; Write</em> on the repo that holds your
-    <code>/docs</code> folder.
-</p>
-
-<form class="provider-form" @onsubmit="ConnectAdoAsync" @onsubmit:preventDefault>
-    <div class="row">
-        <div class="col-sm-6 mb-2">
-            <label class="form-label" for="ado-org">Organization</label>
-            <input id="ado-org" class="form-control" @bind="_adoOrg" placeholder="contoso" required />
-        </div>
-        <div class="col-sm-6 mb-2">
-            <label class="form-label" for="ado-project">Project</label>
-            <input id="ado-project" class="form-control" @bind="_adoProject" placeholder="MyProject" required />
-        </div>
-    </div>
-    <div class="mb-2">
-        <label class="form-label" for="ado-repo">Repository</label>
-        <input id="ado-repo" class="form-control" @bind="_adoRepo" placeholder="my-wiki" required />
-    </div>
-    <div class="row">
-        <div class="col-sm-6 mb-2">
-            <label class="form-label" for="ado-branch">Branch</label>
-            <input id="ado-branch" class="form-control" @bind="_adoBranch" placeholder="main" required />
-        </div>
-        <div class="col-sm-6 mb-2">
-            <label class="form-label" for="ado-docs">Docs path</label>
-            <input id="ado-docs" class="form-control" @bind="_adoDocs" placeholder="docs" required />
-        </div>
-    </div>
-    <div class="mb-2">
-        <label class="form-label" for="ado-token">Personal access token</label>
-        <input id="ado-token" type="password" class="form-control" @bind="_adoToken" required autocomplete="off" />
-    </div>
-
-    @if (_adoError is { } aerr)
-    {
-        <div class="alert alert-danger py-2">@aerr</div>
-    }
-
-    <button type="submit" class="btn btn-primary" disabled="@_adoBusy">
-        @(_adoBusy ? "Connecting…" : "Connect")
-    </button>
-</form>
+        <EditForm Model="_ado" OnValidSubmit="ConnectAdoAsync">
+            <MudGrid Spacing="3">
+                <MudItem xs="12" sm="6">
+                    <MudTextField @bind-Value="_ado.Org" Label="Organization" Required="true"
+                                  Placeholder="contoso" Variant="Variant.Outlined" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField @bind-Value="_ado.Project" Label="Project" Required="true"
+                                  Placeholder="MyProject" Variant="Variant.Outlined" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField @bind-Value="_ado.Repo" Label="Repository" Required="true"
+                                  Placeholder="my-wiki" Variant="Variant.Outlined" />
+                </MudItem>
+                <MudItem xs="12" sm="3">
+                    <MudTextField @bind-Value="_ado.Branch" Label="Branch" Required="true"
+                                  Placeholder="main" Variant="Variant.Outlined" />
+                </MudItem>
+                <MudItem xs="12" sm="3">
+                    <MudTextField @bind-Value="_ado.Docs" Label="Docs path" Required="true"
+                                  Placeholder="docs" Variant="Variant.Outlined" />
+                </MudItem>
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="_ado.Token" Label="Personal access token"
+                                  InputType="InputType.Password" Required="true"
+                                  Variant="Variant.Outlined" />
+                </MudItem>
+                @if (_adoError is { } aerr)
+                {
+                    <MudItem xs="12"><MudAlert Severity="Severity.Error">@aerr</MudAlert></MudItem>
+                }
+                <MudItem xs="12">
+                    <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled"
+                               Color="Color.Primary" Disabled="@_adoBusy">
+                        @(_adoBusy ? "Connecting…" : "Connect")
+                    </MudButton>
+                </MudItem>
+            </MudGrid>
+        </EditForm>
+    </MudTabPanel>
+</MudTabs>
 
 @code {
-    private string _ghOwner = "";
-    private string _ghRepo = "";
-    private string _ghBranch = WikiConnection.DefaultBranch;
-    private string _ghDocs = WikiConnection.DefaultDocsPath;
-    private string _ghToken = "";
+    private readonly GitHubForm _gh = new();
+    private readonly AdoForm _ado = new();
     private string? _ghError;
-    private bool _ghBusy;
-
-    private string _adoOrg = "";
-    private string _adoProject = "";
-    private string _adoRepo = "";
-    private string _adoBranch = WikiConnection.DefaultBranch;
-    private string _adoDocs = WikiConnection.DefaultDocsPath;
-    private string _adoToken = "";
     private string? _adoError;
+    private bool _ghBusy;
     private bool _adoBusy;
 
-    protected override async Task OnInitializedAsync()
-    {
-        await Store.LoadAsync();
-    }
+    protected override async Task OnInitializedAsync() => await Store.LoadAsync();
 
     private async Task ConnectGitHubAsync()
     {
@@ -142,12 +145,13 @@
         {
             var conn = new WikiConnection(
                 WikiProvider.GitHub,
-                _ghToken.Trim(),
-                _ghOwner.Trim(),
-                _ghRepo.Trim(),
-                string.IsNullOrWhiteSpace(_ghBranch) ? WikiConnection.DefaultBranch : _ghBranch.Trim(),
-                string.IsNullOrWhiteSpace(_ghDocs) ? WikiConnection.DefaultDocsPath : _ghDocs.Trim('/'));
+                _gh.Token.Trim(),
+                _gh.Owner.Trim(),
+                _gh.Repo.Trim(),
+                Or(_gh.Branch, WikiConnection.DefaultBranch),
+                Or(_gh.Docs, WikiConnection.DefaultDocsPath).Trim('/'));
             await Store.SaveAsync(conn);
+            Snackbar.Add($"Connected to {conn.Owner}/{conn.Repo}", Severity.Success);
             Nav.NavigateTo("browse");
         }
         catch (Exception ex)
@@ -168,13 +172,14 @@
         {
             var conn = new WikiConnection(
                 WikiProvider.AzureDevOps,
-                _adoToken.Trim(),
-                _adoOrg.Trim(),
-                _adoRepo.Trim(),
-                string.IsNullOrWhiteSpace(_adoBranch) ? WikiConnection.DefaultBranch : _adoBranch.Trim(),
-                string.IsNullOrWhiteSpace(_adoDocs) ? WikiConnection.DefaultDocsPath : _adoDocs.Trim('/'),
-                _adoProject.Trim());
+                _ado.Token.Trim(),
+                _ado.Org.Trim(),
+                _ado.Repo.Trim(),
+                Or(_ado.Branch, WikiConnection.DefaultBranch),
+                Or(_ado.Docs, WikiConnection.DefaultDocsPath).Trim('/'),
+                _ado.Project.Trim());
             await Store.SaveAsync(conn);
+            Snackbar.Add($"Connected to {conn.Owner}/{conn.Project}/{conn.Repo}", Severity.Success);
             Nav.NavigateTo("browse");
         }
         catch (Exception ex)
@@ -190,5 +195,28 @@
     private async Task DisconnectAsync()
     {
         await Store.ClearAsync();
+        Snackbar.Add("Disconnected", Severity.Info);
+    }
+
+    private static string Or(string value, string fallback) =>
+        string.IsNullOrWhiteSpace(value) ? fallback : value.Trim();
+
+    private sealed class GitHubForm
+    {
+        public string Owner { get; set; } = "";
+        public string Repo { get; set; } = "";
+        public string Branch { get; set; } = WikiConnection.DefaultBranch;
+        public string Docs { get; set; } = WikiConnection.DefaultDocsPath;
+        public string Token { get; set; } = "";
+    }
+
+    private sealed class AdoForm
+    {
+        public string Org { get; set; } = "";
+        public string Project { get; set; } = "";
+        public string Repo { get; set; } = "";
+        public string Branch { get; set; } = WikiConnection.DefaultBranch;
+        public string Docs { get; set; } = WikiConnection.DefaultDocsPath;
+        public string Token { get; set; } = "";
     }
 }

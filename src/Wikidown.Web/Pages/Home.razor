@@ -2,24 +2,34 @@
 
 <PageTitle>Wikidown</PageTitle>
 
-<div class="hero">
-    <h1>Wikidown</h1>
-    <p class="lead">
-        An Azure-DevOps-Wiki-compatible wiki that lives in <code>/docs</code> of your
-        code repo. Edit in the browser, commit straight to GitHub or Azure DevOps.
-    </p>
-    <p>
-        <a class="btn btn-primary" href="connect">Open a wiki</a>
-    </p>
-</div>
+<MudStack Spacing="6">
+    <MudPaper Class="pa-6" Elevation="0">
+        <MudText Typo="Typo.h3" GutterBottom="true">Wikidown</MudText>
+        <MudText Typo="Typo.subtitle1" Class="mb-4" Color="Color.Default">
+            An Azure-DevOps-Wiki-compatible wiki that lives in <code>/docs</code> of your
+            code repo. Edit in the browser, commit straight to GitHub or Azure DevOps.
+        </MudText>
+        <MudButton Href="connect" Variant="Variant.Filled" Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Link" Size="Size.Large">
+            Open a wiki
+        </MudButton>
+    </MudPaper>
 
-<h2>How it works</h2>
-<ol>
-    <li>Sign in with GitHub Device Flow or paste a PAT for GitHub / Azure DevOps.</li>
-    <li>Pick the repo (and branch) that holds your <code>/docs</code> folder.</li>
-    <li>Browse, edit, and save pages — the app commits via REST.</li>
-</ol>
-
-<p class="text-muted small">
-    Your token stays in the browser. No backend; everything runs client-side.
-</p>
+    <MudPaper Class="pa-6" Elevation="0" Outlined="true">
+        <MudText Typo="Typo.h5" GutterBottom="true">How it works</MudText>
+        <MudList T="string" Dense="true">
+            <MudListItem T="string" Icon="@Icons.Material.Filled.Key">
+                Sign in with a GitHub or Azure DevOps personal access token.
+            </MudListItem>
+            <MudListItem T="string" Icon="@Icons.Material.Filled.FolderOpen">
+                Pick the repo (and branch) that holds your <code>/docs</code> folder.
+            </MudListItem>
+            <MudListItem T="string" Icon="@Icons.Material.Filled.Edit">
+                Browse, edit, and save pages — the app commits via REST.
+            </MudListItem>
+        </MudList>
+        <MudText Typo="Typo.caption" Class="mt-3" Color="Color.Default">
+            Your token stays in the browser. No backend; everything runs client-side.
+        </MudText>
+    </MudPaper>
+</MudStack>
