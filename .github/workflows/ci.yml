@@ -31,3 +31,9 @@ jobs:
           name: wikidown-nupkgs
           path: artifacts/*.nupkg
           if-no-files-found: warn
+      - name: Publish editor (smoke)
+        run: dotnet publish src/Wikidown.Web/Wikidown.Web.csproj -c Release -o publish/web -p:StaticWebAssetBasePath=app
+      - name: Walk /docs with the CLI (dogfood)
+        run: |
+          dotnet run --project src/Wikidown.Cli --no-build --configuration Release -- list
+          dotnet run --project src/Wikidown.Cli --no-build --configuration Release -- search --query wikidown

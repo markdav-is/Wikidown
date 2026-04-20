@@ -93,7 +93,16 @@ Blazor WASM PWA editor + marketing site hosted on GitHub Pages.
      `404.html` for SPA fallback, and touches `.nojekyll`.
    - Marketing site links to `app/` for the editor; editor base href is
      correct under both root and project-pages deployments.
-6. **Self-hosted /docs demo + CI polish** — dogfood + green builds.
+6. **Self-hosted /docs demo + CI polish** — dogfood + green builds. *(shipped)*
+   - `/docs` expanded to five top-level pages (`Getting-Started`, `CLI`,
+     `MCP-Server`, `Editor`, `Agents`) so the wiki documents every public
+     surface of the project. All pages authored via the CLI so `.order`
+     stays consistent.
+   - `ci.yml`: added a "Publish editor (smoke)" step so a broken Blazor
+     publish fails PRs (previously it only failed `pages.yml` on main),
+     plus a "Walk /docs with the CLI" step that runs `wikidown list` and
+     `wikidown search` against the in-repo wiki. Dogfoods the CLI on
+     every push/PR.
 
 ## Open questions / parking lot
 - `[[_TOC_]]`, mermaid, `:::` callouts rendering in WASM preview.

@@ -11,4 +11,8 @@ Welcome to Wikidown. This folder is itself a Wikidown-format wiki.
 
 ## Next
 
-- [Format](/Getting-Started/Format)
+- [Format](/Getting-Started/Format) — full on-disk format reference
+- [CLI](/CLI) — `wikidown` dotnet tool
+- [MCP Server](/MCP-Server) — `wikidown-mcp` for AI agents
+- [Editor](/Editor) — Blazor WASM browser editor
+- [Agents](/Agents) — drop-in Claude + Copilot configs
