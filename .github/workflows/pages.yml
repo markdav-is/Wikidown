@@ -1,0 +1,68 @@
+name: pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      # Project-pages base path: https://markdav-is.github.io/Wikidown/
+      SITE_BASE: /Wikidown/
+      APP_BASE: /Wikidown/app/
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Publish editor (Wikidown.Web)
+        run: |
+          dotnet publish src/Wikidown.Web/Wikidown.Web.csproj \
+            -c Release \
+            -o publish/web \
+            -p:StaticWebAssetBasePath=app
+
+      - name: Stage Pages output
+        run: |
+          mkdir -p publish/site
+          # Marketing landing at the root.
+          cp -r src/Wikidown.Site/. publish/site/
+          # Editor PWA at /app/. Wikidown.Web is published with
+          # StaticWebAssetBasePath=app, so wwwroot/app/ already contains the
+          # fingerprinted index.html, _framework, and _content laid out for
+          # serving from /Wikidown/app/.
+          mkdir -p publish/site/app
+          cp -r publish/web/wwwroot/app/. publish/site/app/
+          # Rewrite the editor base href so SPA routing works on project pages.
+          sed -i 's#<base href="/" />#<base href="'"$APP_BASE"'" />#' publish/site/app/index.html
+          # SPA fallback: serve the editor's index.html for unknown /app/* routes.
+          cp publish/site/app/index.html publish/site/app/404.html
+          # Disable Jekyll so /_framework/ and dotfiles are served.
+          touch publish/site/.nojekyll
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: publish/site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

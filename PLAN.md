@@ -82,7 +82,17 @@ Blazor WASM PWA editor + marketing site hosted on GitHub Pages.
      successful commit. The published service worker already caches
      MudBlazor + manifest assets, so the app boots offline and a failed
      Save naturally surfaces as a snackbar error.
-5. **Marketing site + GH Pages deploy** — landing page + workflow.
+5. **Marketing site + GH Pages deploy** — landing page + workflow. *(shipped)*
+   - `src/Wikidown.Site/` — static HTML/CSS landing page (no WASM cost on
+     first paint). Topbar, hero, "How it works" cards, "For agents" cards
+     (CLI / MCP / drop-in configs), Format reference, footer.
+   - `.github/workflows/pages.yml` — publishes `Wikidown.Web` with
+     `StaticWebAssetBasePath=app`, stages the marketing site at the Pages
+     root, copies `wwwroot/app/.` to `publish/site/app/`, sed-rewrites
+     `<base href="/" />` to `/Wikidown/app/`, copies `index.html` to
+     `404.html` for SPA fallback, and touches `.nojekyll`.
+   - Marketing site links to `app/` for the editor; editor base href is
+     correct under both root and project-pages deployments.
 6. **Self-hosted /docs demo + CI polish** — dogfood + green builds.
 
 ## Open questions / parking lot

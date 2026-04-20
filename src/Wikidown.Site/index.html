@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wikidown — an Azure-DevOps-Wiki-compatible /docs editor</title>
+  <meta name="description" content="A wiki that lives in /docs of any code repo. Edit in the browser, commit straight to GitHub or Azure DevOps. Pair it with a CLI and an MCP server so AI agents can maintain pages." />
+  <meta name="theme-color" content="#1f2a40" />
+  <meta property="og:title" content="Wikidown" />
+  <meta property="og:description" content="A wiki that lives in /docs. Browser editor + CLI + MCP server for AI agents." />
+  <meta property="og:type" content="website" />
+  <link rel="icon" type="image/png" href="favicon.png" />
+  <link rel="stylesheet" href="site.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="container topbar-row">
+      <a class="brand" href="./">Wikidown</a>
+      <nav>
+        <a href="#how">How it works</a>
+        <a href="#agents">For agents</a>
+        <a href="https://github.com/markdav-is/Wikidown" target="_blank" rel="noopener">GitHub</a>
+        <a class="btn btn-primary" href="app/">Open editor</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="container">
+        <h1>A wiki that lives in <code>/docs</code>.</h1>
+        <p class="lead">
+          Wikidown is an Azure-DevOps-Wiki-compatible markdown wiki you commit
+          alongside your code. Edit in the browser, commit straight to GitHub or
+          Azure DevOps — no backend, no extra service to operate.
+        </p>
+        <div class="cta">
+          <a class="btn btn-primary btn-lg" href="app/">Open the editor</a>
+          <a class="btn btn-ghost btn-lg" href="https://github.com/markdav-is/Wikidown" target="_blank" rel="noopener">View on GitHub</a>
+        </div>
+      </div>
+    </section>
+
+    <section id="how" class="container section">
+      <h2>How it works</h2>
+      <div class="features">
+        <div class="card">
+          <h3>1. Connect a repo</h3>
+          <p>Paste a GitHub or Azure DevOps PAT. Pick the repo and branch that holds your <code>/docs</code> folder. Tokens stay in the browser.</p>
+        </div>
+        <div class="card">
+          <h3>2. Browse &amp; edit</h3>
+          <p>Title-form links, <code>.order</code> files, and subpages — fully ADO-Wiki-compatible. Edit in a side-by-side markdown editor with live preview.</p>
+        </div>
+        <div class="card">
+          <h3>3. Commit via REST</h3>
+          <p>Save commits directly to your repo through GitHub's Contents API or ADO's Push API. File-level conflict detection keeps concurrent edits safe.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="agents" class="container section section-alt">
+      <h2>Built for humans <em>and</em> agents</h2>
+      <div class="features">
+        <div class="card">
+          <h3>CLI</h3>
+          <p>The <code>wikidown</code> dotnet tool reads, writes, moves, reorders, and searches pages while keeping <code>.order</code> consistent.</p>
+          <pre><code>dotnet tool install -g Wikidown.Cli
+wikidown list
+wikidown new "/Getting Started/Format"</code></pre>
+        </div>
+        <div class="card">
+          <h3>MCP server</h3>
+          <p>Drop <code>wikidown-mcp</code> into Claude Code, Claude Desktop, or VS Code (Copilot). Nine tools cover the full read/write surface so AI assistants can maintain your wiki.</p>
+          <pre><code>dotnet tool install -g Wikidown.Mcp
+# wire wikidown-mcp into .mcp.json or .vscode/mcp.json</code></pre>
+        </div>
+        <div class="card">
+          <h3>Drop-in agent configs</h3>
+          <p>Pre-built Claude Code subagent / skill and Copilot chat-mode + instructions live in the <code>agents/</code> folder of the repo. Copy them into your downstream project and you're done.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="container section">
+      <h2>Format</h2>
+      <p>
+        Wikidown follows the Azure DevOps Wiki convention so your pages render
+        in either tool with no migration:
+      </p>
+      <ul class="bullets">
+        <li>Page file: <code>My-Page.md</code> on disk; the title is <em>My Page</em>.</li>
+        <li>Subpages: a folder named the same as the parent page, holding child <code>.md</code> files.</li>
+        <li>Ordering: a <code>.order</code> file per folder — one base name per line, top to bottom.</li>
+        <li>Links: <code>[text](/Parent/Child)</code> resolved by title, ignoring <code>.md</code> and hyphens.</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container footer-row">
+      <span>© Wikidown contributors</span>
+      <span>
+        <a href="https://github.com/markdav-is/Wikidown" target="_blank" rel="noopener">Source</a> ·
+        <a href="https://github.com/markdav-is/Wikidown/issues" target="_blank" rel="noopener">Issues</a>
+      </span>
+    </div>
+  </footer>
+</body>
+</html>
