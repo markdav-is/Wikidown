@@ -6,7 +6,7 @@ self.addEventListener('install', event => event.waitUntil(onInstall(event)));
 self.addEventListener('activate', event => event.waitUntil(onActivate(event)));
 self.addEventListener('fetch', event => {
     const url = new URL(event.request.url);
-    if (url.origin === self.origin && url.pathname.startsWith('/api/')) {
+    if (url.origin === self.origin && (url.pathname.startsWith('/api/') || url.pathname.startsWith('/oauth/'))) {
         return;
     }
     event.respondWith(onFetch(event));

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Wikidown — signing in…</title>
+    <meta name="robots" content="noindex" />
+    <style>
+        body { font-family: Roboto, -apple-system, system-ui, sans-serif; background: #121212; color: #e0e0e0; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+        .box { text-align: center; padding: 2rem; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <p>Completing GitHub sign-in…</p>
+        <noscript>JavaScript is required to finish the sign-in.</noscript>
+    </div>
+    <script>
+        (async () => {
+            function redirect(fragParams) {
+                const parts = [];
+                for (const [k, v] of Object.entries(fragParams)) {
+                    if (v != null && v !== '') parts.push(k + '=' + encodeURIComponent(v));
+                }
+                window.location.replace('/connect' + (parts.length ? '#' + parts.join('&') : ''));
+            }
+
+            const params = new URLSearchParams(window.location.search);
+            const code = params.get('code');
+            const state = params.get('state');
+            const ghError = params.get('error');
+            const ghErrorDesc = params.get('error_description');
+
+            if (ghError) {
+                redirect({ gh_error: ghErrorDesc || ghError, gh_state: state });
+                return;
+            }
+            if (!code) {
+                redirect({ gh_error: 'missing_code', gh_state: state });
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/auth/github/exchange', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code, state }),
+                });
+                let data = null;
+                try { data = await res.json(); } catch { }
+                if (!res.ok) {
+                    redirect({ gh_error: (data && data.error) || ('exchange_' + res.status), gh_state: state });
+                    return;
+                }
+                if (data && data.token) {
+                    redirect({ gh_token: data.token, gh_state: state });
+                } else {
+                    redirect({ gh_error: (data && data.error) || 'no_access_token', gh_state: state });
+                }
+            } catch (e) {
+                const name = (e && e.name) || 'Error';
+                redirect({ gh_error: 'exchange_threw_' + name, gh_state: state });
+            }
+        })();
+    </script>
+</body>
+</html>

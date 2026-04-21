@@ -204,7 +204,7 @@
         await JS.InvokeVoidAsync("sessionStorage.setItem", StateKey, state);
 
         var origin = Nav.BaseUri.TrimEnd('/');
-        var redirectUri = $"{origin}/api/auth/github/callback";
+        var redirectUri = $"{origin}/oauth/github/return.html";
         var authorize =
             "https://github.com/login/oauth/authorize"
             + "?client_id=" + Uri.EscapeDataString(_ghClientId!)
