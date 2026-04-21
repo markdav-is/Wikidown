@@ -83,7 +83,7 @@ Azure Portal's SWA → APIs blade shows a blue banner: *"Bring your own API back
 
 - Stale service worker needs evicting on the dev's machine before `/api/ping` is reachable from their regular browser.
 - `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` need to be confirmed set on the SWA's Configuration → Application settings.
-- The `Wikidown` GitHub OAuth App needs both `https://wikidown.app/api/auth/github/callback` **and** the ASWA default `https://victorious-wave-03164381e.7.azurestaticapps.net/api/auth/github/callback` registered as callback URLs.
+- The `Wikidown` GitHub OAuth App is registered with a single `Authorization callback URL`, `https://wikidown.app/api/auth/github/callback` — OAuth sign-in on the ASWA default hostname will fail with a `redirect_uri` mismatch by design. Converting to a GitHub App would allow multiple callback URLs; not worth it just for the fallback.
 - ADO OAuth is stubbed — `/api/config/ado` returns empty `clientId` on purpose; ADO tab still uses PAT.
 - Device flow (for CLI / MCP) is deferred until there's a real reason to ship it.
 

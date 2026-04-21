@@ -160,17 +160,19 @@ State-mismatch negative test:
 ## ASWA default hostname — `https://victorious-wave-03164381e.7.azurestaticapps.net/`
 
 The vanity domain is `wikidown.app`, but the ASWA default hostname stays
-bound as a safety net. Every user-facing check above should behave
-identically here.
+bound as a safety net. Every check above should behave identically here
+**except GitHub OAuth sign-in**, which only completes on `wikidown.app`.
 
 - `GET /` returns 200 and reaches interactive state.
 - TLS certificate is valid (Azure-managed, no browser interstitial).
 - `/api/config/github` and `/api/ping` respond the same as on
   `wikidown.app`.
-- OAuth round-trip works — which requires the `Wikidown` OAuth App to
-  list **both** `https://wikidown.app/api/auth/github/callback` **and**
-  `https://victorious-wave-03164381e.7.azurestaticapps.net/api/auth/github/callback`
-  as Authorization callback URLs.
+- **GitHub OAuth sign-in is expected to FAIL here.** GitHub OAuth Apps
+  support a single `Authorization callback URL`, which is registered
+  against `https://wikidown.app/api/auth/github/callback`. Starting sign-in
+  from the ASWA default hostname should produce a `redirect_uri` mismatch
+  error from `github.com/login/oauth/authorize`. The PAT fallback still
+  works here.
 
 ## PWA install
 

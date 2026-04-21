@@ -3,10 +3,10 @@
 Wikidown ships a Blazor WebAssembly PWA that lets you browse and edit any
 Wikidown wiki straight from the browser. It's hosted on Azure Static Web Apps
 at `https://wikidown.app/` (default hostname
-`https://victorious-wave-03164381e.7.azurestaticapps.net/` still works), with
-a small Functions app at `/api/*` that only exists to complete OAuth token
-exchange — page commits still go directly to your provider's REST API from
-the browser.
+`https://victorious-wave-03164381e.7.azurestaticapps.net/` still serves the
+editor, but OAuth sign-in only completes on `wikidown.app`), with a small
+Functions app at `/api/*` that only exists to complete OAuth token exchange —
+page commits still go directly to your provider's REST API from the browser.
 
 ## Providers
 
@@ -32,10 +32,10 @@ OAuth `code` for an access token and redirects back.
 
 A "Use a PAT instead" toggle on the same page is kept as a fallback.
 
-The `redirect_uri` is built from `window.location.origin`, so the flow works
-from whichever hostname the user arrived on. The `Wikidown` OAuth App has
-both `wikidown.app` and the ASWA default hostname listed as Authorization
-callback URLs.
+GitHub OAuth Apps support a single `Authorization callback URL`, so the
+`Wikidown` app is registered against `https://wikidown.app/api/auth/github/callback`.
+Sign-in on the ASWA default hostname will fail with a `redirect_uri`
+mismatch — use `wikidown.app` for OAuth, or paste a PAT as a fallback.
 
 ## Browse and edit
 
