@@ -1,6 +1,8 @@
 name: release
 
 on:
+  push:
+    tags: ['v*']
   release:
     types: [published]
   workflow_dispatch:
@@ -27,6 +29,8 @@ jobs:
         run: |
           if [ -n "${{ github.event.release.tag_name }}" ]; then
             V="${{ github.event.release.tag_name }}"
+          elif [ "${{ github.event_name }}" = "push" ]; then
+            V="${{ github.ref_name }}"
           else
             V="${{ github.event.inputs.version }}"
           fi
