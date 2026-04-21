@@ -2,13 +2,18 @@
 @inject ConnectionStore Store
 @inject NavigationManager Nav
 @inject ISnackbar Snackbar
+@inject HttpClient Http
+@inject IJSRuntime JS
+@using System.Net.Http.Json
+@using System.Text.Json
 @using Wikidown.Web.Services
 
 <PageTitle>Connect — Wikidown</PageTitle>
 
 <MudText Typo="Typo.h4" GutterBottom="true">Connect a wiki</MudText>
 <MudText Class="mb-4">
-    Your token stays in this browser (<code>localStorage</code>). No backend.
+    Sign in and pick the repo that holds your <code>/docs</code> folder.
+    Tokens stay in this browser (<code>localStorage</code>) — Wikidown never stores them server-side.
 </MudText>
 
 @if (Store.Current is { } existing)
@@ -29,19 +34,6 @@
 
 <MudTabs Outlined="true" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-6">
     <MudTabPanel Text="GitHub" Icon="@Icons.Custom.Brands.GitHub">
-        <MudText Class="mb-3">
-            Paste a
-            <MudLink Href="https://github.com/settings/tokens?type=beta" Target="_blank">
-                fine-grained Personal Access Token
-            </MudLink>
-            scoped to the repo that holds your <code>/docs</code> folder, with
-            <em>Contents: Read &amp; Write</em>.
-        </MudText>
-        <MudText Typo="Typo.caption" Class="mb-3" Color="Color.Default">
-            GitHub OAuth Device Flow needs a small proxy because GitHub's
-            <code>/login/device/code</code> endpoint blocks browser CORS — planned for a later chunk.
-        </MudText>
-
         <EditForm Model="_gh" OnValidSubmit="ConnectGitHubAsync">
             <MudGrid Spacing="3">
                 <MudItem xs="12" sm="6">
@@ -60,21 +52,44 @@
                     <MudTextField @bind-Value="_gh.Docs" Label="Docs path" Required="true"
                                   Placeholder="docs" Variant="Variant.Outlined" />
                 </MudItem>
-                <MudItem xs="12">
-                    <MudTextField @bind-Value="_gh.Token" Label="Personal access token"
-                                  InputType="InputType.Password" Required="true"
-                                  Variant="Variant.Outlined" />
-                </MudItem>
                 @if (_ghError is { } gerr)
                 {
                     <MudItem xs="12"><MudAlert Severity="Severity.Error">@gerr</MudAlert></MudItem>
                 }
                 <MudItem xs="12">
-                    <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled"
-                               Color="Color.Primary" Disabled="@_ghBusy">
-                        @(_ghBusy ? "Connecting…" : "Connect")
-                    </MudButton>
+                    <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                        <MudButton ButtonType="ButtonType.Button" Variant="Variant.Filled"
+                                   Color="Color.Primary" StartIcon="@Icons.Custom.Brands.GitHub"
+                                   OnClick="SignInWithGitHubAsync"
+                                   Disabled="@(_ghBusy || !_ghOAuthReady)">
+                            @(_ghBusy ? "Signing in…" : "Sign in with GitHub")
+                        </MudButton>
+                        <MudButton Variant="Variant.Text" Size="Size.Small" OnClick="@(() => _ghShowPat = !_ghShowPat)">
+                            @(_ghShowPat ? "Hide" : "Use a PAT instead")
+                        </MudButton>
+                    </MudStack>
+                    @if (!_ghOAuthReady)
+                    {
+                        <MudText Typo="Typo.caption" Class="mt-2" Color="Color.Warning">
+                            GitHub OAuth isn't configured on this server yet — use a PAT below.
+                        </MudText>
+                    }
                 </MudItem>
+                @if (_ghShowPat)
+                {
+                    <MudItem xs="12">
+                        <MudTextField @bind-Value="_gh.Token" Label="Personal access token"
+                                      InputType="InputType.Password"
+                                      Variant="Variant.Outlined"
+                                      HelperText="Fine-grained PAT with Contents: Read & Write on the repo." />
+                    </MudItem>
+                    <MudItem xs="12">
+                        <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Outlined"
+                                   Color="Color.Primary" Disabled="@_ghBusy">
+                            Connect with PAT
+                        </MudButton>
+                    </MudItem>
+                }
             </MudGrid>
         </EditForm>
     </MudTabPanel>
@@ -128,14 +143,144 @@
 </MudTabs>
 
 @code {
+    private const string PendingKey = "wikidown.gh_pending";
+    private const string StateKey = "wikidown.gh_state";
+
     private readonly GitHubForm _gh = new();
     private readonly AdoForm _ado = new();
     private string? _ghError;
     private string? _adoError;
     private bool _ghBusy;
     private bool _adoBusy;
+    private bool _ghShowPat;
+    private string? _ghClientId;
+    private bool _ghOAuthReady;
 
-    protected override async Task OnInitializedAsync() => await Store.LoadAsync();
+    protected override async Task OnInitializedAsync()
+    {
+        await Store.LoadAsync();
+        await TryLoadGitHubConfigAsync();
+        await TryHandleGitHubReturnAsync();
+    }
+
+    private async Task TryLoadGitHubConfigAsync()
+    {
+        try
+        {
+            var cfg = await Http.GetFromJsonAsync<GitHubConfig>("api/config/github");
+            _ghClientId = cfg?.ClientId;
+            _ghOAuthReady = !string.IsNullOrWhiteSpace(_ghClientId);
+        }
+        catch
+        {
+            _ghOAuthReady = false;
+        }
+        if (!_ghOAuthReady) _ghShowPat = true;
+    }
+
+    private async Task SignInWithGitHubAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_ghClientId))
+        {
+            _ghError = "GitHub OAuth is not configured on this server.";
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(_gh.Owner) || string.IsNullOrWhiteSpace(_gh.Repo))
+        {
+            _ghError = "Fill in Owner and Repository before signing in.";
+            return;
+        }
+
+        _ghError = null;
+
+        var pending = JsonSerializer.Serialize(new PendingGitHub(
+            Or(_gh.Owner, ""),
+            Or(_gh.Repo, ""),
+            Or(_gh.Branch, WikiConnection.DefaultBranch),
+            Or(_gh.Docs, WikiConnection.DefaultDocsPath)));
+
+        var state = Guid.NewGuid().ToString("N");
+        await JS.InvokeVoidAsync("sessionStorage.setItem", PendingKey, pending);
+        await JS.InvokeVoidAsync("sessionStorage.setItem", StateKey, state);
+
+        var origin = Nav.BaseUri.TrimEnd('/');
+        var redirectUri = $"{origin}/api/auth/github/callback";
+        var authorize =
+            "https://github.com/login/oauth/authorize"
+            + "?client_id=" + Uri.EscapeDataString(_ghClientId!)
+            + "&redirect_uri=" + Uri.EscapeDataString(redirectUri)
+            + "&scope=" + Uri.EscapeDataString("repo read:user")
+            + "&state=" + Uri.EscapeDataString(state);
+
+        Nav.NavigateTo(authorize, forceLoad: true);
+    }
+
+    private async Task TryHandleGitHubReturnAsync()
+    {
+        var hash = new Uri(Nav.Uri).Fragment;
+        if (string.IsNullOrEmpty(hash) || hash.Length < 2) return;
+
+        var parts = hash.TrimStart('#').Split('&');
+        string? token = null;
+        string? returnedState = null;
+        string? error = null;
+        foreach (var p in parts)
+        {
+            var kv = p.Split('=', 2);
+            if (kv.Length != 2) continue;
+            var k = kv[0];
+            var v = Uri.UnescapeDataString(kv[1]);
+            if (k == "gh_token") token = v;
+            else if (k == "gh_state") returnedState = v;
+            else if (k == "gh_error") error = v;
+        }
+
+        if (token is null && error is null) return;
+
+        var expectedState = await JS.InvokeAsync<string?>("sessionStorage.getItem", StateKey);
+        await JS.InvokeVoidAsync("sessionStorage.removeItem", StateKey);
+        var pendingJson = await JS.InvokeAsync<string?>("sessionStorage.getItem", PendingKey);
+        await JS.InvokeVoidAsync("sessionStorage.removeItem", PendingKey);
+        await JS.InvokeVoidAsync("history.replaceState", null, "", Nav.Uri.Split('#')[0]);
+
+        if (!string.IsNullOrEmpty(error))
+        {
+            _ghError = $"GitHub sign-in failed: {error}";
+            return;
+        }
+
+        if (string.IsNullOrEmpty(expectedState) || expectedState != returnedState)
+        {
+            _ghError = "GitHub sign-in was rejected (state mismatch).";
+            return;
+        }
+
+        PendingGitHub? pending = null;
+        if (!string.IsNullOrWhiteSpace(pendingJson))
+        {
+            try { pending = JsonSerializer.Deserialize<PendingGitHub>(pendingJson); }
+            catch (JsonException) { }
+        }
+
+        if (pending is null || string.IsNullOrWhiteSpace(pending.Owner) || string.IsNullOrWhiteSpace(pending.Repo))
+        {
+            _gh.Token = token ?? "";
+            _ghShowPat = true;
+            _ghError = "Signed in, but owner/repo were lost. Fill them in and click Connect.";
+            return;
+        }
+
+        var conn = new WikiConnection(
+            WikiProvider.GitHub,
+            token!,
+            pending.Owner.Trim(),
+            pending.Repo.Trim(),
+            Or(pending.Branch, WikiConnection.DefaultBranch),
+            Or(pending.Docs, WikiConnection.DefaultDocsPath).Trim('/'));
+        await Store.SaveAsync(conn);
+        Snackbar.Add($"Connected to {conn.Owner}/{conn.Repo}", Severity.Success);
+        Nav.NavigateTo("browse");
+    }
 
     private async Task ConnectGitHubAsync()
     {
@@ -143,6 +288,11 @@
         _ghBusy = true;
         try
         {
+            if (string.IsNullOrWhiteSpace(_gh.Token))
+            {
+                _ghError = "Enter a personal access token, or click Sign in with GitHub.";
+                return;
+            }
             var conn = new WikiConnection(
                 WikiProvider.GitHub,
                 _gh.Token.Trim(),
@@ -219,4 +369,7 @@
         public string Docs { get; set; } = WikiConnection.DefaultDocsPath;
         public string Token { get; set; } = "";
     }
+
+    private sealed record PendingGitHub(string Owner, string Repo, string Branch, string Docs);
+    private sealed record GitHubConfig(string? ClientId);
 }
