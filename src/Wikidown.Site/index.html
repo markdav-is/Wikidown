@@ -30,16 +30,21 @@
 
   <main>
     <section class="hero">
-      <div class="container">
-        <h1>A wiki that lives in <code>/docs</code>.</h1>
-        <p class="lead">
-          Wikidown is an Azure-DevOps-Wiki-compatible markdown wiki you commit
-          alongside your code. Edit in the browser, commit straight to GitHub or
-          Azure DevOps — no backend, no extra service to operate.
-        </p>
-        <div class="cta">
-          <a class="btn btn-primary btn-lg" href="app/">Open the editor</a>
-          <a class="btn btn-ghost btn-lg" href="https://github.com/markdav-is/Wikidown" target="_blank" rel="noopener">View on GitHub</a>
+      <div class="container hero-grid">
+        <div class="hero-copy">
+          <h1>A wiki that lives in <code>/docs</code>.</h1>
+          <p class="lead">
+            Wikidown is an Azure-DevOps-Wiki-compatible markdown wiki you commit
+            alongside your code. Edit in the browser, commit straight to GitHub or
+            Azure DevOps — no backend, no extra service to operate.
+          </p>
+          <div class="cta">
+            <a class="btn btn-primary btn-lg" href="app/">Open the editor</a>
+            <a class="btn btn-ghost btn-lg" href="https://github.com/markdav-is/Wikidown" target="_blank" rel="noopener">View on GitHub</a>
+          </div>
+        </div>
+        <div class="hero-art" aria-hidden="true">
+          <img src="images/wikidown-logo-1024.png" alt="" />
         </div>
       </div>
     </section>
@@ -62,25 +67,39 @@
       </div>
     </section>
 
-    <section id="agents" class="container section section-alt">
-      <h2>Built for humans <em>and</em> agents</h2>
-      <div class="features">
-        <div class="card">
-          <h3>CLI</h3>
-          <p>The <code>wikidown</code> dotnet tool reads, writes, moves, reorders, and searches pages while keeping <code>.order</code> consistent.</p>
-          <pre><code>dotnet tool install -g Wikidown.Cli
+    <section id="agents" class="section section-alt">
+      <div class="container">
+        <h2>Built for humans <em>and</em> agents</h2>
+        <p class="section-lead">Ship the same <code>/docs</code> wiki from a terminal, an MCP host, or a prebuilt agent config.</p>
+        <div class="features features-3">
+          <div class="card card-agent">
+            <div class="card-head">
+              <span class="card-kicker">CLI</span>
+              <h3>wikidown</h3>
+            </div>
+            <p>Dotnet tool that reads, writes, moves, reorders, and searches pages while keeping <code>.order</code> consistent.</p>
+            <pre><code>dotnet tool install -g Wikidown.Cli
 wikidown list
 wikidown new "/Getting Started/Format"</code></pre>
-        </div>
-        <div class="card">
-          <h3>MCP server</h3>
-          <p>Drop <code>wikidown-mcp</code> into Claude Code, Claude Desktop, or VS Code (Copilot). Nine tools cover the full read/write surface so AI assistants can maintain your wiki.</p>
-          <pre><code>dotnet tool install -g Wikidown.Mcp
-# wire wikidown-mcp into .mcp.json or .vscode/mcp.json</code></pre>
-        </div>
-        <div class="card">
-          <h3>Drop-in agent configs</h3>
-          <p>Pre-built Claude Code subagent / skill and Copilot chat-mode + instructions live in the <code>agents/</code> folder of the repo. Copy them into your downstream project and you're done.</p>
+          </div>
+          <div class="card card-agent">
+            <div class="card-head">
+              <span class="card-kicker">MCP server</span>
+              <h3>wikidown-mcp</h3>
+            </div>
+            <p>Stdio MCP server for Claude Code, Claude Desktop, or VS Code (Copilot). Nine tools cover the full read/write surface.</p>
+            <pre><code>dotnet tool install -g Wikidown.Mcp
+# wire into .mcp.json or .vscode/mcp.json</code></pre>
+          </div>
+          <div class="card card-agent">
+            <div class="card-head">
+              <span class="card-kicker">Agent configs</span>
+              <h3>Drop-in</h3>
+            </div>
+            <p>Claude Code subagent &amp; skill, plus Copilot chat-mode + instructions — ready to copy into any repo.</p>
+            <pre><code>cp -r agents/claude/.claude .
+cp -r agents/copilot/.github .</code></pre>
+          </div>
         </div>
       </div>
     </section>
