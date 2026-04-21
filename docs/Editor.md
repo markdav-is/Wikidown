@@ -1,17 +1,35 @@
 # Editor
 
 Wikidown ships a Blazor WebAssembly PWA that lets you browse and edit any
-Wikidown wiki straight from the browser. It's hosted on GitHub Pages at
-`/Wikidown/app/` and has no backend — commits go directly to your provider's
-REST API.
+Wikidown wiki straight from the browser. It's hosted on Azure Static Web Apps
+at `https://victorious-wave-03164381e.7.azurestaticapps.net/` today (custom
+domain `https://wikidown.app/` planned), with a small Functions app at
+`/api/*` that only exists to complete OAuth token exchange — page commits
+still go directly to your provider's REST API from the browser.
 
 ## Providers
 
-- **GitHub** — Personal Access Token. Commits via the Contents API.
+- **GitHub** — Sign in with GitHub (OAuth) or paste a fine-grained Personal
+  Access Token. Commits via the Contents API.
 - **Azure DevOps** — Personal Access Token. Commits via the Pushes API.
+  (OAuth is planned but not yet wired.)
 
-Tokens are kept in browser `localStorage`. Nothing is uploaded anywhere except
-to the provider you connect.
+Access tokens are kept in browser `localStorage`. The Functions app never
+sees your repo contents and never stores your token — it only swaps an
+OAuth `code` for an access token and redirects back.
+
+## Sign-in flow (GitHub)
+
+1. Click **Sign in with GitHub** on `/connect`.
+2. Redirect to `github.com/login/oauth/authorize` for the `Wikidown` OAuth
+   App.
+3. Return to `/api/auth/github/callback`; Functions exchanges the `code` +
+   `client_secret` for an access token.
+4. 302 back to `/connect#gh_token=...&gh_state=...`. The SPA validates the
+   CSRF `state`, stores the token in `localStorage`, scrubs the hash, and
+   navigates to `/browse`.
+
+A "Use a PAT instead" toggle on the same page is kept as a fallback.
 
 ## Browse and edit
 

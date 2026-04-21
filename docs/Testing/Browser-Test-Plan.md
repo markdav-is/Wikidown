@@ -5,11 +5,14 @@ via Playwright MCP — to exhaustively smoke-test Wikidown's public surfaces.
 
 ## How to use this page
 
-Wikidown currently has three public web surfaces:
+Wikidown now has two distinct public surfaces:
 
-1. **Marketing site** — `https://wikidown.org/` (static HTML + CSS).
-2. **Editor PWA** — `https://wikidown.org/app/` (Blazor WASM + MudBlazor; PAT-gated flows require a GitHub or Azure DevOps token).
-3. **Editor at custom domain** — `https://wikidown.app/` (planned; may or may not be live at test time).
+1. **Marketing site** — `https://wikidown.org/` (static HTML + CSS, served by
+   GitHub Pages; marketing only, no editor, no API).
+2. **Editor PWA + API** — `https://victorious-wave-03164381e.7.azurestaticapps.net/`
+   (Blazor WASM + MudBlazor at `/`, .NET isolated Functions at `/api/*`,
+   served by Azure Static Web Apps). A planned custom domain,
+   `https://wikidown.app/`, will point at this same SWA resource.
 
 For every check, report **PASS**, **FAIL**, or **SKIPPED** with a one-line
 reason. On any failure, attach:
@@ -40,11 +43,14 @@ Checks are ordered so you can stop early on a catastrophic failure
 
 ### Navigation
 
-- **"Open the editor"** button → `https://wikidown.org/app/`
-  (trailing slash preserved).
+- **"Open the editor"** button → the editor origin
+  (`https://victorious-wave-03164381e.7.azurestaticapps.net/` today,
+  `https://wikidown.app/` once the custom domain is bound).
 - **"View on GitHub"** has `target="_blank"` and resolves to HTTP 200.
 - Every nav / hero / footer link resolves to HTTP 200 — none are `#`
   or `javascript:void(0)`.
+- `GET /app/` on the marketing origin returns 404 — the editor is **not**
+  served from the marketing site anymore.
 
 ### Layout and readability
 
@@ -63,13 +69,12 @@ Checks are ordered so you can stop early on a catastrophic failure
 - `document.documentElement.scrollWidth ==
   document.documentElement.clientWidth`.
 
-## Editor PWA — `https://wikidown.org/app/`
+## Editor PWA — `https://victorious-wave-03164381e.7.azurestaticapps.net/`
 
 ### Shell and first paint
 
-- `GET /app/` returns HTTP 200 and the Blazor WASM app reaches
-  interactive state (loading spinner disappears within ~10 s on a
-  fast connection).
+- `GET /` returns HTTP 200 and the Blazor WASM app reaches interactive
+  state (loading spinner disappears within ~10 s on a fast connection).
 - App bar shows the **W↓ logo** immediately to the left of the word
   **Wikidown**.
 - The **Drafts** button is visible in the app bar. Clicking it on a
@@ -79,9 +84,9 @@ Checks are ordered so you can stop early on a catastrophic failure
 
 ### Static assets
 
-- `GET /app/favicon.ico` → 200.
-- `GET /app/apple-touch-icon.png` → 200.
-- `GET /app/manifest.webmanifest` → 200. `Content-Type` is
+- `GET /favicon.ico` → 200.
+- `GET /apple-touch-icon.png` → 200.
+- `GET /manifest.webmanifest` → 200. `Content-Type` is
   `application/manifest+json` (or `application/json`). Body is valid
   JSON and declares `name`, `short_name`, `start_url`, `display`, and
   at least one `icons` entry.
@@ -89,74 +94,118 @@ Checks are ordered so you can stop early on a catastrophic failure
 ### Service worker
 
 - DevTools → Application → Service Workers lists a registered SW for
-  scope `/app/`, status **activated and is running**.
+  scope `/`, status **activated and is running**.
 - DevTools → Application → Cache Storage shows at least one
   `offline-cache-*` entry populated after a reload.
 - A hard reload (`Ctrl+Shift+R`) still produces a working app; a
   subsequent normal reload is served partly from cache (Network panel
   shows some requests flagged `(ServiceWorker)` or `(disk cache)`).
 
-### PAT-gated flows *(skip by default)*
+## API smoke tests — `/api/*`
 
-Only run if a throwaway GitHub or Azure DevOps PAT has been supplied.
-Without one, mark every check in this section **SKIPPED**.
+The `/api/*` routes are served by the linked Azure Functions app. These
+are quick unauthenticated probes — they don't touch real OAuth.
 
-With a throwaway PAT:
+- `GET /api/config/github` → HTTP 200, `Content-Type: application/json`,
+  body shape `{"clientId":"..."}`. If `clientId` is empty, the SWA's
+  `GITHUB_CLIENT_ID` application setting isn't configured yet — mark
+  **FAIL** and stop the OAuth section below.
+- `GET /api/config/ado` → HTTP 200, body shape `{"clientId":"..."}`
+  (empty string acceptable — ADO OAuth is not wired yet).
+- `GET /api/auth/github/callback?code=not-a-real-code&state=xyz` → HTTP
+  302 with `Location` containing `/connect#gh_error=` and
+  `gh_state=xyz`. The exact error token should be `bad_verification_code`
+  (GitHub's canonical response) or `token_exchange_failed`. Confirms
+  the token-exchange round-trip is wired even without a valid code.
+- `GET /api/auth/github/callback` (no `code`) → 302 to
+  `/connect#gh_error=missing_code`.
 
-- Connect / Sign-in flow accepts the PAT without a console error.
-- After connecting, the repo / wiki picker populates.
-- Opening a wiki loads the page tree; opening a page renders its
-  markdown with working links.
-- Editing a page and saving produces a commit / push visible in the
-  backing repo.
-- Signing out clears the token from storage
-  (DevTools → Application → Local Storage / IndexedDB).
+## GitHub OAuth sign-in flow *(skip by default)*
+
+Only run if a throwaway GitHub account is available to approve the
+`Wikidown` OAuth App. Without one, mark every check in this section
+**SKIPPED**.
+
+With throwaway credentials:
+
+- Navigate to `/connect`. The GitHub tab shows a **Sign in with GitHub**
+  button as the primary action, *not* a PAT field by default. A
+  "Use a PAT instead" toggle is visible.
+- Fill Owner + Repo for a repo the throwaway account can access.
+- Click **Sign in with GitHub**. Browser leaves the app and lands on
+  `github.com/login/oauth/authorize?...` with the `Wikidown` app name
+  visible on the consent screen.
+- Approve. Browser returns through
+  `/api/auth/github/callback?code=...&state=...` and lands on
+  `/connect` with the hash immediately cleaned up by
+  `history.replaceState` (inspect the address bar — no `#gh_token=` left
+  behind after first paint).
+- The app auto-navigates to `/browse` and the snackbar reads
+  "Connected to <owner>/<repo>".
+- DevTools → Application → Local Storage has key
+  `wikidown.connection.v1` with a JSON value that includes `token`
+  (the access token) and `provider: "GitHub"`.
+- DevTools → Application → Session Storage is empty — `wikidown.gh_state`
+  and `wikidown.gh_pending` have been cleared.
+- Returning to `/connect` shows the "Connected: ..." banner with
+  **Browse** and **Disconnect** buttons.
+- Clicking **Disconnect** removes `wikidown.connection.v1` from Local
+  Storage and the connected banner disappears.
+
+State-mismatch negative test:
+
+- Start a sign-in, then manually set `sessionStorage['wikidown.gh_state']`
+  to a different value before returning from GitHub. The `/connect` page
+  should show a "state mismatch" error and **not** store a connection.
 
 ## Custom domain — `https://wikidown.app/`
 
-This surface is **planned** and may not be live at test time.
+This surface is **planned** (bound via the SWA's Custom domains blade)
+and may not be live at test time.
 
-- `GET /` returns 200. If it returns DNS error, connection refused,
-  or a parking page, mark the entire section **SKIPPED — not yet live**
-  and continue.
-- If live, functionally identical to `https://wikidown.org/app/`
-  (same shell, logo, Drafts menu).
-- TLS certificate is valid and not self-signed; no browser
-  interstitial.
+- `GET /` returns 200. If it returns DNS error, connection refused, or
+  a parking page, mark the entire section **SKIPPED — not yet live** and
+  continue.
+- If live, functionally identical to the ASWA default hostname
+  (same shell, logo, Drafts menu, `/api/*` routes).
+- TLS certificate is valid and not self-signed; no browser interstitial.
 - Service worker registers for scope `wikidown.app/`.
+- OAuth flow works end-to-end — which requires the `Wikidown` OAuth App
+  to have `https://wikidown.app/api/auth/github/callback` listed as an
+  additional Authorization callback URL.
 
 ## PWA install
 
-Run in a Chromium-based browser (Chrome or Edge) where install
-prompts are supported.
+Run in a Chromium-based browser (Chrome or Edge) where install prompts
+are supported.
 
-- At `https://wikidown.org/app/`, the install affordance appears —
-  either a native install prompt fires, or the install icon shows
-  in the address bar.
+- At the editor origin, the install affordance appears — either a
+  native install prompt fires, or the install icon shows in the address
+  bar.
 - Triggering install opens a standalone app window.
-- The installed PWA's taskbar / dock / launchpad icon is the
-  Wikidown W↓ icon, not a generic globe.
-- Launching the installed PWA opens without browser chrome and
-  lands on the editor Home page.
+- The installed PWA's taskbar / dock / launchpad icon is the Wikidown
+  W↓ icon, not a generic globe.
+- Launching the installed PWA opens without browser chrome and lands
+  on the editor Home page.
 - Uninstalling cleanly removes the icon and leaves no zombie window.
 
 ## Responsive and theme
 
 ### Viewport widths
 
-Test all live surfaces at:
+Test both live surfaces (marketing + editor) at:
 
-- **360 px** (small phone) — no horizontal scroll, tap targets
-  ≥ 40 px, all text readable.
-- **768 px** (tablet) — layout adjusts, no awkward large gaps, nav
-  still usable.
+- **360 px** (small phone) — no horizontal scroll, tap targets ≥ 40 px,
+  all text readable.
+- **768 px** (tablet) — layout adjusts, no awkward large gaps, nav still
+  usable.
 - **1280 px** (laptop) — full desktop layout, no stretched hero image,
   content max-width looks intentional.
 
 ### Landscape on mobile
 
-- At 812×375 (iPhone landscape), the editor app bar stays visible
-  and consumes ≤ ~15% of vertical space.
+- At 812×375 (iPhone landscape), the editor app bar stays visible and
+  consumes ≤ ~15% of vertical space.
 - Marketing hero does not push the CTA below the fold unreachably.
 
 ### Theme
@@ -172,25 +221,30 @@ A 10-item fast pass for any future deploy:
 
 1. `https://wikidown.org/` returns 200 and renders.
 2. Logo has transparent corners on the marketing site.
-3. "Open the editor" button reaches `/app/`.
-4. `https://wikidown.org/app/` reaches interactive state with no
+3. "Open the editor" button reaches the editor origin (ASWA or
+   `wikidown.app`).
+4. The editor origin returns 200 and reaches interactive state with no
    console errors.
 5. App bar shows `W↓ Wikidown` with Drafts menu visible.
 6. `manifest.webmanifest` returns 200 and is valid JSON.
 7. Service worker is registered and activated.
-8. Favicon and apple-touch-icon return 200.
-9. 480 px mobile layout stacks without horizontal scroll.
-10. PWA install affordance appears in a supporting browser.
+8. `GET /api/config/github` returns 200 with a non-empty `clientId`.
+9. `GET /api/auth/github/callback` (no code) returns 302 to
+   `/connect#gh_error=missing_code`.
+10. 480 px mobile layout stacks without horizontal scroll.
 
 ## Known gaps
 
 - **`wikidown.app` may not be live.** Treat a missing custom domain
   as SKIPPED, not FAIL.
-- **PAT-gated flows are not covered** unless the test runner has a
-  throwaway GitHub or Azure DevOps token.
-- **No OAuth / device-code flow test.** Those aren't implemented yet.
-- **No accessibility audit here.** A11y (axe, Lighthouse a11y)
-  should live in a dedicated page.
+- **GitHub OAuth flow requires throwaway credentials** and an approved
+  consent on the `Wikidown` OAuth App — SKIPPED without them.
+- **ADO OAuth is not wired yet.** `/api/config/ado` returns an empty
+  `clientId` on purpose; ADO tab still uses PAT.
+- **No device-flow test.** GitHub Device Flow isn't implemented yet;
+  it's only useful for CLI / MCP, not for this browser test.
+- **No accessibility audit here.** A11y (axe, Lighthouse a11y) should
+  live in a dedicated page.
 - **No performance budgets.** Lighthouse scores are informational;
   thresholds aren't defined yet.
 
@@ -201,7 +255,8 @@ When you finish, produce a short summary like:
 ```text
 Marketing site:     12/12 PASS
 Editor PWA shell:   9/9 PASS
-PAT flows:          SKIPPED (no token)
+API smoke tests:    4/4 PASS
+GitHub OAuth:       SKIPPED (no throwaway creds)
 Custom domain:      SKIPPED (not live)
 PWA install:        4/5 PASS  (1 failure, see screenshot)
 Responsive/theme:   7/7 PASS
