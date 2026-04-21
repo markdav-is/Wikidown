@@ -25,10 +25,8 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           global-json-file: global.json
-      - name: Publish editor (Blazor WASM)
+      - name: Publish editor (Blazor WASM, net10 — Oryx can't)
         run: dotnet publish src/Wikidown.Web/Wikidown.Web.csproj -c Release -o publish/web
-      - name: Publish API (Functions isolated, net9)
-        run: dotnet publish src/Wikidown.Api/Wikidown.Api.csproj -c Release -o publish/api
       - name: Install OIDC Client from Core Package
         run: npm install @actions/core@1.6.0 @actions/http-client
       - name: Get Id Token
@@ -46,10 +44,9 @@ jobs:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_VICTORIOUS_WAVE_03164381E }}
           action: "upload"
           app_location: "publish/web/wwwroot"
-          api_location: "publish/api"
+          api_location: "src/Wikidown.Api"
           output_location: ""
           skip_app_build: true
-          skip_api_build: true
           github_id_token: ${{ steps.idtoken.outputs.result }}
 
   close_pull_request_job:
