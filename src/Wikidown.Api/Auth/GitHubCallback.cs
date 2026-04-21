@@ -15,6 +15,19 @@ public class GitHubCallback(IHttpClientFactory httpFactory, ILogger<GitHubCallba
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "auth/github/callback")] HttpRequest req)
     {
         var state = req.Query["state"].ToString();
+        try
+        {
+            return await HandleAsync(req, state);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "GitHubCallback threw before redirect");
+            return RedirectToConnect(state, error: "callback_threw_" + ex.GetType().Name);
+        }
+    }
+
+    private async Task<IActionResult> HandleAsync(HttpRequest req, string state)
+    {
         var code = req.Query["code"].ToString();
 
         if (string.IsNullOrEmpty(code))
@@ -42,6 +55,7 @@ public class GitHubCallback(IHttpClientFactory httpFactory, ILogger<GitHubCallba
             }),
         };
         request.Headers.Accept.ParseAdd("application/json");
+        request.Headers.UserAgent.ParseAdd("Wikidown/1.0");
 
         TokenResponse? token;
         try
