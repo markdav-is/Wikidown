@@ -1,0 +1,27 @@
+{
+  "navigationFallback": {
+    "rewrite": "/index.html",
+    "exclude": [
+      "/_framework/*",
+      "/_content/*",
+      "/css/*",
+      "/api/*",
+      "*.{png,ico,webmanifest,js,wasm,dat,br,gz,css,svg,woff,woff2}"
+    ]
+  },
+  "routes": [
+    {
+      "route": "/api/*",
+      "allowedRoles": ["anonymous"]
+    }
+  ],
+  "mimeTypes": {
+    ".webmanifest": "application/manifest+json",
+    ".wasm": "application/wasm",
+    ".dat": "application/octet-stream"
+  },
+  "globalHeaders": {
+    "Service-Worker-Allowed": "/",
+    "Cache-Control": "no-cache"
+  }
+}
