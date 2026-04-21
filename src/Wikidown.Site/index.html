@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Wikidown — an Azure-DevOps-Wiki-compatible /docs editor</title>
-  <meta name="description" content="A wiki that lives in /docs of any code repo. Edit in the browser, commit straight to GitHub or Azure DevOps. Pair it with a CLI and an MCP server so AI agents can maintain pages." />
+  <title>Wikidown — an opinionated, tool-supported wiki for your /docs folder</title>
+  <meta name="description" content="An opinionated, tool-supported wiki that lives in /docs of any code repo. Edit in the browser, commit straight to GitHub or Azure DevOps. CLI and MCP server keep docs consistent for humans and AI agents alike." />
   <meta name="theme-color" content="#1f2a40" />
   <meta property="og:title" content="Wikidown" />
   <meta property="og:description" content="A wiki that lives in /docs. Browser editor + CLI + MCP server for AI agents." />
@@ -34,9 +34,10 @@
         <div class="hero-copy">
           <h1>A wiki that lives in <code>/docs</code>.</h1>
           <p class="lead">
-            Wikidown is an Azure-DevOps-Wiki-compatible markdown wiki you commit
-            alongside your code. Edit in the browser, commit straight to GitHub or
-            Azure DevOps — no backend, no extra service to operate.
+            Wikidown is an opinionated, tool-supported wiki you commit alongside
+            your code. A strict format spec keeps docs consistent whether you edit
+            in the browser, from the CLI, or through an AI agent — no backend, no
+            extra service to operate.
           </p>
           <div class="cta">
             <a class="btn btn-primary btn-lg" href="https://victorious-wave-03164381e.7.azurestaticapps.net/">Open the editor</a>
@@ -54,11 +55,11 @@
       <div class="features">
         <div class="card">
           <h3>1. Connect a repo</h3>
-          <p>Paste a GitHub or Azure DevOps PAT. Pick the repo and branch that holds your <code>/docs</code> folder. Tokens stay in the browser.</p>
+          <p>Sign in with GitHub or paste an Azure DevOps PAT. Pick the repo and branch that holds your <code>/docs</code> folder. Tokens stay in the browser.</p>
         </div>
         <div class="card">
           <h3>2. Browse &amp; edit</h3>
-          <p>Title-form links, <code>.order</code> files, and subpages — fully ADO-Wiki-compatible. Edit in a side-by-side markdown editor with live preview.</p>
+          <p>Title-form links, <code>.order</code> files, and subpages — all enforced by the Wikidown spec. Edit in a side-by-side markdown editor with live preview.</p>
         </div>
         <div class="card">
           <h3>3. Commit via REST</h3>
@@ -107,8 +108,9 @@ cp -r agents/copilot/.github .</code></pre>
     <section class="container section">
       <h2>Format</h2>
       <p>
-        Wikidown follows the Azure DevOps Wiki convention so your pages render
-        in either tool with no migration:
+        Wikidown enforces a simple, opinionated format so your docs stay consistent
+        whether a human or an AI agent is editing them. The full spec is in the
+        <a href="https://github.com/markdav-is/Wikidown/blob/main/docs/Getting-Started/Format.md">docs</a>:
       </p>
       <ul class="bullets">
         <li>Page file: <code>My-Page.md</code> on disk; the title is <em>My Page</em>.</li>
