@@ -45,6 +45,7 @@ public class GitHubCallback(IHttpClientFactory httpFactory, ILogger<GitHubCallba
         }
 
         var http = httpFactory.CreateClient();
+        http.Timeout = TimeSpan.FromSeconds(8);
         using var request = new HttpRequestMessage(HttpMethod.Post, TokenEndpoint)
         {
             Content = new FormUrlEncodedContent(new[]
