@@ -2,14 +2,15 @@ name: release
 
 on:
   push:
-    tags: ['v*']
-  release:
-    types: [published]
+    branches: [main]
+    paths:
+      - 'Directory.Build.props'
+      - 'src/Wikidown.Cli/**'
+      - 'src/Wikidown.Mcp/**'
+      - 'src/Wikidown.Core/**'
+      - 'assets/**'
+      - '.github/workflows/release.yml'
   workflow_dispatch:
-    inputs:
-      version:
-        description: Semver to publish (e.g. 0.1.0)
-        required: true
 
 permissions:
   contents: read
@@ -24,34 +25,13 @@ jobs:
         with:
           global-json-file: global.json
 
-      - name: Resolve version
-        id: v
-        run: |
-          if [ -n "${{ github.event.release.tag_name }}" ]; then
-            V="${{ github.event.release.tag_name }}"
-          elif [ "${{ github.event_name }}" = "push" ]; then
-            V="${{ github.ref_name }}"
-          else
-            V="${{ github.event.inputs.version }}"
-          fi
-          V="${V#v}"
-          if [ -z "$V" ]; then
-            echo "::error::Could not determine version" >&2
-            exit 1
-          fi
-          echo "version=$V" >> "$GITHUB_OUTPUT"
-
       - name: Test
         run: dotnet test Wikidown.sln -c Release
 
       - name: Pack
         run: |
-          dotnet pack src/Wikidown.Cli/Wikidown.Cli.csproj \
-            -c Release -o artifacts \
-            -p:Version=${{ steps.v.outputs.version }}
-          dotnet pack src/Wikidown.Mcp/Wikidown.Mcp.csproj \
-            -c Release -o artifacts \
-            -p:Version=${{ steps.v.outputs.version }}
+          dotnet pack src/Wikidown.Cli/Wikidown.Cli.csproj -c Release -o artifacts
+          dotnet pack src/Wikidown.Mcp/Wikidown.Mcp.csproj -c Release -o artifacts
 
       - name: Push to NuGet
         env:
@@ -69,5 +49,5 @@ jobs:
       - name: Upload packages
         uses: actions/upload-artifact@v4
         with:
-          name: wikidown-nupkgs-${{ steps.v.outputs.version }}
+          name: wikidown-nupkgs
           path: artifacts/*.nupkg
