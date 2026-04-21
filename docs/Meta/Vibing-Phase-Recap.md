@@ -20,7 +20,7 @@ The wiki eats its own dogfood: this repo's own `/docs` is a Wikidown wiki, edite
 After one wrong turn (more below), we split the surfaces cleanly:
 
 - **`wikidown.org`** — GitHub Pages, marketing only. Plain HTML/CSS, zero backend, Porkbun DNS with four A records to GitHub's 185.199.108-111.153.
-- **`victorious-wave-03164381e.7.azurestaticapps.net`** (future `wikidown.app`) — Azure Static Web Apps. Blazor WASM editor at `/`, managed Functions at `/api/*`.
+- **`wikidown.app`** — Azure Static Web Apps. Blazor WASM editor at `/`, managed Functions at `/api/*`. The ASWA default hostname `victorious-wave-03164381e.7.azurestaticapps.net` stays bound as a safety net.
 
 GitHub Pages is the wrong host for OAuth (no runtime), so anything that needs a server — token exchange, config endpoints — lives on ASWA. Marketing-only stays on Pages because it's free, cached globally, and wiring a .NET WASM app into it gets you nothing.
 
@@ -74,7 +74,7 @@ Azure Portal's SWA → APIs blade shows a blue banner: *"Bring your own API back
 ## Working state as of the handoff
 
 - `https://wikidown.org/` — marketing site, live, HTTPS.
-- `https://victorious-wave-03164381e.7.azurestaticapps.net/` — editor PWA, live, OAuth-aware Connect page shipping.
+- `https://wikidown.app/` — editor PWA, live on the custom domain, OAuth-aware Connect page shipping. The ASWA default hostname `https://victorious-wave-03164381e.7.azurestaticapps.net/` is still bound as a safety net.
 - All 5 Functions registered on the managed backend: `Ping`, `GitHubConfig`, `AdoConfig`, `GitHubCallback`, `AdoCallback`.
 - `ci.yml` builds + tests + packs on every PR; `pages.yml` deploys the marketing site; `azure-static-web-apps-*.yml` pre-builds the editor on the runner and hands it + the API source to Oryx.
 - Browser test plan in `/docs/Testing/Browser-Test-Plan.md` covers the two surfaces, the API smoke tests, and the OAuth flow.
@@ -83,7 +83,7 @@ Azure Portal's SWA → APIs blade shows a blue banner: *"Bring your own API back
 
 - Stale service worker needs evicting on the dev's machine before `/api/ping` is reachable from their regular browser.
 - `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` need to be confirmed set on the SWA's Configuration → Application settings.
-- `wikidown.app` custom domain not yet bound; when it lands, the OAuth App needs a second callback URL registered.
+- The `Wikidown` GitHub OAuth App needs both `https://wikidown.app/api/auth/github/callback` **and** the ASWA default `https://victorious-wave-03164381e.7.azurestaticapps.net/api/auth/github/callback` registered as callback URLs.
 - ADO OAuth is stubbed — `/api/config/ado` returns empty `clientId` on purpose; ADO tab still uses PAT.
 - Device flow (for CLI / MCP) is deferred until there's a real reason to ship it.
 

@@ -9,10 +9,11 @@ Wikidown now has two distinct public surfaces:
 
 1. **Marketing site** — `https://wikidown.org/` (static HTML + CSS, served by
    GitHub Pages; marketing only, no editor, no API).
-2. **Editor PWA + API** — `https://victorious-wave-03164381e.7.azurestaticapps.net/`
-   (Blazor WASM + MudBlazor at `/`, .NET isolated Functions at `/api/*`,
-   served by Azure Static Web Apps). A planned custom domain,
-   `https://wikidown.app/`, will point at this same SWA resource.
+2. **Editor PWA + API** — `https://wikidown.app/` (Blazor WASM + MudBlazor at
+   `/`, .NET isolated Functions at `/api/*`, served by Azure Static Web
+   Apps). The ASWA default hostname
+   `https://victorious-wave-03164381e.7.azurestaticapps.net/` is still bound
+   and should behave identically.
 
 For every check, report **PASS**, **FAIL**, or **SKIPPED** with a one-line
 reason. On any failure, attach:
@@ -43,9 +44,7 @@ Checks are ordered so you can stop early on a catastrophic failure
 
 ### Navigation
 
-- **"Open the editor"** button → the editor origin
-  (`https://victorious-wave-03164381e.7.azurestaticapps.net/` today,
-  `https://wikidown.app/` once the custom domain is bound).
+- **"Open the editor"** button → `https://wikidown.app/`.
 - **"View on GitHub"** has `target="_blank"` and resolves to HTTP 200.
 - Every nav / hero / footer link resolves to HTTP 200 — none are `#`
   or `javascript:void(0)`.
@@ -69,7 +68,7 @@ Checks are ordered so you can stop early on a catastrophic failure
 - `document.documentElement.scrollWidth ==
   document.documentElement.clientWidth`.
 
-## Editor PWA — `https://victorious-wave-03164381e.7.azurestaticapps.net/`
+## Editor PWA — `https://wikidown.app/`
 
 ### Shell and first paint
 
@@ -158,21 +157,20 @@ State-mismatch negative test:
   to a different value before returning from GitHub. The `/connect` page
   should show a "state mismatch" error and **not** store a connection.
 
-## Custom domain — `https://wikidown.app/`
+## ASWA default hostname — `https://victorious-wave-03164381e.7.azurestaticapps.net/`
 
-This surface is **planned** (bound via the SWA's Custom domains blade)
-and may not be live at test time.
+The vanity domain is `wikidown.app`, but the ASWA default hostname stays
+bound as a safety net. Every user-facing check above should behave
+identically here.
 
-- `GET /` returns 200. If it returns DNS error, connection refused, or
-  a parking page, mark the entire section **SKIPPED — not yet live** and
-  continue.
-- If live, functionally identical to the ASWA default hostname
-  (same shell, logo, Drafts menu, `/api/*` routes).
-- TLS certificate is valid and not self-signed; no browser interstitial.
-- Service worker registers for scope `wikidown.app/`.
-- OAuth flow works end-to-end — which requires the `Wikidown` OAuth App
-  to have `https://wikidown.app/api/auth/github/callback` listed as an
-  additional Authorization callback URL.
+- `GET /` returns 200 and reaches interactive state.
+- TLS certificate is valid (Azure-managed, no browser interstitial).
+- `/api/config/github` and `/api/ping` respond the same as on
+  `wikidown.app`.
+- OAuth round-trip works — which requires the `Wikidown` OAuth App to
+  list **both** `https://wikidown.app/api/auth/github/callback` **and**
+  `https://victorious-wave-03164381e.7.azurestaticapps.net/api/auth/github/callback`
+  as Authorization callback URLs.
 
 ## PWA install
 
@@ -221,8 +219,7 @@ A 10-item fast pass for any future deploy:
 
 1. `https://wikidown.org/` returns 200 and renders.
 2. Logo has transparent corners on the marketing site.
-3. "Open the editor" button reaches the editor origin (ASWA or
-   `wikidown.app`).
+3. "Open the editor" button reaches `https://wikidown.app/`.
 4. The editor origin returns 200 and reaches interactive state with no
    console errors.
 5. App bar shows `W↓ Wikidown` with Drafts menu visible.
@@ -235,8 +232,6 @@ A 10-item fast pass for any future deploy:
 
 ## Known gaps
 
-- **`wikidown.app` may not be live.** Treat a missing custom domain
-  as SKIPPED, not FAIL.
 - **GitHub OAuth flow requires throwaway credentials** and an approved
   consent on the `Wikidown` OAuth App — SKIPPED without them.
 - **ADO OAuth is not wired yet.** `/api/config/ado` returns an empty

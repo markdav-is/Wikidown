@@ -2,10 +2,11 @@
 
 Wikidown ships a Blazor WebAssembly PWA that lets you browse and edit any
 Wikidown wiki straight from the browser. It's hosted on Azure Static Web Apps
-at `https://victorious-wave-03164381e.7.azurestaticapps.net/` today (custom
-domain `https://wikidown.app/` planned), with a small Functions app at
-`/api/*` that only exists to complete OAuth token exchange — page commits
-still go directly to your provider's REST API from the browser.
+at `https://wikidown.app/` (default hostname
+`https://victorious-wave-03164381e.7.azurestaticapps.net/` still works), with
+a small Functions app at `/api/*` that only exists to complete OAuth token
+exchange — page commits still go directly to your provider's REST API from
+the browser.
 
 ## Providers
 
@@ -31,6 +32,11 @@ OAuth `code` for an access token and redirects back.
 
 A "Use a PAT instead" toggle on the same page is kept as a fallback.
 
+The `redirect_uri` is built from `window.location.origin`, so the flow works
+from whichever hostname the user arrived on. The `Wikidown` OAuth App has
+both `wikidown.app` and the ASWA default hostname listed as Authorization
+callback URLs.
+
 ## Browse and edit
 
 - Read mode renders pages with MudMarkdown (CommonMark + KaTeX-ready).
@@ -48,8 +54,3 @@ with a "Reload remote" banner so you don't clobber someone else's change.
 In-progress edits are kept per `(provider, owner, project, repo, branch, page)`
 in `localStorage`. They survive page reloads and crashes, and clear on a
 successful commit.
-
-## PWA
-
-The editor is installable. The service worker caches the MudBlazor assets and
-the Blazor framework files, so it boots offline once you've visited it.
