@@ -111,13 +111,21 @@ are quick unauthenticated probes — they don't touch real OAuth.
   **FAIL** and stop the OAuth section below.
 - `GET /api/config/ado` → HTTP 200, body shape `{"clientId":"..."}`
   (empty string acceptable — ADO OAuth is not wired yet).
-- `GET /api/auth/github/callback?code=not-a-real-code&state=xyz` → HTTP
-  302 with `Location` containing `/connect#gh_error=` and
-  `gh_state=xyz`. The exact error token should be `bad_verification_code`
-  (GitHub's canonical response) or `token_exchange_failed`. Confirms
-  the token-exchange round-trip is wired even without a valid code.
-- `GET /api/auth/github/callback` (no `code`) → 302 to
-  `/connect#gh_error=missing_code`.
+- `POST /api/auth/github/exchange` with body
+  `{"code":"not-a-real-code","state":"xyz"}` and
+  `Content-Type: application/json` → HTTP 502 with body
+  `{"error":"token_exchange_failed"}` (GitHub returns non-200 for the bad
+  code). Confirms the token-exchange round-trip is wired.
+- `POST /api/auth/github/exchange` with body `{}` → HTTP 400 with body
+  `{"error":"missing_code"}`.
+- `GET /oauth/github/return.html` → HTTP 200, serves the static relay
+  page (briefly shows "Completing GitHub sign-in…" before redirecting to
+  `/connect#gh_error=missing_code` because no `code` is in the query
+  string).
+- **Do not** add `?code=…` to any `/api/*` URL when probing — Azure
+  Functions on ASWA's managed backend rejects `?code=` queries pre-dispatch
+  with HTTP 500, regardless of `AuthorizationLevel`. The relay-via-static-page
+  flow exists specifically to avoid this. See `/Meta/Vibing-Phase-Recap`.
 
 ## GitHub OAuth sign-in flow *(skip by default)*
 
@@ -135,10 +143,11 @@ With throwaway credentials:
   `github.com/login/oauth/authorize?...` with the `Wikidown` app name
   visible on the consent screen.
 - Approve. Browser returns through
-  `/api/auth/github/callback?code=...&state=...` and lands on
-  `/connect` with the hash immediately cleaned up by
-  `history.replaceState` (inspect the address bar — no `#gh_token=` left
-  behind after first paint).
+  `/oauth/github/return.html?code=...&state=...`, briefly shows
+  "Completing GitHub sign-in…" while the relay page POSTs the code to
+  `/api/auth/github/exchange`, then lands on `/connect` with the hash
+  immediately cleaned up by `history.replaceState` (inspect the address
+  bar — no `#gh_token=` left behind after first paint).
 - The app auto-navigates to `/browse` and the snackbar reads
   "Connected to <owner>/<repo>".
 - DevTools → Application → Local Storage has key
@@ -169,7 +178,7 @@ bound as a safety net. Every check above should behave identically here
   `wikidown.app`.
 - **GitHub OAuth sign-in is expected to FAIL here.** GitHub OAuth Apps
   support a single `Authorization callback URL`, which is registered
-  against `https://wikidown.app/api/auth/github/callback`. Starting sign-in
+  against `https://wikidown.app/oauth/github/return.html`. Starting sign-in
   from the ASWA default hostname should produce a `redirect_uri` mismatch
   error from `github.com/login/oauth/authorize`. The PAT fallback still
   works here.
@@ -228,8 +237,9 @@ A 10-item fast pass for any future deploy:
 6. `manifest.webmanifest` returns 200 and is valid JSON.
 7. Service worker is registered and activated.
 8. `GET /api/config/github` returns 200 with a non-empty `clientId`.
-9. `GET /api/auth/github/callback` (no code) returns 302 to
-   `/connect#gh_error=missing_code`.
+9. `GET /oauth/github/return.html` returns 200 (static relay page) and
+   `POST /api/auth/github/exchange` with `{}` returns 400
+   `{"error":"missing_code"}`.
 10. 480 px mobile layout stacks without horizontal scroll.
 
 ## Known gaps

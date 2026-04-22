@@ -29,7 +29,7 @@ GitHub Pages is the wrong host for OAuth (no runtime), so anything that needs a 
 The first cut of `/connect` was PAT-only with a frozen "GitHub OAuth Device Flow needs a small proxy…" caption. That caption was still true — a proxy was needed — so we built one.
 
 - **`/api/config/github`** — returns the public `clientId` (empty string means the SWA app setting isn't wired).
-- **`/api/auth/github/callback`** — exchanges `code` for a token against `https://github.com/login/oauth/access_token` using the server-side `GITHUB_CLIENT_SECRET`, then 302s back to `/connect#gh_token=…&gh_state=…`.
+- **`/oauth/github/return.html` + `/api/auth/github/exchange`** — a static HTML relay page is the registered OAuth callback. Its JS reads `code` + `state` from the query string and POSTs them as a JSON body to the `GitHubExchange` Function, which swaps `code` for a token against `https://github.com/login/oauth/access_token` using the server-side `GITHUB_CLIENT_SECRET` and returns `{"token":"…"}`. The page then redirects to `/connect#gh_token=…&gh_state=…`. The reason for the relay (rather than a single Function callback) is documented in §6 below.
 - **`/connect` in the WASM app** — generates a CSRF `state`, stashes pending form + state in sessionStorage, redirects to `github.com/login/oauth/authorize`, receives the fragment on return, validates state, stores the access token in localStorage, and scrubs the fragment via `history.replaceState` so no token is ever left in the address bar. A "Use a PAT instead" toggle keeps the old path available.
 
 Device Flow was consciously deferred. It's the right answer for the CLI / MCP surfaces, not for a browser.
@@ -71,11 +71,41 @@ Lesson: in a Blazor PWA + co-located API setup, the service worker is the *first
 
 Azure Portal's SWA → APIs blade shows a blue banner: *"Bring your own API backends are not supported in the Free hosting plan. Click to upgrade."* Right below it, Production → Function App → `(managed)`. Those two things look contradictory but aren't — the banner only applies to BYO backends (external Function App, Container App, API Management). The managed Functions backend that ships with Free tier is right there, working, no upgrade needed. Worth calling out because the framing is actively misleading.
 
+### 6. Azure Functions reserves `?code=`
+
+The "OAuth works locally, returns 500 on production" classic, but with a twist. Symptoms:
+
+- Click **Sign in with GitHub** on `wikidown.app/connect`. GitHub authorizes fine and 302s the browser to `https://wikidown.app/api/auth/github/callback?code=<real-code>&state=…`.
+- Browser lands on a generic `wikidown.app can't currently handle this request — HTTP ERROR 500`. URL stays on the callback path; no redirect to `/connect#gh_error=…` despite a try/catch in the callback that *always* returns a 302.
+- Application Insights records nothing. The portal toggle for AI keeps reverting to off.
+- The GitHub OAuth App's client secret shows **Never used**, 18+ hours after creation, despite repeated sign-in attempts.
+
+Hours of bisecting added canary endpoints — `/api/version`, `/api/ping`, an outbound-HTTP probe at `/api/github-test` — and verified each pass directly. The callback function with no `code` param (`GET /api/auth/github/callback`) correctly redirected to `/connect#gh_error=missing_code`. Adding `?code=anything` flipped it to a 500.
+
+The smoking-gun test was one URL in a regular browser tab: `https://wikidown.app/api/ping?code=foo` → 500. `Ping` is a one-line Function with `AuthorizationLevel.Anonymous`, no DI beyond logging, no outbound calls. The only thing that changed was the query string.
+
+**Azure Functions' HTTP host treats the query parameter `?code=` as a function-key candidate and rejects unmatched keys with HTTP 500 *before* dispatching the function — even on `AuthorizationLevel.Anonymous` routes.** GitHub OAuth's redirect ALWAYS appends `?code=…`. So a GitHub OAuth callback URL on a managed Functions endpoint is structurally impossible.
+
+Fix: stop letting `code=` reach the Functions host as a query param.
+
+- Register the OAuth callback URL against a static HTML page served by ASWA, not by Functions. We chose `/oauth/github/return.html`.
+- The page's JS reads `code` and `state` from `window.location.search`, then `fetch`-POSTs them as a JSON body to a new `GitHubExchange` Function at `/api/auth/github/exchange`. The POST URL contains no `code=`, so the host leaves it alone.
+- `GitHubExchange` does the `https://github.com/login/oauth/access_token` exchange and returns `{"token":"…"}` or `{"error":"…"}`.
+- The relay page redirects to `/connect#gh_token=…&gh_state=…` (or `…#gh_error=…`), preserving the existing fragment convention so `Connect.razor`'s return-handling code is unchanged.
+- The PWA service worker now also early-returns on `/oauth/*` (in addition to `/api/*`) so the relay page always hits the network.
+
+Lessons:
+
+- **`AuthorizationLevel.Anonymous` does not actually disable the `?code=` key check on ASWA managed Functions** — at least not on the version we deployed against. The host inspects the query before checking the function's auth level.
+- When App Insights toggles itself off and your function never appears in the logs, the host is rejecting the request *pre-dispatch*. The function never ran, so there's nothing to log.
+- "Never used" on the OAuth App's client secret, after a day of real attempts, is a stronger signal than any 500 page. If GitHub never recorded a token-exchange POST hitting it, your callback isn't reaching the network — go upstream from the function code.
+- One-URL bisection beats theory: `?param=foo` on a known-working endpoint is the cheapest possible way to falsify "the host doesn't touch query params."
+
 ## Working state as of the handoff
 
 - `https://wikidown.org/` — marketing site, live, HTTPS.
 - `https://wikidown.app/` — editor PWA, live on the custom domain, OAuth-aware Connect page shipping. The ASWA default hostname `https://victorious-wave-03164381e.7.azurestaticapps.net/` is still bound as a safety net.
-- All 5 Functions registered on the managed backend: `Ping`, `GitHubConfig`, `AdoConfig`, `GitHubCallback`, `AdoCallback`.
+- All 7 Functions registered on the managed backend: `Ping`, `Version`, `GitHubProbe`, `GitHubConfig`, `AdoConfig`, `GitHubExchange`, `AdoCallback`.
 - `ci.yml` builds + tests + packs on every PR; `pages.yml` deploys the marketing site; `azure-static-web-apps-*.yml` pre-builds the editor on the runner and hands it + the API source to Oryx.
 - Browser test plan in `/docs/Testing/Browser-Test-Plan.md` covers the two surfaces, the API smoke tests, and the OAuth flow.
 
@@ -83,7 +113,7 @@ Azure Portal's SWA → APIs blade shows a blue banner: *"Bring your own API back
 
 - Stale service worker needs evicting on the dev's machine before `/api/ping` is reachable from their regular browser.
 - `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` need to be confirmed set on the SWA's Configuration → Application settings.
-- The `Wikidown` GitHub OAuth App is registered with a single `Authorization callback URL`, `https://wikidown.app/api/auth/github/callback` — OAuth sign-in on the ASWA default hostname will fail with a `redirect_uri` mismatch by design. Converting to a GitHub App would allow multiple callback URLs; not worth it just for the fallback.
+- The `Wikidown` GitHub OAuth App is registered with a single `Authorization callback URL`, `https://wikidown.app/oauth/github/return.html` — OAuth sign-in on the ASWA default hostname will fail with a `redirect_uri` mismatch by design. Converting to a GitHub App would allow multiple callback URLs; not worth it just for the fallback.
 - ADO OAuth is stubbed — `/api/config/ado` returns empty `clientId` on purpose; ADO tab still uses PAT.
 - Device flow (for CLI / MCP) is deferred until there's a real reason to ship it.
 
