@@ -25,6 +25,37 @@ html, body {
     overflow: auto;
 }
 
+.wd-appbar-slot {
+    min-width: 0;
+    gap: 0.5rem;
+}
+
+.wd-appbar-commit {
+    min-width: 18rem;
+    max-width: 28rem;
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+.wd-appbar-commit .mud-input-outlined .mud-input-slot {
+    color: #fff;
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+.wd-appbar-commit .mud-input-outlined .mud-input-slot::placeholder {
+    color: rgba(255, 255, 255, 0.7);
+    opacity: 1;
+}
+
+.wd-appbar-commit .mud-input-outlined-border {
+    border-color: rgba(255, 255, 255, 0.4) !important;
+}
+
+.wd-appbar-commit:hover .mud-input-outlined-border,
+.wd-appbar-commit .mud-input.mud-focused .mud-input-outlined-border {
+    border-color: rgba(255, 255, 255, 0.85) !important;
+}
+
 #blazor-error-ui {
     color-scheme: light only;
     background: lightyellow;
