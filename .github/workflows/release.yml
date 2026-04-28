@@ -30,6 +30,7 @@ jobs:
 
       - name: Pack
         run: |
+          dotnet pack src/Wikidown.Core/Wikidown.Core.csproj -c Release -o artifacts
           dotnet pack src/Wikidown.Cli/Wikidown.Cli.csproj -c Release -o artifacts
           dotnet pack src/Wikidown.Mcp/Wikidown.Mcp.csproj -c Release -o artifacts
 
