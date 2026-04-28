@@ -104,6 +104,24 @@ Blazor WASM PWA editor + marketing site hosted on GitHub Pages.
      `wikidown search` against the in-repo wiki. Dogfoods the CLI on
      every push/PR.
 
+7. **VS Extension** — Visual Studio 2022+ VSIX that adds a Wikidown project type. *(shipped)*
+   - `src/Wikidown.Vs/` — net472 VSIX project (MS.VisualStudio.SDK 17.x).
+   - Project type GUID `{6a9c3f4b-d5e8-4f0a-b1c2-345678901bcd}` registered via
+     `[ProvideProjectFactory]` in `WikidownPackage` (AsyncPackage).
+   - `WikidownProjectFactory` creates `WikidownProject` instances for `.wikidownproj` files.
+   - `WikidownProject` implements `IVsHierarchy`/`IVsProject`/`IVsUIHierarchy`:
+     reads `<WikiRoot>` from the `.wikidownproj` XML (defaults to `docs/`),
+     recursively populates Solution Explorer with `.md` and `.order` files,
+     opens files via `IVsUIShellOpenDocument`, never implements build interfaces.
+   - Project template (`ProjectTemplate/`) wired into VSIX as a
+     `Microsoft.VisualStudio.ProjectTemplate` asset — surfaces in
+     **Add → New Project → Wikidown Wiki**.
+   - `publish.json` + `README.marketplace.md` for VS Marketplace listing.
+   - `.github/workflows/vsix.yml` — `windows-latest` runner, MSBuild, NuGet
+     restore, VSIX build; publishes to Marketplace on version tags via
+     `VsixPublisher.exe` when `VSIX_PAT` secret is set; attaches `.vsix` to
+     the GitHub Release.
+
 ## Open questions / parking lot
 - `[[_TOC_]]`, mermaid, `:::` callouts rendering in WASM preview.
 - `/.attachments` upload from browser (REST base64 -> Contents API).

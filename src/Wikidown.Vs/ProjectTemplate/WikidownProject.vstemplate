@@ -1,0 +1,20 @@
+<VSTemplate Version="3.0.0" Type="Project"
+    xmlns="http://schemas.microsoft.com/developer/vstemplate/2005">
+  <TemplateData>
+    <Name>Wikidown Wiki</Name>
+    <Description>Adds a Wikidown wiki project to your solution. The docs/ folder is visible in Solution Explorer and does not participate in the build.</Description>
+    <ProjectType>Wikidown</ProjectType>
+    <ProjectSubType></ProjectSubType>
+    <SortOrder>1000</SortOrder>
+    <CreateNewFolder>false</CreateNewFolder>
+    <DefaultName>wiki</DefaultName>
+    <ProvideDefaultName>true</ProvideDefaultName>
+    <LocationField>Disabled</LocationField>
+    <EnableLocationBrowseButton>false</EnableLocationBrowseButton>
+    <Icon>__TemplateIcon.ico</Icon>
+  </TemplateData>
+  <TemplateContent>
+    <Project File="wiki.wikidownproj" ReplaceParameters="true">
+    </Project>
+  </TemplateContent>
+</VSTemplate>
