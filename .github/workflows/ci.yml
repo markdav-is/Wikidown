@@ -15,11 +15,11 @@ jobs:
         with:
           global-json-file: global.json
       - name: Restore
-        run: dotnet restore Wikidown.sln
+        run: dotnet restore Wikidown.slnf
       - name: Build
-        run: dotnet build Wikidown.sln --configuration Release --no-restore
+        run: dotnet build Wikidown.slnf --configuration Release --no-restore
       - name: Test
-        run: dotnet test Wikidown.sln --configuration Release --no-build --logger "trx;LogFileName=test-results.trx"
+        run: dotnet test Wikidown.slnf --configuration Release --no-build --logger "trx;LogFileName=test-results.trx"
       - name: Pack
         run: |
           dotnet pack src/Wikidown.Cli/Wikidown.Cli.csproj --configuration Release --no-build -o artifacts

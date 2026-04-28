@@ -1,0 +1,74 @@
+name: vsix
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/Wikidown.Vs/**'
+      - 'Directory.Build.props'
+      - '.github/workflows/vsix.yml'
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write   # needed to attach .vsix to GitHub Releases
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Restore NuGet packages
+        run: nuget restore Wikidown.sln
+
+      - name: Build VSIX
+        run: |
+          msbuild src/Wikidown.Vs/Wikidown.Vs.csproj `
+            /p:Configuration=Release `
+            /p:DeployExtension=false `
+            /p:OutDir=artifacts\vsix\
+
+      - name: Upload VSIX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wikidown-vsix
+          path: src/Wikidown.Vs/artifacts/vsix/*.vsix
+
+      # ── Marketplace publish (tag pushes only, requires VSIX_PAT secret) ────
+      - name: Publish to Visual Studio Marketplace
+        if: startsWith(github.ref, 'refs/tags/v') && env.VSIX_PAT != ''
+        env:
+          VSIX_PAT: ${{ secrets.VSIX_PAT }}
+        shell: pwsh
+        run: |
+          $vsix = Get-ChildItem -Path "src/Wikidown.Vs/artifacts/vsix/*.vsix" | Select-Object -First 1
+          if (-not $vsix) { Write-Error "No .vsix file found"; exit 1 }
+
+          # Install the VS Marketplace CLI
+          $toolPath = "$env:TEMP\vsix-publisher"
+          # Use the VsixPublisher that ships with VS Build Tools on the runner
+          $vsixPublisher = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\resources\app\ServiceHub\Services\Microsoft.VisualStudio.Setup.Service\VSIXPublisher.exe"
+          if (-not (Test-Path $vsixPublisher)) {
+            # Fallback: locate in VS 2022 installation
+            $vsixPublisher = Get-ChildItem `
+              "C:\Program Files\Microsoft Visual Studio\2022\*\VSSDK\VisualStudioIntegration\Tools\Bin\VsixPublisher.exe" `
+              -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty FullName
+          }
+          if (-not $vsixPublisher) { Write-Error "VsixPublisher.exe not found"; exit 1 }
+
+          & $vsixPublisher publish `
+            -payload $vsix.FullName `
+            -publishManifest src/Wikidown.Vs/publish.json `
+            -personalAccessToken $env:VSIX_PAT
+
+      # ── Attach .vsix to GitHub Release (tag pushes only) ──────────────────
+      - name: Attach VSIX to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: src/Wikidown.Vs/artifacts/vsix/*.vsix

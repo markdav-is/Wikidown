@@ -1,0 +1,15 @@
+{
+  "version": "1.0.0",
+  "id": "WikidownVs",
+  "name": "Wikidown",
+  "displayName": "Wikidown Wiki Project",
+  "publisher": "markdav-is",
+  "categories": ["Other"],
+  "tags": ["wiki", "markdown", "docs", "azure-devops", "ado"],
+  "shortDescription": "Shows your docs/ wiki in Solution Explorer without participating in the build.",
+  "overview": "./README.marketplace.md",
+  "priceCategory": "free",
+  "private": false,
+  "qna": false,
+  "repo": "https://github.com/markdav-is/Wikidown"
+}

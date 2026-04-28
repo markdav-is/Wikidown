@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- VS SDK requires net472; override the global net10.0 from Directory.Build.props -->
+    <TargetFramework>net472</TargetFramework>
+    <RootNamespace>Wikidown.Vs</RootNamespace>
+    <AssemblyName>Wikidown.Vs</AssemblyName>
+    <IsPackable>false</IsPackable>
+
+    <!-- VSIX build properties -->
+    <GeneratePkgDefFile>true</GeneratePkgDefFile>
+    <CreateVsixContainer>true</CreateVsixContainer>
+    <IncludeAssemblyInVSIXContainer>true</IncludeAssemblyInVSIXContainer>
+    <!-- Set to true locally for F5 deploy; keep false in CI to avoid side effects -->
+    <DeployExtension>false</DeployExtension>
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- VS 2022 (17.x) SDK meta-package -->
+    <PackageReference Include="Microsoft.VisualStudio.SDK" Version="17.0.31902.203" PrivateAssets="none" />
+    <!-- Build tooling: generates .vsix, .pkgdef, vsixmanifest transforms -->
+    <PackageReference Include="Microsoft.VSSDK.BuildTools" Version="17.12.2239" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="source.extension.vsixmanifest">
+      <SubType>Designer</SubType>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Assets\icon.png" />
+    <EmbeddedResource Include="Assets\icon-dark.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Project template zip: included in VSIX as a ProjectTemplate asset -->
+    <VSIXSourceItem Include="ProjectTemplate\WikidownProject.vstemplate" />
+    <VSIXSourceItem Include="ProjectTemplate\wiki.wikidownproj" />
+  </ItemGroup>
+
+  <!-- Exclude NuGet icon include from Directory.Build.props (inapplicable here) -->
+  <ItemGroup>
+    <None Remove="..\..\assets\nuget-icon.png" />
+  </ItemGroup>
+</Project>

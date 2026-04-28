@@ -1,0 +1,13 @@
+{
+  "solution": {
+    "path": "Wikidown.sln",
+    "projects": [
+      "src\\Wikidown.Core\\Wikidown.Core.csproj",
+      "src\\Wikidown.Cli\\Wikidown.Cli.csproj",
+      "src\\Wikidown.Mcp\\Wikidown.Mcp.csproj",
+      "src\\Wikidown.Web\\Wikidown.Web.csproj",
+      "src\\Wikidown.Api\\Wikidown.Api.csproj",
+      "tests\\Wikidown.Core.Tests\\Wikidown.Core.Tests.csproj"
+    ]
+  }
+}

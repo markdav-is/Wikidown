@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PackageManifest Version="2.0.0"
+    xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011"
+    xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
+  <Metadata>
+    <Identity
+      Id="Wikidown.Vs"
+      Version="1.0.0"
+      Language="en-US"
+      Publisher="markdav-is" />
+    <DisplayName>Wikidown Wiki Project</DisplayName>
+    <Description xml:space="preserve">Adds a Wikidown project type to Visual Studio. Drop a .wikidownproj file in your solution to surface your docs/ wiki in Solution Explorer without participating in the build. Compatible with Azure DevOps Wiki format.</Description>
+    <MoreInfo>https://github.com/markdav-is/Wikidown</MoreInfo>
+    <License>MIT</License>
+    <Icon>Assets\icon.png</Icon>
+    <PreviewImage>Assets\icon.png</PreviewImage>
+    <Tags>wiki, markdown, docs, azure-devops, ado</Tags>
+    <GettingStartedGuide>https://github.com/markdav-is/Wikidown#readme</GettingStartedGuide>
+  </Metadata>
+  <Installation>
+    <InstallationTarget Id="Microsoft.VisualStudio.Community" Version="[17.0,)" />
+    <InstallationTarget Id="Microsoft.VisualStudio.Professional" Version="[17.0,)" />
+    <InstallationTarget Id="Microsoft.VisualStudio.Enterprise" Version="[17.0,)" />
+  </Installation>
+  <Dependencies>
+    <Dependency Id="Microsoft.Framework.NDP"
+                DisplayName=".NET Framework 4.7.2"
+                Version="[4.7.2,)" />
+  </Dependencies>
+  <Prerequisites>
+    <Prerequisite Id="Microsoft.VisualStudio.Component.CoreEditor"
+                  Version="[17.0,)"
+                  DisplayName="Visual Studio core editor" />
+  </Prerequisites>
+  <Assets>
+    <!-- Package registration (.pkgdef) -->
+    <Asset Type="Microsoft.VisualStudio.VsPackage"
+           d:Source="Project"
+           d:ProjectName="%CurrentProject%"
+           Path="|%CurrentProject%;PkgdefProjectOutputGroup|" />
+    <!-- Project template shown in Add New Project dialog -->
+    <Asset Type="Microsoft.VisualStudio.ProjectTemplate"
+           d:Source="File"
+           Path="ProjectTemplates"
+           d:VsixSubPath="ProjectTemplates" />
+  </Assets>
+</PackageManifest>
