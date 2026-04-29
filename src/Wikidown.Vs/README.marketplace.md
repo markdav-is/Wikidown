@@ -11,10 +11,11 @@ Surface your [Wikidown](https://github.com/markdav-is/Wikidown) / Azure DevOps W
 
 ## Getting started
 
-1. Install the extension from the Visual Studio Marketplace.
-2. In your solution, choose **Add → New Project → Wikidown Wiki**.  
-   A `wiki.wikidownproj` file is created alongside your `.sln`.
-3. The `docs/` folder is now visible in Solution Explorer under the **wiki** node.
+1. Install the extension from the Visual Studio Marketplace (or double-click the `.vsix`).
+2. In your solution, choose **Add → New Project**, search for **Wikidown**, and select **Wikidown Wiki**.
+3. Name the project (default: `wiki`) and place it alongside your `.sln` file, then click **Create**.  
+   A `wiki.wikidownproj` file is created and the `docs/` folder appears under the new project node.
+4. Double-click any `.md` file in Solution Explorer to open it in VS's built-in markdown editor.
 
 ## Configuring the wiki root
 

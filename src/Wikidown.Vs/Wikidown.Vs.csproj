@@ -13,6 +13,14 @@
     <!-- Set to true locally for F5 deploy; keep false in CI to avoid side effects -->
     <DeployExtension>false</DeployExtension>
     <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+    <!-- Ensure intermediate files land under obj/, not the filesystem root -->
+    <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
+    <!-- Explicitly name the VSIX output file -->
+    <TargetVsixContainerName>$(AssemblyName).vsix</TargetVsixContainerName>
+    <!-- Point GeneratePkgDef at the compiled assembly -->
+    <CreatePkgDefAssemblyToProcess>$(MSBuildProjectDirectory)\bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).dll</CreatePkgDefAssemblyToProcess>
+    <!-- Tell VS where to find the DLL since it's not in the GAC -->
+    <UseCodebase>true</UseCodebase>
   </PropertyGroup>
 
   <ItemGroup>
@@ -29,18 +37,38 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Assets\icon.png" />
-    <EmbeddedResource Include="Assets\icon-dark.png" />
+    <Content Include="Assets\icon.png">
+      <IncludeInVSIX>true</IncludeInVSIX>
+      <VSIXSubPath>Assets</VSIXSubPath>
+    </Content>
+    <Content Include="Assets\icon-dark.png">
+      <IncludeInVSIX>true</IncludeInVSIX>
+      <VSIXSubPath>Assets</VSIXSubPath>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Project template zip: included in VSIX as a ProjectTemplate asset -->
-    <VSIXSourceItem Include="ProjectTemplate\WikidownProject.vstemplate" />
-    <VSIXSourceItem Include="ProjectTemplate\wiki.wikidownproj" />
+    <!-- Project template zip in ProjectTemplates\ subfolder so VS discovers it -->
+    <Content Include="ProjectTemplates\Wikidown.zip">
+      <IncludeInVSIX>true</IncludeInVSIX>
+      <VSIXSubPath>ProjectTemplates</VSIXSubPath>
+    </Content>
   </ItemGroup>
 
   <!-- Exclude NuGet icon include from Directory.Build.props (inapplicable here) -->
   <ItemGroup>
     <None Remove="..\..\assets\nuget-icon.png" />
   </ItemGroup>
+
+  <ItemGroup>
+    <!-- LICENSE file required by the vsixmanifest -->
+    <Content Include="..\..\LICENSE">
+      <Link>LICENSE</Link>
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+  </ItemGroup>
+
+  <!-- Import VS SDK targets that provide CreateVsixContainer, GeneratePkgDef, etc. -->
+  <Import Project="$(VSToolsPath)\VSSDK\Microsoft.VsSDK.targets" Condition="'$(VSToolsPath)' != '' and Exists('$(VSToolsPath)\VSSDK\Microsoft.VsSDK.targets')" />
+
 </Project>

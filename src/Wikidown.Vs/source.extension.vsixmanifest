@@ -5,22 +5,27 @@
   <Metadata>
     <Identity
       Id="Wikidown.Vs"
-      Version="1.0.0"
+      Version="1.0.3"
       Language="en-US"
-      Publisher="markdav-is" />
+      Publisher="Mark Davis" />
     <DisplayName>Wikidown Wiki Project</DisplayName>
     <Description xml:space="preserve">Adds a Wikidown project type to Visual Studio. Drop a .wikidownproj file in your solution to surface your docs/ wiki in Solution Explorer without participating in the build. Compatible with Azure DevOps Wiki format.</Description>
     <MoreInfo>https://github.com/markdav-is/Wikidown</MoreInfo>
-    <License>MIT</License>
+    <License>LICENSE</License>
     <Icon>Assets\icon.png</Icon>
     <PreviewImage>Assets\icon.png</PreviewImage>
     <Tags>wiki, markdown, docs, azure-devops, ado</Tags>
-    <GettingStartedGuide>https://github.com/markdav-is/Wikidown#readme</GettingStartedGuide>
   </Metadata>
   <Installation>
-    <InstallationTarget Id="Microsoft.VisualStudio.Community" Version="[17.0,)" />
-    <InstallationTarget Id="Microsoft.VisualStudio.Professional" Version="[17.0,)" />
-    <InstallationTarget Id="Microsoft.VisualStudio.Enterprise" Version="[17.0,)" />
+    <InstallationTarget Id="Microsoft.VisualStudio.Community" Version="[17.0,)">
+      <ProductArchitecture>amd64</ProductArchitecture>
+    </InstallationTarget>
+    <InstallationTarget Id="Microsoft.VisualStudio.Professional" Version="[17.0,)">
+      <ProductArchitecture>amd64</ProductArchitecture>
+    </InstallationTarget>
+    <InstallationTarget Id="Microsoft.VisualStudio.Enterprise" Version="[17.0,)">
+      <ProductArchitecture>amd64</ProductArchitecture>
+    </InstallationTarget>
   </Installation>
   <Dependencies>
     <Dependency Id="Microsoft.Framework.NDP"

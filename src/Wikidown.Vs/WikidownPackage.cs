@@ -21,7 +21,7 @@ namespace Wikidown.Vs
         "Wikidown Project Files (*.wikidownproj);*.wikidownproj",
         "wikidownproj",
         "wikidownproj",
-        @".\NullPath",
+        @".\ProjectTemplates",
         LanguageVsTemplate = "Wikidown")]
     public sealed class WikidownPackage : AsyncPackage
     {

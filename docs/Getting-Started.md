@@ -12,6 +12,7 @@ Welcome to Wikidown. This folder is itself a Wikidown-format wiki.
 ## Next
 
 - [Format](/Getting-Started/Format) — full on-disk format reference
+- [Visual Studio Extension](/Getting-Started/Visual-Studio-Extension) — add a Wikidown project in VS 2022+
 - [CLI](/CLI) — `wikidown` dotnet tool
 - [MCP Server](/MCP-Server) — `wikidown-mcp` for AI agents
 - [Editor](/Editor) — Blazor WASM browser editor

@@ -4,6 +4,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Xml.Linq;
 using Microsoft.VisualStudio;
+using Microsoft.VisualStudio.OLE.Interop;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using IServiceProvider = System.IServiceProvider;
@@ -160,7 +161,7 @@ namespace Wikidown.Vs
                     return VSConstants.S_OK;
 
                 case __VSHPROPID.VSHPROPID_ParentHierarchyItemid:
-                    pvar = (int)ItemIdNil;
+                    pvar = unchecked((int)ItemIdNil);
                     return VSConstants.S_OK;
 
                 case __VSHPROPID.VSHPROPID_FirstChild:
@@ -360,6 +361,12 @@ namespace Wikidown.Vs
             ppSP = null;
             return VSConstants.E_NOTIMPL;
         }
+
+        // ── IVsHierarchy / IVsUIHierarchy shared stubs ──────────────────────
+
+        public int QueryClose(out int pfCanClose) { pfCanClose = 1; return VSConstants.S_OK; }
+
+        public int Unused4() => VSConstants.S_OK;
 
         // ── IVsUIHierarchy ───────────────────────────────────────────────────
 

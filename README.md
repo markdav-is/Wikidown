@@ -10,6 +10,11 @@ Wikidown bundles:
   edit the wiki. See [`samples/mcp/`](./samples/mcp/) for drop-in configs.
 - **Agent configs** — drop-in Claude Code and GitHub Copilot setups; see
   [`agents/`](./agents/).
+- **Wikidown for Visual Studio** — a VS 2022+ extension that adds a
+  `.wikidownproj` project type so your `docs/` folder appears in Solution
+  Explorer without affecting the build. Install from the
+  [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=MarkDavis.Wikidown)
+  or see [`src/Wikidown.Vs/`](./src/Wikidown.Vs/).
 - **Wikidown Web** — a Blazor WASM PWA editor that commits directly to GitHub
   or Azure DevOps via REST (no backend). Hosted on GitHub Pages.
 - **Wikidown Site** — the product/marketing page (also on GitHub Pages).
