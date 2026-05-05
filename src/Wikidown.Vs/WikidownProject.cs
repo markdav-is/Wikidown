@@ -49,6 +49,7 @@ namespace Wikidown.Vs
         private readonly Dictionary<uint, Node>  _nodes   = new Dictionary<uint, Node>();
         private readonly List<IVsHierarchyEvents> _sinks   = new List<IVsHierarchyEvents>();
         private uint _nextId = 1;
+        private FileSystemWatcher _watcher;
 
         // ── construction ─────────────────────────────────────────────────────
         public WikidownProject(IServiceProvider serviceProvider, string projectFile)
@@ -58,6 +59,7 @@ namespace Wikidown.Vs
             _wikiRoot = ResolveWikiRoot(projectFile);
 
             BuildHierarchy();
+            StartWatcher();
         }
 
         private static string ResolveWikiRoot(string projectFile)
@@ -136,6 +138,52 @@ namespace Wikidown.Vs
             }
             if (children.Count > 0)
                 _nodes[parentId].FirstChild = children[0];
+        }
+
+        // ── file-system watcher ──────────────────────────────────────────────
+
+        private void StartWatcher()
+        {
+            if (!Directory.Exists(_wikiRoot)) return;
+            _watcher = new FileSystemWatcher(_wikiRoot)
+            {
+                IncludeSubdirectories = true,
+                NotifyFilter = NotifyFilters.FileName | NotifyFilters.DirectoryName,
+                EnableRaisingEvents = true,
+            };
+            _watcher.Created += OnFsChanged;
+            _watcher.Deleted += OnFsChanged;
+            _watcher.Renamed += OnFsRenamed;
+        }
+
+        private void OnFsChanged(object sender, FileSystemEventArgs e)
+        {
+            if (IsWikiRelevant(e.FullPath)) InvalidateAsync();
+        }
+
+        private void OnFsRenamed(object sender, RenamedEventArgs e)
+        {
+            if (IsWikiRelevant(e.FullPath) || IsWikiRelevant(e.OldFullPath)) InvalidateAsync();
+        }
+
+        private static bool IsWikiRelevant(string path)
+        {
+            var name = Path.GetFileName(path);
+            var ext  = Path.GetExtension(name).ToLowerInvariant();
+            return ext == ".md" || name == ".order" || string.IsNullOrEmpty(ext);
+        }
+
+        private void InvalidateAsync()
+        {
+            ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
+            {
+                await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+                _nodes.Clear();
+                _nextId = 1;
+                BuildHierarchy();
+                foreach (var sink in _sinks)
+                    sink?.OnInvalidateItems(ItemIdRoot);
+            });
         }
 
         // ── IVsHierarchy ─────────────────────────────────────────────────────
@@ -281,7 +329,12 @@ namespace Wikidown.Vs
         public int Unused2() => VSConstants.E_NOTIMPL;
         public int Unused3() => VSConstants.E_NOTIMPL;
 
-        public int Close() => VSConstants.S_OK;
+        public int Close()
+        {
+            _watcher?.Dispose();
+            _watcher = null;
+            return VSConstants.S_OK;
+        }
 
         public int GetSite(out Microsoft.VisualStudio.OLE.Interop.IServiceProvider ppSP)
         {

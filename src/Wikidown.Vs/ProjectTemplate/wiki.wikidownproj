@@ -3,5 +3,5 @@
     WikiRoot: path to the wiki folder, relative to this file.
     Defaults to "docs" when omitted.
   -->
-  <WikiRoot>docs</WikiRoot>
+  <WikiRoot>../docs</WikiRoot>
 </WikidownProject>
