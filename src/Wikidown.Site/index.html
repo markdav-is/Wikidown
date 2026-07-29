@@ -97,9 +97,9 @@ wikidown new "/Getting Started/Format"</code></pre>
               <span class="card-kicker">Agent configs</span>
               <h3>Drop-in</h3>
             </div>
-            <p>Claude Code subagent &amp; skill, plus Copilot chat-mode + instructions — ready to copy into any repo.</p>
-            <pre><code>cp -r agents/claude/.claude .
-cp -r agents/copilot/.github .</code></pre>
+            <p>One shared Agent Skills <code>SKILL.md</code> for Claude Code <em>and</em> GitHub Copilot, plus subagent, custom agent, and chat-mode wiring — installed by one command.</p>
+            <pre><code>dotnet tool install -g Wikidown.Cli
+wikidown init --agents all</code></pre>
           </div>
         </div>
       </div>

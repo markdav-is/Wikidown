@@ -19,6 +19,9 @@ wikidown --root ./my-wiki list
 
 ## Commands
 
+- `init [--root docs] [--agents claude|copilot|all|none] [--force]` — seed an
+  empty wiki with a `/Home` page and install the AI agent configs (Claude Code
+  + GitHub Copilot) into the folder containing the wiki root. See [Agents](/Agents).
 - `list [--path /P]` — list children of a page (or root). `wikidown list`
 - `read --path /P` — print page markdown to stdout. `wikidown read --path /Getting-Started`
 - `write --path /P [--file F | --stdin]` — overwrite a page.

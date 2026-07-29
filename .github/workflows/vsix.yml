@@ -24,7 +24,7 @@ jobs:
         uses: microsoft/setup-msbuild@v2
 
       - name: Restore NuGet packages
-        run: nuget restore Wikidown.sln
+        run: msbuild src/Wikidown.Vs/Wikidown.Vs.csproj /t:Restore /p:Configuration=Release
 
       - name: Build VSIX
         run: |

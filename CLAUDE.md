@@ -7,11 +7,14 @@ chunk-by-chunk progress.
 ## Build, test, package
 
 ```bash
-dotnet build Wikidown.sln -c Release
-dotnet test Wikidown.sln -c Release
+dotnet build Wikidown.slnx -c Release
+dotnet test Wikidown.slnx -c Release
 ```
 
-Targets .NET 10 (`global.json` pinned to 10.0.100). CI runs build + test +
+Targets .NET 10 (`global.json` pinned to 10.0.302, rolls forward within the
+feature band). Solution is `Wikidown.slnx` (new XML format); `Wikidown.slnf`
+filters out the VSIX for dotnet-CLI builds. Package versions are centralized
+in `Directory.Packages.props` (the VSIX project opts out). CI runs build + test +
 pack on every push/PR.
 
 ## Project map

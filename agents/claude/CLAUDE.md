@@ -1,9 +1,3 @@
-<!--
-Append this section to your repo's root CLAUDE.md. It tells the main Claude
-agent that the wiki exists and to delegate wiki work to the wikidown-editor
-subagent (or invoke the `wikidown` skill).
--->
-
 ## Documentation lives in `/docs` (Wikidown wiki)
 
 - The `/docs` folder is a Wikidown wiki — Azure-DevOps-Wiki-compatible

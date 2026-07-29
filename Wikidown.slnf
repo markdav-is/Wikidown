@@ -1,6 +1,6 @@
 {
   "solution": {
-    "path": "Wikidown.sln",
+    "path": "Wikidown.slnx",
     "projects": [
       "src\\Wikidown.Core\\Wikidown.Core.csproj",
       "src\\Wikidown.Cli\\Wikidown.Cli.csproj",

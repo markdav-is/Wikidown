@@ -122,6 +122,46 @@ Blazor WASM PWA editor + marketing site hosted on GitHub Pages.
      `VsixPublisher.exe` when `VSIX_PAT` secret is set; attaches `.vsix` to
      the GitHub Release.
 
+8. **Agents rework — dual-target Claude + Copilot.** *(shipped)*
+   - `agents/skills/wikidown/SKILL.md` — one shared skill in the Agent Skills
+     standard (`SKILL.md`) format, consumed by Claude Code
+     (`.claude/skills/`) and GitHub Copilot (`.github/skills/`). Carries the
+     format rules, tool cheat sheet, CLI fallback, and workflow; the removed
+     `agents/claude/wikidown.skill.md` was its Claude-only predecessor.
+   - Per-agent wiring stays thin: Claude subagent + CLAUDE.md snippet;
+     Copilot instructions + custom agent (`wikidown.agent.md`, promoted from
+     dogfood into `agents/copilot/`) + chat mode + `.vscode/mcp.json`.
+   - `wikidown init [--root docs] [--agents claude|copilot|all|none] [--force]`
+     — seeds an empty wiki with `/Home` and installs the agent configs from
+     embedded resources (single-sourced from `agents/` via csproj links).
+     Existing files are skipped unless `--force`; an existing `CLAUDE.md`
+     gets the wiki section appended when it lacks one.
+   - Dogfood configs refreshed; `.github/skills/wikidown/SKILL.md` added.
+   - `InitCommandTests` cover scaffolding, filtering, skip/force, and
+     CLAUDE.md append behavior.
+
+9. **.NET 10 modernization — file formats + startup.** *(shipped)*
+   - `Wikidown.sln` → `Wikidown.slnx` (new XML solution format);
+     `Wikidown.slnf` retargeted at the `.slnx`; `vsix.yml` restores via
+     `msbuild /t:Restore` instead of `nuget restore`.
+   - Central package management: `Directory.Packages.props` owns all
+     versions; csprojs carry version-less `PackageReference`s. `Wikidown.Vs`
+     opts out (`ManagePackageVersionsCentrally=false`) to keep VSSDK pins
+     local.
+   - `global.json` → SDK 10.0.302 (rollForward latestFeature).
+   - `Wikidown.Api`: net9.0 → net10.0 (inherits from
+     `Directory.Build.props`), startup rewritten from `new HostBuilder()` to
+     `FunctionsApplication.CreateBuilder`, Functions worker + App Insights
+     packages bumped to latest.
+   - Package bumps: ModelContextProtocol 1.2.0 → 2.0.0 (stdio smoke-tested:
+     initialize + tools/list return all nine `wiki_*` tools),
+     Microsoft.Extensions.Hosting / AspNetCore WASM → 10.0.10, test stack →
+     Microsoft.NET.Test.Sdk 18.8.1 / xunit 2.9.3 / runner 3.1.5. MudBlazor
+     stays 8.15.0 (9.x is a breaking UI migration; the Markdig renderer
+     hasn't moved past 0.15.0).
+   - `Wikidown.Web` csproj slimmed — TargetFramework/Nullable/ImplicitUsings
+     now inherited from `Directory.Build.props`.
+
 ## Open questions / parking lot
 - `[[_TOC_]]`, mermaid, `:::` callouts rendering in WASM preview.
 - `/.attachments` upload from browser (REST base64 -> Contents API).

@@ -1,0 +1,23 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Folder Name="/src/">
+    <Project Path="src/Wikidown.Api/Wikidown.Api.csproj" />
+    <Project Path="src/Wikidown.Cli/Wikidown.Cli.csproj" />
+    <Project Path="src/Wikidown.Core/Wikidown.Core.csproj" />
+    <Project Path="src/Wikidown.Mcp/Wikidown.Mcp.csproj" />
+    <Project Path="src/Wikidown.Web/Wikidown.Web.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Wikidown.Core.Tests/Wikidown.Core.Tests.csproj" />
+  </Folder>
+  <Folder Name="/vsix/">
+    <Project Path="src/Wikidown.Vs/Wikidown.Vs.csproj">
+      <Build Solution="*|x64" Project="false" />
+      <Build Solution="*|x86" Project="false" />
+    </Project>
+  </Folder>
+</Solution>

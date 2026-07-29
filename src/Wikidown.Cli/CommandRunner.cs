@@ -28,6 +28,7 @@ public static class CommandRunner
                 "delete" => Commands.Delete(repo, parsed, stdout),
                 "reorder" => Commands.Reorder(repo, parsed, stdout),
                 "search" => Commands.Search(repo, parsed, stdout),
+                "init" => InitCommand.Run(repo, parsed, stdout),
                 _ => Unknown(parsed.Command, stderr),
             };
         }
@@ -68,6 +69,9 @@ public static class CommandRunner
         w.WriteLine("  delete   --path /P [--recursive]             delete a page (and optionally subpages)");
         w.WriteLine("  reorder  --folder /P --names a,b,c           rewrite .order for a folder");
         w.WriteLine("  search   --query <text> [--case-sensitive]   search all page bodies");
+        w.WriteLine("  init     [--agents claude|copilot|all|none] [--force]");
+        w.WriteLine("           seed the wiki and install AI agent configs (Claude Code +");
+        w.WriteLine("           GitHub Copilot) in the folder containing the wiki root");
         w.WriteLine();
         w.WriteLine("Global:");
         w.WriteLine("  --root <path>   path to docs folder (default: ./docs)");

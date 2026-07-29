@@ -15,6 +15,16 @@
     <None Include="..\..\LICENSE" Pack="true" PackagePath="\" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="..\..\agents\skills\wikidown\SKILL.md" LogicalName="agents/skills/wikidown/SKILL.md" />
+    <EmbeddedResource Include="..\..\agents\claude\wikidown.subagent.md" LogicalName="agents/claude/wikidown.subagent.md" />
+    <EmbeddedResource Include="..\..\agents\claude\CLAUDE.md" LogicalName="agents/claude/CLAUDE.md" />
+    <EmbeddedResource Include="..\..\samples\mcp\claude-code.mcp.json" LogicalName="agents/claude/mcp.json" />
+    <EmbeddedResource Include="..\..\agents\copilot\copilot-instructions.md" LogicalName="agents/copilot/copilot-instructions.md" />
+    <EmbeddedResource Include="..\..\agents\copilot\wikidown.agent.md" LogicalName="agents/copilot/wikidown.agent.md" />
+    <EmbeddedResource Include="..\..\agents\copilot\wikidown.chatmode.md" LogicalName="agents/copilot/wikidown.chatmode.md" />
+    <EmbeddedResource Include="..\..\agents\copilot\mcp.json" LogicalName="agents/copilot/mcp.json" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\Wikidown.Core\Wikidown.Core.csproj" />
   </ItemGroup>
 </Project>

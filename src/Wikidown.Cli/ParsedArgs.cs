@@ -4,7 +4,7 @@ public sealed class ParsedArgs
 {
     private static readonly HashSet<string> BoolFlags = new(StringComparer.Ordinal)
     {
-        "stdin", "recursive", "case-sensitive"
+        "stdin", "recursive", "case-sensitive", "force"
     };
 
     public string Command { get; init; } = "";
