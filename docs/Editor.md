@@ -12,6 +12,8 @@ page commits still go directly to your provider's REST API from the browser.
 
 - **GitHub** — Sign in with GitHub (OAuth) or paste a fine-grained Personal
   Access Token. Commits via the Contents API.
+- **Azure DevOps** — Personal Access Token. Commits via the Pushes API.
+  (OAuth is planned but not yet wired.)
 
 Access tokens are kept in browser `localStorage`. The Functions app never
 sees your repo contents and never stores your token — it only swaps an

@@ -17,7 +17,8 @@ Wikidown bundles:
   [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=MarkDavis.Wikidown)
   or see [`src/Wikidown.Vs/`](./src/Wikidown.Vs/).
 - **Wikidown Web** — a Blazor WASM PWA editor that commits directly to your
-  repo via REST (no backend). Hosted on GitHub Pages.
+  repo via REST (no backend). Works with GitHub and Azure DevOps repos.
+  Hosted on GitHub Pages.
 - **Wikidown Site** — the product/marketing page (also on GitHub Pages).
 
 See [`PLAN.md`](./PLAN.md) for the current build plan and scope.
