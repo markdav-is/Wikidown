@@ -55,7 +55,7 @@ public static class CommandRunner
 
     private static void PrintUsage(TextWriter w)
     {
-        w.WriteLine("wikidown — maintain an ADO-Wiki-compatible /docs folder");
+        w.WriteLine("wikidown — maintain a Wikidown /docs wiki");
         w.WriteLine();
         w.WriteLine("Usage:");
         w.WriteLine("  wikidown <command> [--root <path>] [options]");

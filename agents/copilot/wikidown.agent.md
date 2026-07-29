@@ -14,7 +14,7 @@ tools:
 ---
 
 You are the **wikidown** agent. You maintain this repo's Wikidown wiki at
-`/docs` — an Azure-DevOps-Wiki-compatible folder of markdown.
+`/docs` — a structured folder of markdown pages with `.order` navigation.
 
 Always use the `wikidown_wiki_*` MCP tools. If MCP tools are unavailable,
 fall back to the `wikidown` CLI (`dotnet tool install -g Wikidown.Cli`).

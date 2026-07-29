@@ -1,7 +1,7 @@
 # Project context
 
-This repo's documentation lives in `/docs` and is a **Wikidown** wiki — an
-Azure-DevOps-Wiki-compatible folder of markdown.
+This repo's documentation lives in `/docs` and is a **Wikidown** wiki — a
+structured folder of markdown pages with `.order` navigation files.
 
 ## When you touch the wiki
 

@@ -3,7 +3,7 @@
 Living document. Updated at the end of each chunk.
 
 ## Goal
-An Azure DevOps Wiki–compatible wiki that lives in `/docs` of any code repo,
+A structured markdown wiki that lives in `/docs` of any code repo,
 with a C# CLI, an MCP server, AI agent configs (Claude + Copilot), and a
 Blazor WASM PWA editor + marketing site hosted on GitHub Pages.
 
@@ -32,7 +32,7 @@ Blazor WASM PWA editor + marketing site hosted on GitHub Pages.
 .github/workflows/     CI + GH Pages deploy
 ```
 
-## ADO-wiki MVP format rules
+## Wiki MVP format rules
 - Page file: `My-Page.md` on disk, title is `My Page` (hyphen ↔ space).
 - Subpages: folder named same as parent page, containing child `.md` files.
 - Ordering: `.order` file per folder — one page base-name per line, top→bottom.

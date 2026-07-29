@@ -15,8 +15,8 @@
     <RepositoryType>git</RepositoryType>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageIcon>icon.png</PackageIcon>
-    <PackageTags>wiki;markdown;ado;azure-devops;mcp;cli</PackageTags>
-    <VersionPrefix>0.2.0</VersionPrefix>
+    <PackageTags>wiki;markdown;docs;mcp;cli</PackageTags>
+    <VersionPrefix>0.2.1</VersionPrefix>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
   </PropertyGroup>

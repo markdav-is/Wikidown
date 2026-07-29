@@ -1,7 +1,7 @@
 ## Documentation lives in `/docs` (Wikidown wiki)
 
-- The `/docs` folder is a Wikidown wiki — Azure-DevOps-Wiki-compatible
-  markdown. Page links use title form: `/Getting-Started/Format`.
+- The `/docs` folder is a Wikidown wiki — structured markdown with `.order`
+  navigation files. Page links use title form: `/Getting-Started/Format`.
 - A `wikidown-editor` subagent and a `wikidown` skill are configured for this
   repo. Use them for ANY read/write of `/docs/*.md`.
 - Never edit `/docs/*.md` directly with `Write`/`Edit`. Use the `wiki_*` MCP

@@ -5,9 +5,9 @@ description: Use whenever the user asks to read, write, search, rename, or reorg
 
 # Wikidown skill
 
-This repo's documentation lives in `/docs` and is a **Wikidown** wiki — an
-Azure-DevOps-Wiki-compatible folder of markdown. Edit it through the wiki
-MCP tools, never by writing files directly. If MCP tools are unavailable,
+This repo's documentation lives in `/docs` and is a **Wikidown** wiki — a
+structured folder of markdown pages with `.order` navigation files. Edit it
+through the wiki MCP tools, never by writing files directly. If MCP tools are unavailable,
 fall back to the `wikidown` CLI.
 
 Tool names below use the bare form (`wiki_write`). Your host may prefix them

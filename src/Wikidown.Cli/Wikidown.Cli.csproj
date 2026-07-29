@@ -7,7 +7,7 @@
     <ToolCommandName>wikidown</ToolCommandName>
     <PackageId>Wikidown.Cli</PackageId>
     <Title>Wikidown CLI</Title>
-    <Description>Command-line tool for maintaining an Azure-DevOps-Wiki-compatible /docs folder. List, read, write, move, reorder, and search pages while keeping .order files consistent.</Description>
+    <Description>Command-line tool for maintaining a Wikidown /docs wiki. List, read, write, move, reorder, and search pages while keeping .order files consistent.</Description>
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
   <ItemGroup>

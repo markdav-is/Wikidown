@@ -4,7 +4,7 @@ A build log / field notes of getting the basics standing up, from nothing to a d
 
 ## The shape of the thing
 
-**Wikidown** is an Azure-DevOps-Wiki-compatible markdown wiki that lives in `/docs` of any git repo — no service to run, tokens never leave the browser. One codebase ships four surfaces:
+**Wikidown** is a structured markdown wiki that lives in `/docs` of any git repo — no service to run, tokens never leave the browser. One codebase ships four surfaces:
 
 - `Wikidown.Core` — the page model: `.order` files, title-form links (`/Parent/Child`), on-disk read/write.
 - `Wikidown.Cli` — a `dotnet tool` called `wikidown` for list / read / write / move / search.

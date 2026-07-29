@@ -38,8 +38,8 @@ pack on every push/PR.
 
 ## Documentation lives in `/docs` (Wikidown wiki)
 
-- `/docs` is a Wikidown wiki — Azure-DevOps-Wiki-compatible markdown. Page
-  links use title form: `/Getting-Started/Format`.
+- `/docs` is a Wikidown wiki — structured markdown with `.order` navigation
+  files. Page links use title form: `/Getting-Started/Format`.
 - A `wikidown-editor` subagent and a `wikidown` skill are configured in
   `.claude/`. Use them for ANY read/write of `/docs/*.md`.
 - Never edit `/docs/*.md` directly with `Write`/`Edit`. Use the `wiki_*` MCP

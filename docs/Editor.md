@@ -12,8 +12,6 @@ page commits still go directly to your provider's REST API from the browser.
 
 - **GitHub** — Sign in with GitHub (OAuth) or paste a fine-grained Personal
   Access Token. Commits via the Contents API.
-- **Azure DevOps** — Personal Access Token. Commits via the Pushes API.
-  (OAuth is planned but not yet wired.)
 
 Access tokens are kept in browser `localStorage`. The Functions app never
 sees your repo contents and never stores your token — it only swaps an
@@ -56,8 +54,8 @@ mismatch — use `wikidown.app` for OAuth, or paste a PAT as a fallback.
 
 ## Conflict handling
 
-The editor records the file SHA (GitHub) or the commit OID of the branch HEAD
-(ADO) before you edit. If the remote has moved when you save, the commit fails
+The editor records the file SHA (or the branch-head commit OID, depending on
+the provider) before you edit. If the remote has moved when you save, the commit fails
 with a "Reload remote" banner so you don't clobber someone else's change.
 
 ## Drafts

@@ -1,6 +1,6 @@
 # Wikidown Wiki Project
 
-Surface your [Wikidown](https://github.com/markdav-is/Wikidown) / Azure DevOps Wiki `docs/` folder directly in Visual Studio's Solution Explorer — **without it participating in the build**.
+Surface your [Wikidown](https://github.com/markdav-is/Wikidown) `docs/` wiki folder directly in Visual Studio's Solution Explorer — **without it participating in the build**.
 
 ## Features
 

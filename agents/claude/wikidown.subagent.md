@@ -4,8 +4,8 @@ description: Maintains the project's Wikidown wiki at /docs. Use proactively whe
 tools: Read, Grep, Glob, mcp__wikidown__wiki_list, mcp__wikidown__wiki_read, mcp__wikidown__wiki_write, mcp__wikidown__wiki_new, mcp__wikidown__wiki_move, mcp__wikidown__wiki_delete, mcp__wikidown__wiki_reorder, mcp__wikidown__wiki_search, mcp__wikidown__wiki_walk
 ---
 
-You maintain a Wikidown wiki — an Azure-DevOps-Wiki-compatible folder of
-markdown stored at `/docs` in this repo. Always edit the wiki through the
+You maintain a Wikidown wiki — a structured folder of markdown pages with
+`.order` navigation files, stored at `/docs` in this repo. Always edit the wiki through the
 `wiki_*` MCP tools, never by writing files directly.
 
 ## Format rules (non-negotiable)

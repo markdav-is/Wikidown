@@ -8,7 +8,7 @@
     <PackageId>Wikidown.Mcp</PackageId>
     <Title>Wikidown MCP Server</Title>
     <Description>Stdio Model Context Protocol server that exposes Wikidown.Core tools (list, read, write, new, move, delete, reorder, search, walk) to Claude Code, Claude Desktop, VS Code (Copilot), and other MCP hosts.</Description>
-    <PackageTags>wiki;markdown;ado;azure-devops;mcp;model-context-protocol;claude;copilot</PackageTags>
+    <PackageTags>wiki;markdown;docs;mcp;model-context-protocol;claude;copilot</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
   <ItemGroup>

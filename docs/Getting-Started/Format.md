@@ -1,6 +1,6 @@
 # Format Specification
 
-Wikidown's on-disk format is a strict subset of the Azure DevOps Wiki format. The goal of this specification is to ensure that a repository's documentation is equally readable by humans browsing the file system, AI agents using the MCP server, and web-based renderers.
+Wikidown's on-disk format is deliberately minimal: markdown pages, folder-based hierarchy, and `.order` navigation files. The goal of this specification is to ensure that a repository's documentation is equally readable by humans browsing the file system, AI agents using the MCP server, and web-based renderers.
 
 By enforcing these rules, Wikidown prevents the link rot and structural drift that typically plagues flat-file documentation.
 

@@ -1,10 +1,11 @@
 # Wikidown
 
-An Azure DevOps–Wiki-compatible wiki that lives in `/docs` of any code repo.
+A structured markdown wiki that lives in `/docs` of any code repo — plain
+pages, folder-based hierarchy, and `.order` navigation files.
 
 Wikidown bundles:
 
-- **`Wikidown.Core`** — library for reading/writing ADO-wiki-formatted pages.
+- **`Wikidown.Core`** — library for reading/writing Wikidown-formatted pages.
 - **`wikidown` CLI** — dotnet tool for AI agents and humans to maintain pages.
 - **`wikidown-mcp`** — stdio MCP server so Claude / Copilot / other agents can
   edit the wiki. See [`samples/mcp/`](./samples/mcp/) for drop-in configs.
@@ -15,8 +16,8 @@ Wikidown bundles:
   Explorer without affecting the build. Install from the
   [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=MarkDavis.Wikidown)
   or see [`src/Wikidown.Vs/`](./src/Wikidown.Vs/).
-- **Wikidown Web** — a Blazor WASM PWA editor that commits directly to GitHub
-  or Azure DevOps via REST (no backend). Hosted on GitHub Pages.
+- **Wikidown Web** — a Blazor WASM PWA editor that commits directly to your
+  repo via REST (no backend). Hosted on GitHub Pages.
 - **Wikidown Site** — the product/marketing page (also on GitHub Pages).
 
 See [`PLAN.md`](./PLAN.md) for the current build plan and scope.
