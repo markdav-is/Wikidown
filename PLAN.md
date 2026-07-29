@@ -140,6 +140,28 @@ Blazor WASM PWA editor + marketing site hosted on GitHub Pages.
    - `InitCommandTests` cover scaffolding, filtering, skip/force, and
      CLAUDE.md append behavior.
 
+9. **.NET 10 modernization — file formats + startup.** *(shipped)*
+   - `Wikidown.sln` → `Wikidown.slnx` (new XML solution format);
+     `Wikidown.slnf` retargeted at the `.slnx`; `vsix.yml` restores via
+     `msbuild /t:Restore` instead of `nuget restore`.
+   - Central package management: `Directory.Packages.props` owns all
+     versions; csprojs carry version-less `PackageReference`s. `Wikidown.Vs`
+     opts out (`ManagePackageVersionsCentrally=false`) to keep VSSDK pins
+     local.
+   - `global.json` → SDK 10.0.302 (rollForward latestFeature).
+   - `Wikidown.Api`: net9.0 → net10.0 (inherits from
+     `Directory.Build.props`), startup rewritten from `new HostBuilder()` to
+     `FunctionsApplication.CreateBuilder`, Functions worker + App Insights
+     packages bumped to latest.
+   - Package bumps: ModelContextProtocol 1.2.0 → 2.0.0 (stdio smoke-tested:
+     initialize + tools/list return all nine `wiki_*` tools),
+     Microsoft.Extensions.Hosting / AspNetCore WASM → 10.0.10, test stack →
+     Microsoft.NET.Test.Sdk 18.8.1 / xunit 2.9.3 / runner 3.1.5. MudBlazor
+     stays 8.15.0 (9.x is a breaking UI migration; the Markdig renderer
+     hasn't moved past 0.15.0).
+   - `Wikidown.Web` csproj slimmed — TargetFramework/Nullable/ImplicitUsings
+     now inherited from `Directory.Build.props`.
+
 ## Open questions / parking lot
 - `[[_TOC_]]`, mermaid, `:::` callouts rendering in WASM preview.
 - `/.attachments` upload from browser (REST base64 -> Contents API).
