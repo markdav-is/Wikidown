@@ -24,3 +24,7 @@ Thumbs.db
 ## Local
 *.local
 .env
+
+## VSIX build outputs
+src/Wikidown.Vs/extension.vsixmanifest
+*.vsix

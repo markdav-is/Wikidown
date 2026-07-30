@@ -1,15 +1,13 @@
 {
-  "version": "1.0.4",
-  "id": "WikidownVs",
-  "name": "Wikidown",
-  "displayName": "Wikidown Wiki Project",
-  "publisher": "markdav-is",
-  "categories": ["Other"],
-  "tags": ["wiki", "markdown", "docs"],
-  "shortDescription": "Shows your docs/ wiki in Solution Explorer without participating in the build.",
-  "overview": "./README.marketplace.md",
+  "$schema": "http://json.schemastore.org/vsix-publish",
+  "categories": ["coding", "documentation"],
+  "identity": {
+    "internalName": "wikidown"
+  },
+  "overview": "README.marketplace.md",
   "priceCategory": "free",
+  "publisher": "MarkDavis",
   "private": false,
-  "qna": false,
+  "qna": true,
   "repo": "https://github.com/markdav-is/Wikidown"
 }

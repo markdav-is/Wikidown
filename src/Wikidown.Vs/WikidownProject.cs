@@ -20,7 +20,9 @@ namespace Wikidown.Vs
     internal sealed class WikidownProject :
         IVsHierarchy,
         IVsProject,
-        IVsUIHierarchy
+        IVsUIHierarchy,
+        IPersistFileFormat,
+        IVsPersistHierarchyItem
     {
         // ── constants ────────────────────────────────────────────────────────
         private const uint ItemIdRoot = VSConstants.VSITEMID_ROOT;
@@ -241,6 +243,14 @@ namespace Wikidown.Vs
                     pvar = (uint)0;
                     return VSConstants.S_OK;
 
+                case __VSHPROPID.VSHPROPID_ProjectDir:
+                    pvar = Path.GetDirectoryName(_projectFile);
+                    return VSConstants.S_OK;
+
+                case __VSHPROPID.VSHPROPID_TypeName:
+                    pvar = "Wikidown Wiki";
+                    return VSConstants.S_OK;
+
                 // Build-related: report no build support
                 case __VSHPROPID.VSHPROPID_HasEnumerationSideEffects:
                     pvar = false;
@@ -428,5 +438,68 @@ namespace Wikidown.Vs
 
         public int ExecCommand(uint itemid, ref Guid pguidCmdGroup, uint nCmdID, uint nCmdexecopt, IntPtr pvaIn, IntPtr pvaOut)
             => (int)Microsoft.VisualStudio.OLE.Interop.Constants.OLECMDERR_E_NOTSUPPORTED;
+
+        // ── IPersistFileFormat ───────────────────────────────────────────────
+        // The .wikidownproj file is authored by the factory / user and never
+        // modified by the hierarchy, so the project is never dirty and Save is
+        // a no-op. Implementing this is still required so VS can add the
+        // project to a solution and "Save All" without errors.
+
+        public int GetClassID(out Guid pClassID)
+        {
+            pClassID = PackageGuids.ProjectType;
+            return VSConstants.S_OK;
+        }
+
+        public int IsDirty(out int pfIsDirty)
+        {
+            pfIsDirty = 0;
+            return VSConstants.S_OK;
+        }
+
+        public int InitNew(uint nFormatIndex) => VSConstants.S_OK;
+
+        public int Load(string pszFilename, uint grfMode, int fReadOnly) => VSConstants.S_OK;
+
+        public int Save(string pszFilename, int fRemember, uint nFormatIndex) => VSConstants.S_OK;
+
+        public int SaveCompleted(string pszFilename) => VSConstants.S_OK;
+
+        public int GetCurFile(out string ppszFilename, out uint pnFormatIndex)
+        {
+            ppszFilename = _projectFile;
+            pnFormatIndex = 0;
+            return VSConstants.S_OK;
+        }
+
+        public int GetFormatList(out string ppszFormatList)
+        {
+            ppszFormatList = "Wikidown Project Files (*.wikidownproj)\n*.wikidownproj\n";
+            return VSConstants.S_OK;
+        }
+
+        // ── IVsPersistHierarchyItem ──────────────────────────────────────────
+        // Delegates item saves to the document data VS already holds in the
+        // running document table (e.g. an open .md editor buffer).
+
+        public int IsItemDirty(uint itemid, IntPtr punkDocData, out int pfDirty)
+        {
+            pfDirty = 0;
+            var docData = GetDocData(punkDocData);
+            return docData != null ? docData.IsDocDataDirty(out pfDirty) : VSConstants.S_OK;
+        }
+
+        public int SaveItem(VSSAVEFLAGS dwSave, string pszSilentSaveAsName, uint itemid, IntPtr punkDocData, out int pfCanceled)
+        {
+            pfCanceled = 0;
+            var docData = GetDocData(punkDocData);
+            if (docData == null) return VSConstants.S_OK;
+            return docData.SaveDocData(dwSave, out _, out pfCanceled);
+        }
+
+        private static IVsPersistDocData GetDocData(IntPtr punkDocData)
+            => punkDocData != IntPtr.Zero
+                ? Marshal.GetObjectForIUnknown(punkDocData) as IVsPersistDocData
+                : null;
     }
 }

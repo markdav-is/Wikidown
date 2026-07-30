@@ -1,4 +1,13 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project>
+  <!--
+    Explicit SDK imports: Microsoft.VsSDK.targets must be imported AFTER
+    Sdk.targets, because it appends the VSIX targets (GeneratePkgDef,
+    CreateVsixContainer, ZipProjects, ...) to PrepareForRunDependsOn — which
+    Microsoft.Common.CurrentVersion.targets redefines. With the implicit
+    Sdk="..." form the import lands too early and no .vsix is ever produced.
+  -->
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+
   <PropertyGroup>
     <!-- VS SDK requires net472; override the global net10.0 from Directory.Build.props -->
     <TargetFramework>net472</TargetFramework>
@@ -19,8 +28,6 @@
     <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
     <!-- Explicitly name the VSIX output file -->
     <TargetVsixContainerName>$(AssemblyName).vsix</TargetVsixContainerName>
-    <!-- Point GeneratePkgDef at the compiled assembly -->
-    <CreatePkgDefAssemblyToProcess>$(MSBuildProjectDirectory)\bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).dll</CreatePkgDefAssemblyToProcess>
     <!-- Tell VS where to find the DLL since it's not in the GAC -->
     <UseCodebase>true</UseCodebase>
   </PropertyGroup>
@@ -28,14 +35,20 @@
   <ItemGroup>
     <!-- VS 2022 (17.x) SDK meta-package -->
     <PackageReference Include="Microsoft.VisualStudio.SDK" Version="17.0.31902.203" PrivateAssets="none" />
-    <!-- Build tooling: generates .vsix, .pkgdef, vsixmanifest transforms -->
-    <PackageReference Include="Microsoft.VSSDK.BuildTools" Version="17.12.2239" PrivateAssets="all" />
+    <!-- Build tooling: generates .vsix, .pkgdef, vsixmanifest transforms, template zips -->
+    <PackageReference Include="Microsoft.VSSDK.BuildTools" Version="17.13.2126" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>
     <None Include="source.extension.vsixmanifest">
       <SubType>Designer</SubType>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="ProjectTemplate\WikidownProject.vstemplate" />
+    <None Include="ProjectTemplate\wiki.wikidownproj" />
+    <None Include="ProjectTemplate\__TemplateIcon.ico" />
   </ItemGroup>
 
   <ItemGroup>
@@ -46,14 +59,6 @@
     <Content Include="Assets\icon-dark.png">
       <IncludeInVSIX>true</IncludeInVSIX>
       <VSIXSubPath>Assets</VSIXSubPath>
-    </Content>
-  </ItemGroup>
-
-  <ItemGroup>
-    <!-- Project template zip in ProjectTemplates\ subfolder so VS discovers it -->
-    <Content Include="ProjectTemplates\Wikidown.zip">
-      <IncludeInVSIX>true</IncludeInVSIX>
-      <VSIXSubPath>ProjectTemplates</VSIXSubPath>
     </Content>
   </ItemGroup>
 
@@ -70,7 +75,32 @@
     </Content>
   </ItemGroup>
 
-  <!-- Import VS SDK targets that provide CreateVsixContainer, GeneratePkgDef, etc. -->
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+  <!-- Must come after Sdk.targets; VSToolsPath is set by the VSSDK.BuildTools NuGet package -->
   <Import Project="$(VSToolsPath)\VSSDK\Microsoft.VsSDK.targets" Condition="'$(VSToolsPath)' != '' and Exists('$(VSToolsPath)\VSSDK\Microsoft.VsSDK.targets')" />
 
+  <!--
+    Zip the ProjectTemplate\ folder at build time (no hand-built zip is
+    checked in) and add it as a VSIX source item under ProjectTemplates\.
+    createTemplateManifests then extracts it into the container and emits
+    the .vstman manifest VS 2022+ needs for template discovery.
+  -->
+  <Target Name="PackTemplateZip" BeforeTargets="GetVsixSourceItems">
+    <PropertyGroup>
+      <_TemplateZip>$(IntermediateOutputPath)Wikidown.zip</_TemplateZip>
+    </PropertyGroup>
+    <ZipDirectory SourceDirectory="ProjectTemplate" DestinationFile="$(_TemplateZip)" Overwrite="true" />
+    <ItemGroup>
+      <VSIXSourceItem Include="$(_TemplateZip)">
+        <VSIXSubPath>ProjectTemplates</VSIXSubPath>
+      </VSIXSourceItem>
+      <FileWrites Include="$(_TemplateZip)" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Fail loudly instead of silently building a DLL-only "success" when the VSSDK targets are missing -->
+  <Target Name="EnsureVsSdkTargetsImported" BeforeTargets="PrepareForBuild">
+    <Error Condition="!Exists('$(VSToolsPath)\VSSDK\Microsoft.VsSDK.targets')"
+           Text="Microsoft.VsSDK.targets not found (VSToolsPath='$(VSToolsPath)') — restore Microsoft.VSSDK.BuildTools first." />
+  </Target>
 </Project>
