@@ -4,7 +4,7 @@
       "command": "wikidown-mcp",
       "args": [],
       "env": {
-        "WIKIDOWN_ROOT": "${workspaceFolder}/docs"
+        "WIKIDOWN_ROOT": "docs"
       }
     }
   }

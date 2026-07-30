@@ -18,11 +18,15 @@ and double-click to install.
    **Add → New Project**.
 2. Search for **Wikidown** (or filter by project type **Wikidown**).
 3. Select **Wikidown Wiki** and click **Next**.
-4. Give the project a name (default: `wiki`) and choose the same folder as your
-   `.sln` file, then click **Create**.
+4. Give the project a name (default: `wiki`) and pick any folder you like —
+   the location field defaults sensibly — then click **Create**.
 
-A `wiki.wikidownproj` file is created alongside your solution. The `docs/`
-folder appears immediately under the new project node in Solution Explorer.
+When the project is created, the extension looks for an existing `docs/`
+folder near the project file (checking the project folder and up to two parent
+folders). If it finds one, the new project points at it; if not, it creates a
+`docs/` folder next to the project file seeded with a starter `Home.md` page.
+The wiki folder appears immediately under the new project node in Solution
+Explorer.
 
 ## Configure the wiki root
 
