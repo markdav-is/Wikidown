@@ -92,8 +92,17 @@ namespace Wikidown.Vs
                 : name + ProjectExtension;
 
             var dest = Path.Combine(location, fileName);
-            File.Copy(templateFile, dest, overwrite: true);
-            InitializeWikiRoot(dest);
+            // With CreateInPlace templates VS materializes the file at the
+            // destination itself (and may still hold a handle on it) before
+            // calling the factory — only copy when it isn't already there.
+            var samePath = string.Equals(
+                Path.GetFullPath(templateFile), Path.GetFullPath(dest),
+                StringComparison.OrdinalIgnoreCase);
+            if (!samePath && !File.Exists(dest))
+                File.Copy(templateFile, dest);
+
+            try { InitializeWikiRoot(dest); }
+            catch { /* wiki discovery/seeding is best-effort; never block creation */ }
             return dest;
         }
 
