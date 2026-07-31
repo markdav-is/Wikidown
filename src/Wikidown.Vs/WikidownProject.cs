@@ -863,7 +863,7 @@ namespace Wikidown.Vs
 
             var choice = VsShellUtilities.ShowMessageBox(
                 _serviceProvider,
-                question + "\n\nThe files are moved to the Recycle Bin.",
+                question,
                 "Wikidown",
                 OLEMSGICON.OLEMSGICON_WARNING,
                 OLEMSGBUTTON.OLEMSGBUTTON_YESNO,
@@ -871,20 +871,10 @@ namespace Wikidown.Vs
             if (choice != 6) return VSConstants.S_OK; // IDYES
 
             if (node.IsPage && File.Exists(node.FullPath))
-            {
-                Microsoft.VisualBasic.FileIO.FileSystem.DeleteFile(
-                    node.FullPath,
-                    Microsoft.VisualBasic.FileIO.UIOption.OnlyErrorDialogs,
-                    Microsoft.VisualBasic.FileIO.RecycleOption.SendToRecycleBin);
-            }
+                File.Delete(node.FullPath);
             var dirToDelete = node.IsPage ? node.ChildDir : node.FullPath;
             if (dirToDelete != null && Directory.Exists(dirToDelete))
-            {
-                Microsoft.VisualBasic.FileIO.FileSystem.DeleteDirectory(
-                    dirToDelete,
-                    Microsoft.VisualBasic.FileIO.UIOption.OnlyErrorDialogs,
-                    Microsoft.VisualBasic.FileIO.RecycleOption.SendToRecycleBin);
-            }
+                Directory.Delete(dirToDelete, recursive: true);
 
             // Drop the entry from .order (materializing post-delete excludes it)
             var parentDir = Path.GetDirectoryName(node.FullPath);
