@@ -11,7 +11,7 @@
     <ProjectTypeTag>Documentation</ProjectTypeTag>
     <SortOrder>1000</SortOrder>
     <CreateNewFolder>false</CreateNewFolder>
-    <DefaultName>wiki</DefaultName>
+    <DefaultName>Wiki</DefaultName>
     <ProvideDefaultName>true</ProvideDefaultName>
     <LocationField>Enabled</LocationField>
     <EnableLocationBrowseButton>true</EnableLocationBrowseButton>
