@@ -21,7 +21,10 @@ namespace Wikidown.Vs
         "Wikidown Project Files (*.wikidownproj);*.wikidownproj",
         "wikidownproj",
         "wikidownproj",
-        @".\ProjectTemplates",
+        // No legacy templates directory: VS's old-style scanner would list the
+        // raw wiki.wikidownproj inside it as a second, bare "wiki" template in
+        // the New Project dialog. Discovery happens via the VSIX .vstman only.
+        null,
         LanguageVsTemplate = "Wikidown")]
     public sealed class WikidownPackage : AsyncPackage
     {
