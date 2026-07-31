@@ -41,9 +41,11 @@ file. Edit the file to point to a different location:
 
 ## Features
 
-- Recursively shows all `.md` pages and `.order` files, sorted the same way
-  the wiki renders them: `.order` entries first, everything else alphabetical.
-- Double-clicking a `.md` file opens it in VS's built-in markdown editor.
+- Presents the wiki the way Azure DevOps does: nodes show page **titles**
+  (dashes render as spaces, no `.md` extension), a page with a same-named
+  subpage folder is a single expandable node, `.order` files are hidden, and
+  pages sort by `.order` (listed entries first, then alphabetical).
+- Double-clicking a page opens it in VS's built-in markdown editor.
 - Right-click the project, a folder, or a page for the standard context menus,
   including the **Git** submenu.
 - **Add → New Item** prompts for a page name, creates the page, and records it

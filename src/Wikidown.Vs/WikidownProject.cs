@@ -133,14 +133,12 @@ namespace Wikidown.Vs
 
             var entries = new List<(int Key, string Base, int Kind, Node Node)>();
 
+            // ADO-wiki presentation: nodes are page titles (dashes render as
+            // spaces, no .md extension) and .order files are hidden.
+            string TitleOf(string baseName) => baseName.Replace('-', ' ');
+
             foreach (var file in Directory.GetFiles(dir))
             {
-                var name = Path.GetFileName(file);
-                if (name == ".order")
-                {
-                    entries.Add((int.MaxValue, name, 2, new Node { Name = name, FullPath = file }));
-                    continue;
-                }
                 if (!string.Equals(Path.GetExtension(file), ".md", StringComparison.OrdinalIgnoreCase))
                     continue;
 
@@ -150,14 +148,14 @@ namespace Wikidown.Vs
                     dirs.Remove(baseName);
                     entries.Add((OrderKey(baseName), baseName, 0, new Node
                     {
-                        Name = baseName, FullPath = file, IsFolder = true, IsPage = true, ChildDir = pairedDir,
+                        Name = TitleOf(baseName), FullPath = file, IsFolder = true, IsPage = true, ChildDir = pairedDir,
                     }));
                 }
                 else
                 {
                     entries.Add((OrderKey(baseName), baseName, 0, new Node
                     {
-                        Name = name, FullPath = file, IsPage = true,
+                        Name = TitleOf(baseName), FullPath = file, IsPage = true,
                     }));
                 }
             }
@@ -167,7 +165,7 @@ namespace Wikidown.Vs
             {
                 entries.Add((OrderKey(kv.Key), kv.Key, 1, new Node
                 {
-                    Name = kv.Key, FullPath = kv.Value, IsFolder = true, ChildDir = kv.Value,
+                    Name = TitleOf(kv.Key), FullPath = kv.Value, IsFolder = true, ChildDir = kv.Value,
                 }));
             }
 
