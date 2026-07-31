@@ -41,8 +41,16 @@ file. Edit the file to point to a different location:
 
 ## Features
 
-- Recursively shows all `.md` pages and `.order` files.
+- Recursively shows all `.md` pages and `.order` files, sorted the same way
+  the wiki renders them: `.order` entries first, everything else alphabetical.
 - Double-clicking a `.md` file opens it in VS's built-in markdown editor.
+- Right-click the project, a folder, or a page for the standard context menus,
+  including the **Git** submenu.
+- **Add → New Item** prompts for a page name, creates the page, and records it
+  in `.order`; **Add → Existing Item** copies `.md` files in. Both stay
+  consistent with the `wikidown` CLI and the `wiki_*` MCP tools, which remain
+  fully usable side by side — the tree refreshes live when they change files
+  or reorder `.order`.
 - The project node is **display-only** — it never appears in Build, Rebuild, or
   Clean, and adds no compile items to the solution.
 
