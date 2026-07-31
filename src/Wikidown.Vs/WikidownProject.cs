@@ -22,8 +22,15 @@ namespace Wikidown.Vs
         IVsProject,
         IVsUIHierarchy,
         IPersistFileFormat,
-        IVsPersistHierarchyItem
+        IVsPersistHierarchyItem,
+        IOleCommandTarget
     {
+        // Shell context menus (ShellCmdDef guidSHLMainMenu)
+        private static readonly Guid ShlMainMenu = new Guid("d309f791-903f-11d0-9efc-00a0c911004f");
+        private const int IDM_VS_CTXT_PROJNODE   = 0x0402;
+        private const int IDM_VS_CTXT_ITEMNODE   = 0x0430;
+        private const int IDM_VS_CTXT_FOLDERNODE = 0x0431;
+
         // ── constants ────────────────────────────────────────────────────────
         private const uint ItemIdRoot = VSConstants.VSITEMID_ROOT;
         private const uint ItemIdNil  = VSConstants.VSITEMID_NIL;
@@ -97,40 +104,66 @@ namespace Wikidown.Vs
 
         private void PopulateFolder(string dir, uint parentId)
         {
-            var children = new List<uint>();
-
-            // Sub-directories first (folders in Solution Explorer appear before files)
-            foreach (var sub in Directory.GetDirectories(dir))
+            // Sort children the way the wiki renders them: entries listed in
+            // .order come first (in that order), everything else follows
+            // alphabetically. A page file sorts immediately before its
+            // same-named subfolder. The .order file itself is listed last.
+            var order = ReadOrderEntries(dir);
+            int OrderKey(string baseName)
             {
-                var id = _nextId++;
-                _nodes[id] = new Node
+                for (var i = 0; i < order.Count; i++)
                 {
-                    Id       = id,
-                    Name     = Path.GetFileName(sub),
-                    FullPath = sub,
-                    IsFolder = true,
-                    Parent   = parentId,
-                };
-                children.Add(id);
-                PopulateFolder(sub, id);
+                    if (string.Equals(order[i], baseName, StringComparison.OrdinalIgnoreCase))
+                        return i;
+                }
+                return int.MaxValue;
             }
 
-            // Then .md and .order files
+            var entries = new List<(int Key, string Base, int Kind, string Path, bool IsFolder)>();
+
+            foreach (var sub in Directory.GetDirectories(dir))
+            {
+                var name = Path.GetFileName(sub);
+                entries.Add((OrderKey(name), name, 1, sub, true));
+            }
             foreach (var file in Directory.GetFiles(dir))
             {
-                var ext = Path.GetExtension(file).ToLowerInvariant();
-                if (ext != ".md" && Path.GetFileName(file) != ".order") continue;
+                var name = Path.GetFileName(file);
+                if (name == ".order")
+                {
+                    entries.Add((int.MaxValue, name, 2, file, false));
+                    continue;
+                }
+                if (!string.Equals(Path.GetExtension(file), ".md", StringComparison.OrdinalIgnoreCase))
+                    continue;
+                entries.Add((OrderKey(Path.GetFileNameWithoutExtension(file)), Path.GetFileNameWithoutExtension(file), 0, file, false));
+            }
 
+            entries.Sort((a, b) =>
+            {
+                if (a.Kind == 2 || b.Kind == 2) return a.Kind.CompareTo(b.Kind);
+                var byKey = a.Key.CompareTo(b.Key);
+                if (byKey != 0) return byKey;
+                var byName = string.Compare(a.Base, b.Base, StringComparison.OrdinalIgnoreCase);
+                if (byName != 0) return byName;
+                return a.Kind.CompareTo(b.Kind);
+            });
+
+            var children = new List<uint>();
+            foreach (var entry in entries)
+            {
                 var id = _nextId++;
                 _nodes[id] = new Node
                 {
                     Id       = id,
-                    Name     = Path.GetFileName(file),
-                    FullPath = file,
-                    IsFolder = false,
+                    Name     = Path.GetFileName(entry.Path),
+                    FullPath = entry.Path,
+                    IsFolder = entry.IsFolder,
                     Parent   = parentId,
                 };
                 children.Add(id);
+                if (entry.IsFolder)
+                    PopulateFolder(entry.Path, id);
             }
 
             // Wire sibling chain and first-child pointer
@@ -142,6 +175,37 @@ namespace Wikidown.Vs
                 _nodes[parentId].FirstChild = children[0];
         }
 
+        // ── .order handling (mirrors Wikidown.Core.OrderFile semantics) ──────
+
+        private static List<string> ReadOrderEntries(string dir)
+        {
+            var result = new List<string>();
+            var path = Path.Combine(dir, ".order");
+            if (!File.Exists(path)) return result;
+            try
+            {
+                foreach (var raw in File.ReadAllText(path).Split('\n'))
+                {
+                    var line = raw.TrimEnd('\r', ' ', '\t');
+                    if (line.Length == 0 || line.StartsWith("#")) continue;
+                    result.Add(line);
+                }
+            }
+            catch { /* unreadable .order — fall back to alphabetical */ }
+            return result;
+        }
+
+        private static void AppendToOrder(string dir, string baseName)
+        {
+            var entries = ReadOrderEntries(dir);
+            foreach (var e in entries)
+            {
+                if (string.Equals(e, baseName, StringComparison.OrdinalIgnoreCase)) return;
+            }
+            entries.Add(baseName);
+            File.WriteAllText(Path.Combine(dir, ".order"), string.Join("\n", entries) + "\n");
+        }
+
         // ── file-system watcher ──────────────────────────────────────────────
 
         private void StartWatcher()
@@ -150,12 +214,20 @@ namespace Wikidown.Vs
             _watcher = new FileSystemWatcher(_wikiRoot)
             {
                 IncludeSubdirectories = true,
-                NotifyFilter = NotifyFilters.FileName | NotifyFilters.DirectoryName,
+                NotifyFilter = NotifyFilters.FileName | NotifyFilters.DirectoryName | NotifyFilters.LastWrite,
                 EnableRaisingEvents = true,
             };
             _watcher.Created += OnFsChanged;
             _watcher.Deleted += OnFsChanged;
             _watcher.Renamed += OnFsRenamed;
+            _watcher.Changed += OnFsContentChanged;
+        }
+
+        private void OnFsContentChanged(object sender, FileSystemEventArgs e)
+        {
+            // Content changes only matter for .order (re-sort); md content
+            // edits don't change the tree.
+            if (Path.GetFileName(e.FullPath) == ".order") InvalidateAsync();
         }
 
         private void OnFsChanged(object sender, FileSystemEventArgs e)
@@ -180,12 +252,17 @@ namespace Wikidown.Vs
             ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
             {
                 await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-                _nodes.Clear();
-                _nextId = 1;
-                BuildHierarchy();
-                foreach (var sink in _sinks)
-                    sink?.OnInvalidateItems(ItemIdRoot);
+                RebuildAndNotify();
             });
+        }
+
+        private void RebuildAndNotify()
+        {
+            _nodes.Clear();
+            _nextId = 1;
+            BuildHierarchy();
+            foreach (var sink in _sinks)
+                sink?.OnInvalidateItems(ItemIdRoot);
         }
 
         // ── IVsHierarchy ─────────────────────────────────────────────────────
@@ -456,7 +533,7 @@ namespace Wikidown.Vs
         // ── IVsUIHierarchy ───────────────────────────────────────────────────
 
         public int QueryStatusCommand(uint itemid, ref Guid pguidCmdGroup, uint cCmds, OLECMD[] prgCmds, IntPtr pCmdText)
-            => (int)Microsoft.VisualStudio.OLE.Interop.Constants.OLECMDERR_E_NOTSUPPORTED;
+            => QueryStatusInternal(ref pguidCmdGroup, cCmds, prgCmds);
 
         public int ExecCommand(uint itemid, ref Guid pguidCmdGroup, uint nCmdID, uint nCmdexecopt, IntPtr pvaIn, IntPtr pvaOut)
         {
@@ -477,9 +554,210 @@ namespace Wikidown.Vs
                             return OpenItem(itemid, ref view, IntPtr.Zero, out _);
                         }
                         break;
+
+                    case (uint)VSConstants.VsUIHierarchyWindowCmdIds.UIHWCMDID_RightClick:
+                        return ShowNodeContextMenu(itemid, pvaIn);
                 }
             }
+
+            if (pguidCmdGroup == VSConstants.GUID_VSStandardCommandSet97)
+                return ExecStd97(itemid, nCmdID);
+
             return (int)Microsoft.VisualStudio.OLE.Interop.Constants.OLECMDERR_E_NOTSUPPORTED;
+        }
+
+        // ── context menu ─────────────────────────────────────────────────────
+
+        private uint _contextItemId = ItemIdRoot;
+
+        private int ShowNodeContextMenu(uint itemid, IntPtr pvaIn)
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+            _contextItemId = itemid;
+
+            if (!_nodes.TryGetValue(itemid, out var node))
+                return VSConstants.E_FAIL;
+
+            var menuId = itemid == ItemIdRoot ? IDM_VS_CTXT_PROJNODE
+                : node.IsFolder ? IDM_VS_CTXT_FOLDERNODE
+                : IDM_VS_CTXT_ITEMNODE;
+
+            // pvaIn is a packed DWORD: x in the low word, y in the high word
+            var pnts = new POINTS[1];
+            if (pvaIn != IntPtr.Zero)
+            {
+                var packed = unchecked((uint)(int)Marshal.GetObjectForNativeVariant(pvaIn));
+                pnts[0].x = unchecked((short)(packed & 0xffff));
+                pnts[0].y = unchecked((short)((packed >> 16) & 0xffff));
+            }
+
+            var uiShell = _serviceProvider.GetService(typeof(SVsUIShell)) as IVsUIShell;
+            if (uiShell == null) return VSConstants.E_FAIL;
+
+            var menuGuid = ShlMainMenu;
+            return uiShell.ShowContextMenu(0, ref menuGuid, menuId, pnts, this);
+        }
+
+        // ── IOleCommandTarget (routes context-menu commands to this project) ─
+
+        public int QueryStatus(ref Guid pguidCmdGroup, uint cCmds, OLECMD[] prgCmds, IntPtr pCmdText)
+            => QueryStatusInternal(ref pguidCmdGroup, cCmds, prgCmds);
+
+        public int Exec(ref Guid pguidCmdGroup, uint nCmdID, uint nCmdexecopt, IntPtr pvaIn, IntPtr pvaOut)
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+            if (pguidCmdGroup == VSConstants.GUID_VSStandardCommandSet97)
+                return ExecStd97(_contextItemId, nCmdID);
+            return (int)Microsoft.VisualStudio.OLE.Interop.Constants.OLECMDERR_E_UNKNOWNGROUP;
+        }
+
+        private int QueryStatusInternal(ref Guid pguidCmdGroup, uint cCmds, OLECMD[] prgCmds)
+        {
+            if (pguidCmdGroup == VSConstants.GUID_VSStandardCommandSet97 && prgCmds != null)
+            {
+                var handledAny = false;
+                for (var i = 0; i < cCmds; i++)
+                {
+                    switch ((VSConstants.VSStd97CmdID)prgCmds[i].cmdID)
+                    {
+                        case VSConstants.VSStd97CmdID.AddNewItem:
+                        case VSConstants.VSStd97CmdID.AddExistingItem:
+                            prgCmds[i].cmdf = (uint)(OLECMDF.OLECMDF_SUPPORTED | OLECMDF.OLECMDF_ENABLED);
+                            handledAny = true;
+                            break;
+                    }
+                }
+                if (handledAny) return VSConstants.S_OK;
+            }
+            return (int)Microsoft.VisualStudio.OLE.Interop.Constants.OLECMDERR_E_NOTSUPPORTED;
+        }
+
+        private int ExecStd97(uint itemid, uint nCmdID)
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+            switch ((VSConstants.VSStd97CmdID)nCmdID)
+            {
+                case VSConstants.VSStd97CmdID.AddNewItem:
+                    return AddNewPage(itemid);
+                case VSConstants.VSStd97CmdID.AddExistingItem:
+                    return AddExistingPages(itemid);
+            }
+            return (int)Microsoft.VisualStudio.OLE.Interop.Constants.OLECMDERR_E_NOTSUPPORTED;
+        }
+
+        // ── add page commands ────────────────────────────────────────────────
+
+        private string GetTargetDirectory(uint itemid)
+        {
+            if (itemid == ItemIdRoot || !_nodes.TryGetValue(itemid, out var node))
+                return _wikiRoot;
+            return node.IsFolder ? node.FullPath : (Path.GetDirectoryName(node.FullPath) ?? _wikiRoot);
+        }
+
+        private int AddNewPage(uint itemid)
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+            var dir = GetTargetDirectory(itemid);
+
+            var name = PromptForPageName();
+            if (string.IsNullOrEmpty(name)) return VSConstants.S_OK;
+
+            // Wiki convention: dashes in file names render as spaces in titles
+            name = name.Trim().Replace(' ', '-');
+            foreach (var c in Path.GetInvalidFileNameChars())
+                name = name.Replace(c.ToString(), "");
+            if (name.Length == 0) return VSConstants.S_OK;
+
+            Directory.CreateDirectory(dir);
+            var path = Path.Combine(dir, name + ".md");
+            if (!File.Exists(path))
+            {
+                File.WriteAllText(path, "# " + name.Replace('-', ' ') + "\n");
+                AppendToOrder(dir, name);
+            }
+
+            RebuildAndNotify();
+            OpenByPath(path);
+            return VSConstants.S_OK;
+        }
+
+        private int AddExistingPages(uint itemid)
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+            var dir = GetTargetDirectory(itemid);
+
+            var dlg = new Microsoft.Win32.OpenFileDialog
+            {
+                Title = "Add Existing Wiki Pages",
+                Filter = "Markdown pages (*.md)|*.md|All files (*.*)|*.*",
+                Multiselect = true,
+                CheckFileExists = true,
+            };
+            if (dlg.ShowDialog() != true) return VSConstants.S_OK;
+
+            Directory.CreateDirectory(dir);
+            foreach (var source in dlg.FileNames)
+            {
+                var dest = Path.Combine(dir, Path.GetFileName(source));
+                if (!string.Equals(Path.GetFullPath(source), Path.GetFullPath(dest), StringComparison.OrdinalIgnoreCase) &&
+                    !File.Exists(dest))
+                {
+                    File.Copy(source, dest);
+                }
+                AppendToOrder(dir, Path.GetFileNameWithoutExtension(dest));
+            }
+
+            RebuildAndNotify();
+            return VSConstants.S_OK;
+        }
+
+        private void OpenByPath(string path)
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+            foreach (var kv in _nodes)
+            {
+                if (string.Equals(kv.Value.FullPath, path, StringComparison.OrdinalIgnoreCase))
+                {
+                    var view = VSConstants.LOGVIEWID.Primary_guid;
+                    OpenItem(kv.Key, ref view, IntPtr.Zero, out _);
+                    return;
+                }
+            }
+        }
+
+        private string PromptForPageName()
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+
+            var input = new System.Windows.Controls.TextBox { Margin = new System.Windows.Thickness(0, 4, 0, 12), MinWidth = 320 };
+            var ok = new System.Windows.Controls.Button { Content = "OK", IsDefault = true, MinWidth = 75, Margin = new System.Windows.Thickness(0, 0, 8, 0) };
+            var cancel = new System.Windows.Controls.Button { Content = "Cancel", IsCancel = true, MinWidth = 75 };
+
+            var buttons = new System.Windows.Controls.StackPanel
+            {
+                Orientation = System.Windows.Controls.Orientation.Horizontal,
+                HorizontalAlignment = System.Windows.HorizontalAlignment.Right,
+            };
+            buttons.Children.Add(ok);
+            buttons.Children.Add(cancel);
+
+            var panel = new System.Windows.Controls.StackPanel { Margin = new System.Windows.Thickness(12) };
+            panel.Children.Add(new System.Windows.Controls.TextBlock { Text = "Page name (dashes render as spaces):" });
+            panel.Children.Add(input);
+            panel.Children.Add(buttons);
+
+            var dialog = new Microsoft.VisualStudio.PlatformUI.DialogWindow
+            {
+                Title = "Add Wiki Page",
+                Content = panel,
+                SizeToContent = System.Windows.SizeToContent.WidthAndHeight,
+                WindowStartupLocation = System.Windows.WindowStartupLocation.CenterOwner,
+                ResizeMode = System.Windows.ResizeMode.NoResize,
+            };
+            ok.Click += (s, e) => { dialog.DialogResult = true; dialog.Close(); };
+            input.Loaded += (s, e) => input.Focus();
+
+            return dialog.ShowModal() == true ? input.Text : null;
         }
 
         // ── IPersistFileFormat ───────────────────────────────────────────────

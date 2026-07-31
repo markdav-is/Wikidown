@@ -40,6 +40,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- WPF references for the Add Wiki Page dialog (DialogWindow) -->
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="System.Xaml" />
+    <Reference Include="WindowsBase" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Include="source.extension.vsixmanifest">
       <SubType>Designer</SubType>
     </None>
