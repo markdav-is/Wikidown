@@ -44,8 +44,10 @@ namespace Wikidown.Vs
         {
             public uint   Id;
             public string Name       = "";
-            public string FullPath   = "";
-            public bool   IsFolder;
+            public string FullPath   = "";   // document identity: .md for pages, dir for bare folders
+            public bool   IsFolder;          // folder icon / folder context menu
+            public bool   IsPage;            // FullPath is an openable .md
+            public string ChildDir;          // non-null when the node expands into a folder
             public uint   Parent     = ItemIdNil;
             public uint   FirstChild = ItemIdNil;
             public uint   NextSib    = ItemIdNil;
@@ -122,24 +124,51 @@ namespace Wikidown.Vs
                 return int.MaxValue;
             }
 
-            var entries = new List<(int Key, string Base, int Kind, string Path, bool IsFolder)>();
-
+            // A page file with a same-named sibling folder (the spec's
+            // subpage convention) becomes ONE node: folder icon, expandable,
+            // opens the page on double-click.
+            var dirs = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             foreach (var sub in Directory.GetDirectories(dir))
-            {
-                var name = Path.GetFileName(sub);
-                entries.Add((OrderKey(name), name, 1, sub, true));
-            }
+                dirs[Path.GetFileName(sub)] = sub;
+
+            var entries = new List<(int Key, string Base, int Kind, Node Node)>();
+
             foreach (var file in Directory.GetFiles(dir))
             {
                 var name = Path.GetFileName(file);
                 if (name == ".order")
                 {
-                    entries.Add((int.MaxValue, name, 2, file, false));
+                    entries.Add((int.MaxValue, name, 2, new Node { Name = name, FullPath = file }));
                     continue;
                 }
                 if (!string.Equals(Path.GetExtension(file), ".md", StringComparison.OrdinalIgnoreCase))
                     continue;
-                entries.Add((OrderKey(Path.GetFileNameWithoutExtension(file)), Path.GetFileNameWithoutExtension(file), 0, file, false));
+
+                var baseName = Path.GetFileNameWithoutExtension(file);
+                if (dirs.TryGetValue(baseName, out var pairedDir))
+                {
+                    dirs.Remove(baseName);
+                    entries.Add((OrderKey(baseName), baseName, 0, new Node
+                    {
+                        Name = baseName, FullPath = file, IsFolder = true, IsPage = true, ChildDir = pairedDir,
+                    }));
+                }
+                else
+                {
+                    entries.Add((OrderKey(baseName), baseName, 0, new Node
+                    {
+                        Name = name, FullPath = file, IsPage = true,
+                    }));
+                }
+            }
+
+            // Folders with no paired page
+            foreach (var kv in dirs)
+            {
+                entries.Add((OrderKey(kv.Key), kv.Key, 1, new Node
+                {
+                    Name = kv.Key, FullPath = kv.Value, IsFolder = true, ChildDir = kv.Value,
+                }));
             }
 
             entries.Sort((a, b) =>
@@ -155,22 +184,18 @@ namespace Wikidown.Vs
             var children = new List<uint>();
             foreach (var entry in entries)
             {
-                if (!_idByPath.TryGetValue(entry.Path, out var id))
+                var node = entry.Node;
+                if (!_idByPath.TryGetValue(node.FullPath, out var id))
                 {
                     id = _nextId++;
-                    _idByPath[entry.Path] = id;
+                    _idByPath[node.FullPath] = id;
                 }
-                _nodes[id] = new Node
-                {
-                    Id       = id,
-                    Name     = Path.GetFileName(entry.Path),
-                    FullPath = entry.Path,
-                    IsFolder = entry.IsFolder,
-                    Parent   = parentId,
-                };
+                node.Id = id;
+                node.Parent = parentId;
+                _nodes[id] = node;
                 children.Add(id);
-                if (entry.IsFolder)
-                    PopulateFolder(entry.Path, id);
+                if (node.ChildDir != null)
+                    PopulateFolder(node.ChildDir, id);
             }
 
             // Wire sibling chain and first-child pointer
@@ -499,7 +524,7 @@ namespace Wikidown.Vs
             ppWindowFrame = null;
             ThreadHelper.ThrowIfNotOnUIThread();
 
-            if (itemid == ItemIdRoot || !_nodes.TryGetValue(itemid, out var node) || node.IsFolder)
+            if (itemid == ItemIdRoot || !_nodes.TryGetValue(itemid, out var node) || !node.IsPage && node.IsFolder)
                 return VSConstants.E_NOTIMPL;
 
             // If the document is already open, just activate it (RDT lookup,
@@ -588,7 +613,7 @@ namespace Wikidown.Vs
                     case (uint)VSConstants.VsUIHierarchyWindowCmdIds.UIHWCMDID_DoubleClick:
                     case (uint)VSConstants.VsUIHierarchyWindowCmdIds.UIHWCMDID_EnterKey:
                         if (itemid != ItemIdRoot &&
-                            _nodes.TryGetValue(itemid, out var node) && !node.IsFolder)
+                            _nodes.TryGetValue(itemid, out var node) && (node.IsPage || !node.IsFolder))
                         {
                             var view = VSConstants.LOGVIEWID.Primary_guid;
                             return OpenItem(itemid, ref view, IntPtr.Zero, out _);
@@ -747,6 +772,7 @@ namespace Wikidown.Vs
         {
             if (itemid == ItemIdRoot || !_nodes.TryGetValue(itemid, out var node))
                 return _wikiRoot;
+            if (node.ChildDir != null) return node.ChildDir;
             return node.IsFolder ? node.FullPath : (Path.GetDirectoryName(node.FullPath) ?? _wikiRoot);
         }
 
