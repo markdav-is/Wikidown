@@ -324,6 +324,15 @@ namespace Wikidown.Vs
                     pvar = Path.GetDirectoryName(_projectFile);
                     return VSConstants.S_OK;
 
+                case __VSHPROPID.VSHPROPID_IconHandle:
+                case __VSHPROPID.VSHPROPID_OpenFolderIconHandle:
+                    if (itemid == ItemIdRoot && ProjectIconHandle != IntPtr.Zero)
+                    {
+                        pvar = unchecked((int)ProjectIconHandle.ToInt64());
+                        return VSConstants.S_OK;
+                    }
+                    return VSConstants.DISP_E_MEMBERNOTFOUND;
+
                 case __VSHPROPID.VSHPROPID_TypeName:
                     pvar = "Wikidown Wiki";
                     return VSConstants.S_OK;
@@ -570,6 +579,26 @@ namespace Wikidown.Vs
 
         private uint _contextItemId = ItemIdRoot;
 
+        private static System.Drawing.Icon _projectIcon;
+        private static bool _projectIconLoadFailed;
+
+        private static IntPtr ProjectIconHandle
+        {
+            get
+            {
+                if (_projectIcon == null && !_projectIconLoadFailed)
+                {
+                    try
+                    {
+                        var dir = Path.GetDirectoryName(typeof(WikidownProject).Assembly.Location) ?? "";
+                        _projectIcon = new System.Drawing.Icon(Path.Combine(dir, "Assets", "wikidown.ico"), 16, 16);
+                    }
+                    catch { _projectIconLoadFailed = true; }
+                }
+                return _projectIcon?.Handle ?? IntPtr.Zero;
+            }
+        }
+
         [StructLayout(LayoutKind.Sequential)]
         private struct Win32Point { public int X; public int Y; }
 
@@ -641,6 +670,7 @@ namespace Wikidown.Vs
                     {
                         case VSConstants.VSStd97CmdID.AddNewItem:
                         case VSConstants.VSStd97CmdID.AddExistingItem:
+                        case VSConstants.VSStd97CmdID.NewFolder:
                             prgCmds[i].cmdf = (uint)(OLECMDF.OLECMDF_SUPPORTED | OLECMDF.OLECMDF_ENABLED);
                             handledAny = true;
                             break;
@@ -660,6 +690,8 @@ namespace Wikidown.Vs
                     return AddNewPage(itemid);
                 case VSConstants.VSStd97CmdID.AddExistingItem:
                     return AddExistingPages(itemid);
+                case VSConstants.VSStd97CmdID.NewFolder:
+                    return AddNewFolder(itemid);
             }
             return (int)Microsoft.VisualStudio.OLE.Interop.Constants.OLECMDERR_E_NOTSUPPORTED;
         }
@@ -678,26 +710,54 @@ namespace Wikidown.Vs
             ThreadHelper.ThrowIfNotOnUIThread();
             var dir = GetTargetDirectory(itemid);
 
-            var name = PromptForPageName();
+            var name = SanitizePageName(PromptForName("Add Wiki Page", "Page name (dashes render as spaces):"));
             if (string.IsNullOrEmpty(name)) return VSConstants.S_OK;
 
+            Directory.CreateDirectory(dir);
+            var path = CreatePage(dir, name);
+
+            RebuildAndNotify();
+            OpenByPath(path);
+            return VSConstants.S_OK;
+        }
+
+        private int AddNewFolder(uint itemid)
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+            var dir = GetTargetDirectory(itemid);
+
+            var name = SanitizePageName(PromptForName("Add Wiki Folder", "Folder name (a same-named page is created with it):"));
+            if (string.IsNullOrEmpty(name)) return VSConstants.S_OK;
+
+            // CLI convention: a folder of children is paired with a page of
+            // the same name next to it, and the name is recorded in .order.
+            Directory.CreateDirectory(Path.Combine(dir, name));
+            var path = CreatePage(dir, name);
+
+            RebuildAndNotify();
+            OpenByPath(path);
+            return VSConstants.S_OK;
+        }
+
+        private static string SanitizePageName(string name)
+        {
+            if (string.IsNullOrEmpty(name)) return null;
             // Wiki convention: dashes in file names render as spaces in titles
             name = name.Trim().Replace(' ', '-');
             foreach (var c in Path.GetInvalidFileNameChars())
                 name = name.Replace(c.ToString(), "");
-            if (name.Length == 0) return VSConstants.S_OK;
+            return name.Length == 0 ? null : name;
+        }
 
-            Directory.CreateDirectory(dir);
+        private static string CreatePage(string dir, string name)
+        {
             var path = Path.Combine(dir, name + ".md");
             if (!File.Exists(path))
             {
                 File.WriteAllText(path, "# " + name.Replace('-', ' ') + "\n");
                 AppendToOrder(dir, name);
             }
-
-            RebuildAndNotify();
-            OpenByPath(path);
-            return VSConstants.S_OK;
+            return path;
         }
 
         private int AddExistingPages(uint itemid)
@@ -744,7 +804,7 @@ namespace Wikidown.Vs
             }
         }
 
-        private string PromptForPageName()
+        private string PromptForName(string title, string label)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 
@@ -761,13 +821,13 @@ namespace Wikidown.Vs
             buttons.Children.Add(cancel);
 
             var panel = new System.Windows.Controls.StackPanel { Margin = new System.Windows.Thickness(12) };
-            panel.Children.Add(new System.Windows.Controls.TextBlock { Text = "Page name (dashes render as spaces):" });
+            panel.Children.Add(new System.Windows.Controls.TextBlock { Text = label });
             panel.Children.Add(input);
             panel.Children.Add(buttons);
 
             var dialog = new Microsoft.VisualStudio.PlatformUI.DialogWindow
             {
-                Title = "Add Wiki Page",
+                Title = title,
                 Content = panel,
                 SizeToContent = System.Windows.SizeToContent.WidthAndHeight,
                 WindowStartupLocation = System.Windows.WindowStartupLocation.CenterOwner,

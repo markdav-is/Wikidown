@@ -45,6 +45,8 @@
     <Reference Include="PresentationFramework" />
     <Reference Include="System.Xaml" />
     <Reference Include="WindowsBase" />
+    <!-- Project node icon -->
+    <Reference Include="System.Drawing" />
   </ItemGroup>
 
   <ItemGroup>
@@ -65,6 +67,10 @@
       <VSIXSubPath>Assets</VSIXSubPath>
     </Content>
     <Content Include="Assets\icon-dark.png">
+      <IncludeInVSIX>true</IncludeInVSIX>
+      <VSIXSubPath>Assets</VSIXSubPath>
+    </Content>
+    <Content Include="Assets\wikidown.ico">
       <IncludeInVSIX>true</IncludeInVSIX>
       <VSIXSubPath>Assets</VSIXSubPath>
     </Content>
