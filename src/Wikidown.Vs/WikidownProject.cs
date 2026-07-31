@@ -57,6 +57,9 @@ namespace Wikidown.Vs
         private readonly string                  _wikiRoot;
         private readonly Dictionary<uint, Node>  _nodes   = new Dictionary<uint, Node>();
         private readonly List<IVsHierarchyEvents> _sinks   = new List<IVsHierarchyEvents>();
+        // Item ids stay stable for a given path across rebuilds — Solution
+        // Explorer caches by id, and renumbering makes refreshes unreliable.
+        private readonly Dictionary<string, uint> _idByPath = new Dictionary<string, uint>(StringComparer.OrdinalIgnoreCase);
         private uint _nextId = 1;
         private FileSystemWatcher _watcher;
 
@@ -152,7 +155,11 @@ namespace Wikidown.Vs
             var children = new List<uint>();
             foreach (var entry in entries)
             {
-                var id = _nextId++;
+                if (!_idByPath.TryGetValue(entry.Path, out var id))
+                {
+                    id = _nextId++;
+                    _idByPath[entry.Path] = id;
+                }
                 _nodes[id] = new Node
                 {
                     Id       = id,
@@ -197,13 +204,38 @@ namespace Wikidown.Vs
 
         private static void AppendToOrder(string dir, string baseName)
         {
-            var entries = ReadOrderEntries(dir);
-            foreach (var e in entries)
+            // Never trust the read alone: merge with the pages actually on
+            // disk so a failed/partial read can't clobber existing entries.
+            // Result: existing listed order, then unlisted pages
+            // alphabetically, then the new page last.
+            var listed = ReadOrderEntries(dir);
+            var present = new List<string>();
+            foreach (var file in Directory.GetFiles(dir, "*.md"))
+                present.Add(Path.GetFileNameWithoutExtension(file));
+
+            bool Contains(List<string> list, string value)
             {
-                if (string.Equals(e, baseName, StringComparison.OrdinalIgnoreCase)) return;
+                foreach (var v in list)
+                {
+                    if (string.Equals(v, value, StringComparison.OrdinalIgnoreCase)) return true;
+                }
+                return false;
             }
-            entries.Add(baseName);
-            File.WriteAllText(Path.Combine(dir, ".order"), string.Join("\n", entries) + "\n");
+
+            var result = new List<string>();
+            foreach (var e in listed)
+            {
+                if (Contains(present, e) && !Contains(result, e)) result.Add(e);
+            }
+            present.Sort(StringComparer.OrdinalIgnoreCase);
+            foreach (var p in present)
+            {
+                if (!string.Equals(p, baseName, StringComparison.OrdinalIgnoreCase) && !Contains(result, p))
+                    result.Add(p);
+            }
+            if (!Contains(result, baseName)) result.Add(baseName);
+
+            File.WriteAllText(Path.Combine(dir, ".order"), string.Join("\n", result) + "\n");
         }
 
         // ── file-system watcher ──────────────────────────────────────────────
@@ -259,7 +291,6 @@ namespace Wikidown.Vs
         private void RebuildAndNotify()
         {
             _nodes.Clear();
-            _nextId = 1;
             BuildHierarchy();
             foreach (var sink in _sinks)
                 sink?.OnInvalidateItems(ItemIdRoot);
@@ -684,14 +715,28 @@ namespace Wikidown.Vs
         private int ExecStd97(uint itemid, uint nCmdID)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
-            switch ((VSConstants.VSStd97CmdID)nCmdID)
+            try
             {
-                case VSConstants.VSStd97CmdID.AddNewItem:
-                    return AddNewPage(itemid);
-                case VSConstants.VSStd97CmdID.AddExistingItem:
-                    return AddExistingPages(itemid);
-                case VSConstants.VSStd97CmdID.NewFolder:
-                    return AddNewFolder(itemid);
+                switch ((VSConstants.VSStd97CmdID)nCmdID)
+                {
+                    case VSConstants.VSStd97CmdID.AddNewItem:
+                        return AddNewPage(itemid);
+                    case VSConstants.VSStd97CmdID.AddExistingItem:
+                        return AddExistingPages(itemid);
+                    case VSConstants.VSStd97CmdID.NewFolder:
+                        return AddNewFolder(itemid);
+                }
+            }
+            catch (Exception ex)
+            {
+                VsShellUtilities.ShowMessageBox(
+                    _serviceProvider,
+                    ex.Message,
+                    "Wikidown",
+                    OLEMSGICON.OLEMSGICON_CRITICAL,
+                    OLEMSGBUTTON.OLEMSGBUTTON_OK,
+                    OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
+                return VSConstants.E_FAIL;
             }
             return (int)Microsoft.VisualStudio.OLE.Interop.Constants.OLECMDERR_E_NOTSUPPORTED;
         }
