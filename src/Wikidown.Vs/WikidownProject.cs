@@ -382,20 +382,21 @@ namespace Wikidown.Vs
             ppWindowFrame = null;
             ThreadHelper.ThrowIfNotOnUIThread();
 
-            if (!_nodes.TryGetValue(itemid, out var node) || node.IsFolder)
+            if (itemid == ItemIdRoot || !_nodes.TryGetValue(itemid, out var node) || node.IsFolder)
                 return VSConstants.E_NOTIMPL;
 
-            var openDoc = _serviceProvider.GetService(typeof(SVsUIShellOpenDocument)) as IVsUIShellOpenDocument;
-            if (openDoc == null) return VSConstants.E_NOTIMPL;
-
+            // Not OpenDocumentViaProject — that routes back into this project's
+            // OpenItem. Open with VS's standard editor for the file type.
             var logicalView = rguidLogicalView == Guid.Empty ? VSConstants.LOGVIEWID.Primary_guid : rguidLogicalView;
-            return openDoc.OpenDocumentViaProject(
+            VsShellUtilities.OpenDocument(
+                _serviceProvider,
                 node.FullPath,
-                ref logicalView,
-                out _,
+                logicalView,
                 out _,
                 out _,
                 out ppWindowFrame);
+            ppWindowFrame?.Show();
+            return ppWindowFrame != null ? VSConstants.S_OK : VSConstants.E_FAIL;
         }
 
         public int GetMkDocument(uint itemid, out string pbstrMkDocument)
@@ -437,7 +438,28 @@ namespace Wikidown.Vs
             => (int)Microsoft.VisualStudio.OLE.Interop.Constants.OLECMDERR_E_NOTSUPPORTED;
 
         public int ExecCommand(uint itemid, ref Guid pguidCmdGroup, uint nCmdID, uint nCmdexecopt, IntPtr pvaIn, IntPtr pvaOut)
-            => (int)Microsoft.VisualStudio.OLE.Interop.Constants.OLECMDERR_E_NOTSUPPORTED;
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+
+            // Double-click / Enter on a file in Solution Explorer opens it.
+            // Folders fall through so the tree keeps its expand/collapse default.
+            if (pguidCmdGroup == VSConstants.GUID_VsUIHierarchyWindowCmds)
+            {
+                switch (nCmdID)
+                {
+                    case (uint)VSConstants.VsUIHierarchyWindowCmdIds.UIHWCMDID_DoubleClick:
+                    case (uint)VSConstants.VsUIHierarchyWindowCmdIds.UIHWCMDID_EnterKey:
+                        if (itemid != ItemIdRoot &&
+                            _nodes.TryGetValue(itemid, out var node) && !node.IsFolder)
+                        {
+                            var view = VSConstants.LOGVIEWID.Primary_guid;
+                            return OpenItem(itemid, ref view, IntPtr.Zero, out _);
+                        }
+                        break;
+                }
+            }
+            return (int)Microsoft.VisualStudio.OLE.Interop.Constants.OLECMDERR_E_NOTSUPPORTED;
+        }
 
         // ── IPersistFileFormat ───────────────────────────────────────────────
         // The .wikidownproj file is authored by the factory / user and never
