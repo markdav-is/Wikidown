@@ -39,7 +39,7 @@ else
                 {
                     <MudAlert Severity="Severity.Error" Dense="true">@terr</MudAlert>
                 }
-                else if (_pages.Count == 0)
+                else if (_tree.Count == 0)
                 {
                     <MudText Typo="Typo.body2" Color="Color.Default">
                         No pages found at <code>/@_conn.DocsPath</code>.
@@ -48,14 +48,7 @@ else
                 else
                 {
                     <MudNavMenu Class="wd-tree">
-                        @foreach (var p in _pages)
-                        {
-                            <MudNavLink Href="@($"browse{p.ToLinkPath()}")"
-                                        Match="NavLinkMatch.All"
-                                        Icon="@Icons.Material.Filled.Article">
-                                @p.Name.Title
-                            </MudNavLink>
-                        }
+                        <WikiTreeView Nodes="@_tree" Expanded="@_expanded" />
                     </MudNavMenu>
                 }
             </MudPaper>
@@ -188,7 +181,8 @@ else
     [Parameter] public string? Path { get; set; }
 
     private WikiConnection? _conn;
-    private IReadOnlyList<PagePath> _pages = Array.Empty<PagePath>();
+    private IReadOnlyList<NavNode> _tree = Array.Empty<NavNode>();
+    private readonly HashSet<string> _expanded = new(StringComparer.OrdinalIgnoreCase);
     private bool _loadingTree;
     private string? _treeError;
 
@@ -222,7 +216,16 @@ else
         _editMode = false;
         _conflictMessage = null;
         _draftRestored = false;
+        ExpandCurrentPath();
         await LoadPageAsync();
+    }
+
+    private void ExpandCurrentPath()
+    {
+        if (_currentPath is null) return;
+        // Expand every ancestor (and the page itself, so its subpages show)
+        for (var p = _currentPath; !p.IsRoot; p = p.Parent)
+            _expanded.Add(p.ToLinkPath());
     }
 
     private async Task LoadTreeAsync()
@@ -233,12 +236,14 @@ else
         try
         {
             var backend = Backends.For(_conn.Provider);
-            _pages = await backend.WalkAsync(_conn);
+            var snapshot = await backend.WalkAsync(_conn);
+            _tree = NavTree.Build(snapshot.Pages, snapshot.OrderFor);
+            ExpandCurrentPath();
         }
         catch (Exception ex)
         {
             _treeError = $"Tree load failed: {ex.Message}";
-            _pages = Array.Empty<PagePath>();
+            _tree = Array.Empty<NavNode>();
         }
         finally
         {

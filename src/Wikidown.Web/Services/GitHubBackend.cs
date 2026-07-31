@@ -66,7 +66,7 @@ public sealed class GitHubBackend(HttpClient http) : IWikiBackend
         return new RemotePage(page, markdown, item.Sha);
     }
 
-    public async Task<IReadOnlyList<PagePath>> WalkAsync(
+    public async Task<WikiSnapshot> WalkAsync(
         WikiConnection conn, CancellationToken ct = default)
     {
         var branchUrl = $"{ApiBase}/repos/{conn.Owner}/{conn.Repo}/branches/{Uri.EscapeDataString(conn.Branch)}";
@@ -86,17 +86,39 @@ public sealed class GitHubBackend(HttpClient http) : IWikiBackend
 
             var docsPrefix = conn.DocsPath.TrimEnd('/') + "/";
             var pages = new List<PagePath>();
+            var orderBlobs = new List<(string FolderLink, string Sha)>();
             foreach (var entry in tree.Tree)
             {
                 if (entry.Type != "blob") continue;
                 if (!entry.Path.StartsWith(docsPrefix, StringComparison.Ordinal)) continue;
-                if (!entry.Path.EndsWith(".md", StringComparison.OrdinalIgnoreCase)) continue;
 
                 var rel = entry.Path[docsPrefix.Length..];
-                pages.Add(PagePath.Parse("/" + rel));
+                if (rel.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
+                {
+                    pages.Add(PagePath.Parse("/" + rel));
+                }
+                else if (rel == ".order" || rel.EndsWith("/.order", StringComparison.Ordinal))
+                {
+                    var folder = rel == ".order" ? "/" : "/" + rel[..^"/.order".Length];
+                    orderBlobs.Add((folder, entry.Sha));
+                }
             }
             pages.Sort((a, b) => string.CompareOrdinal(a.ToLinkPath(), b.ToLinkPath()));
-            return pages;
+
+            var orders = new Dictionary<string, IReadOnlyList<string>>(StringComparer.OrdinalIgnoreCase);
+            foreach (var (folderLink, sha) in orderBlobs)
+            {
+                var blobUrl = $"{ApiBase}/repos/{conn.Owner}/{conn.Repo}/git/blobs/{sha}";
+                using var blobReq = Authenticated(HttpMethod.Get, blobUrl, conn.Token);
+                using var blobRes = await http.SendAsync(blobReq, ct);
+                if (!blobRes.IsSuccessStatusCode) continue;
+                var blob = await blobRes.Content.ReadFromJsonAsync<GhContent>(cancellationToken: ct);
+                if (blob?.Content is null) continue;
+                var text = Encoding.UTF8.GetString(Convert.FromBase64String(blob.Content.Replace("\n", "")));
+                orders[folderLink] = OrderFile.Parse(text);
+            }
+
+            return new WikiSnapshot(pages, orders);
         }
     }
 

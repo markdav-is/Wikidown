@@ -59,9 +59,10 @@ public sealed class AzureDevOpsBackend(HttpClient http) : IWikiBackend
         return new RemotePage(page, item.Content ?? string.Empty, item.ObjectId);
     }
 
-    public async Task<IReadOnlyList<PagePath>> WalkAsync(
+    public async Task<WikiSnapshot> WalkAsync(
         WikiConnection conn, CancellationToken ct = default)
     {
+        var empty = new WikiSnapshot(Array.Empty<PagePath>(), new Dictionary<string, IReadOnlyList<string>>());
         var scope = "/" + conn.DocsPath.Trim('/');
         var url = $"{ItemsBase(conn)}?scopePath={Uri.EscapeDataString(scope)}" +
                   $"&recursionLevel=Full" +
@@ -70,25 +71,42 @@ public sealed class AzureDevOpsBackend(HttpClient http) : IWikiBackend
         using var req = Authenticated(HttpMethod.Get, url, conn.Token);
         using var res = await http.SendAsync(req, ct);
 
-        if (res.StatusCode == HttpStatusCode.NotFound) return Array.Empty<PagePath>();
+        if (res.StatusCode == HttpStatusCode.NotFound) return empty;
         res.EnsureSuccessStatusCode();
 
         var payload = await res.Content.ReadFromJsonAsync<AdoItemList>(cancellationToken: ct);
-        if (payload?.Value is null) return Array.Empty<PagePath>();
+        if (payload?.Value is null) return empty;
 
         var prefix = scope.TrimEnd('/') + "/";
         var pages = new List<PagePath>();
+        var orderPaths = new List<(string FolderLink, string ItemPath)>();
         foreach (var item in payload.Value)
         {
             if (!string.Equals(item.GitObjectType, "blob", StringComparison.OrdinalIgnoreCase)) continue;
-            if (!item.Path.EndsWith(".md", StringComparison.OrdinalIgnoreCase)) continue;
             if (!item.Path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) continue;
 
             var rel = item.Path[prefix.Length..];
-            pages.Add(PagePath.Parse("/" + rel));
+            if (rel.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
+            {
+                pages.Add(PagePath.Parse("/" + rel));
+            }
+            else if (rel == ".order" || rel.EndsWith("/.order", StringComparison.Ordinal))
+            {
+                var folder = rel == ".order" ? "/" : "/" + rel[..^"/.order".Length];
+                orderPaths.Add((folder, item.Path));
+            }
         }
         pages.Sort((a, b) => string.CompareOrdinal(a.ToLinkPath(), b.ToLinkPath()));
-        return pages;
+
+        var orders = new Dictionary<string, IReadOnlyList<string>>(StringComparer.OrdinalIgnoreCase);
+        foreach (var (folderLink, itemPath) in orderPaths)
+        {
+            var item = await GetItemAsync(conn, itemPath, includeContent: true, ct);
+            if (item?.Content is null) continue;
+            orders[folderLink] = OrderFile.Parse(item.Content);
+        }
+
+        return new WikiSnapshot(pages, orders);
     }
 
     public async Task<CommitResult> WritePageAsync(

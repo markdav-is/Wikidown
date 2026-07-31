@@ -1,0 +1,49 @@
+@using Wikidown.Core
+
+@foreach (var node in Nodes)
+{
+    var link = node.Path.ToLinkPath();
+    var hasKids = node.Children.Count > 0;
+    <div class="wd-tree-row" style="padding-left:@(Depth * 16)px">
+        @if (hasKids)
+        {
+            <MudIconButton Size="Size.Small"
+                           Icon="@(IsExpanded(link) ? Icons.Material.Filled.ExpandMore : Icons.Material.Filled.ChevronRight)"
+                           OnClick="@(() => Toggle(link))" />
+        }
+        else
+        {
+            <span class="wd-tree-spacer"></span>
+        }
+        @if (node.IsPage)
+        {
+            <MudNavLink Href="@($"browse{link}")" Match="NavLinkMatch.All"
+                        Icon="@(hasKids ? Icons.Material.Filled.MenuBook : Icons.Material.Filled.Article)">
+                @node.Title
+            </MudNavLink>
+        }
+        else
+        {
+            <MudNavLink Icon="@Icons.Material.Filled.Folder" OnClick="@(() => Toggle(link))">
+                @node.Title
+            </MudNavLink>
+        }
+    </div>
+    @if (hasKids && IsExpanded(link))
+    {
+        <WikiTreeView Nodes="@node.Children" Depth="@(Depth + 1)" Expanded="@Expanded" />
+    }
+}
+
+@code {
+    [Parameter] public IReadOnlyList<NavNode> Nodes { get; set; } = Array.Empty<NavNode>();
+    [Parameter] public int Depth { get; set; }
+    [Parameter] public HashSet<string> Expanded { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
+    private bool IsExpanded(string link) => Expanded.Contains(link);
+
+    private void Toggle(string link)
+    {
+        if (!Expanded.Add(link)) Expanded.Remove(link);
+    }
+}

@@ -7,6 +7,25 @@ html, body {
     overflow-y: auto;
 }
 
+.wd-tree-row {
+    display: flex;
+    align-items: center;
+}
+
+.wd-tree-row .mud-nav-link {
+    flex: 1 1 auto;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.wd-tree-spacer {
+    display: inline-block;
+    width: 30px;
+    flex: 0 0 30px;
+}
+
 .wd-page-md {
     line-height: 1.6;
 }
