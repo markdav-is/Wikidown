@@ -14,6 +14,7 @@ namespace Wikidown.Vs
     /// </summary>
     [PackageRegistration(UseManagedResourcesOnly = true, AllowsBackgroundLoading = true)]
     [Guid(PackageGuids.PackageGuidString)]
+    [ProvideMenuResource("Menus.ctmenu", 1)]
     [ProvideAutoLoad(VSConstants.UICONTEXT.SolutionExists_string, PackageAutoLoadFlags.BackgroundLoad)]
     [ProvideProjectFactory(
         typeof(WikidownProjectFactory),

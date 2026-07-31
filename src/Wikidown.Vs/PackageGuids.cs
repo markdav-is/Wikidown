@@ -15,5 +15,13 @@ namespace Wikidown.Vs
         /// </summary>
         public const string ProjectTypeGuidString = "6a9c3f4b-d5e8-4f0a-b1c2-345678901bcd";
         public static readonly Guid ProjectType = new Guid(ProjectTypeGuidString);
+
+        /// <summary>Command set for the wiki node context-menu commands (matches WikidownCommands.vsct).</summary>
+        public const string CmdSetGuidString = "8b7f3d5a-2c41-4e8f-9a6b-1d2e3f405162";
+        public static readonly Guid CmdSet = new Guid(CmdSetGuidString);
+
+        public const uint CmdIdMovePageUp    = 0x0100;
+        public const uint CmdIdMovePageDown  = 0x0101;
+        public const uint CmdIdEditPageOrder = 0x0102;
     }
 }

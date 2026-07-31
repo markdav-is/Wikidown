@@ -56,6 +56,18 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Context-menu commands (Move Page Up/Down, Edit Page Order) -->
+    <VSCTCompile Include="WikidownCommands.vsct">
+      <ResourceName>Menus.ctmenu</ResourceName>
+    </VSCTCompile>
+    <!-- The compiled command table merges into the "VSPackage" resource VS's menu loader reads -->
+    <EmbeddedResource Update="VSPackage.resx">
+      <MergeWithCTO>true</MergeWithCTO>
+      <ManifestResourceName>VSPackage</ManifestResourceName>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
     <None Include="ProjectTemplate\WikidownProject.vstemplate" />
     <None Include="ProjectTemplate\wiki.wikidownproj" />
     <None Include="ProjectTemplate\__TemplateIcon.ico" />

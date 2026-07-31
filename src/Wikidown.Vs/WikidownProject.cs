@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Xml.Linq;
 using Microsoft.VisualStudio;
@@ -710,6 +711,8 @@ namespace Wikidown.Vs
             ThreadHelper.ThrowIfNotOnUIThread();
             if (pguidCmdGroup == VSConstants.GUID_VSStandardCommandSet97)
                 return ExecStd97(_contextItemId, nCmdID);
+            if (pguidCmdGroup == PackageGuids.CmdSet)
+                return ExecWikidownCmd(_contextItemId, nCmdID);
             return (int)Microsoft.VisualStudio.OLE.Interop.Constants.OLECMDERR_E_UNKNOWNGROUP;
         }
 
@@ -732,6 +735,20 @@ namespace Wikidown.Vs
                 }
                 if (handledAny) return VSConstants.S_OK;
             }
+
+            if (pguidCmdGroup == PackageGuids.CmdSet && prgCmds != null)
+            {
+                var isRoot = _contextItemId == ItemIdRoot;
+                for (var i = 0; i < cCmds; i++)
+                {
+                    var enable = prgCmds[i].cmdID == PackageGuids.CmdIdEditPageOrder || !isRoot;
+                    prgCmds[i].cmdf = enable
+                        ? (uint)(OLECMDF.OLECMDF_SUPPORTED | OLECMDF.OLECMDF_ENABLED)
+                        : (uint)(OLECMDF.OLECMDF_SUPPORTED | OLECMDF.OLECMDF_INVISIBLE);
+                }
+                return VSConstants.S_OK;
+            }
+
             return (int)Microsoft.VisualStudio.OLE.Interop.Constants.OLECMDERR_E_NOTSUPPORTED;
         }
 
@@ -762,6 +779,106 @@ namespace Wikidown.Vs
                 return VSConstants.E_FAIL;
             }
             return (int)Microsoft.VisualStudio.OLE.Interop.Constants.OLECMDERR_E_NOTSUPPORTED;
+        }
+
+        private int ExecWikidownCmd(uint itemid, uint nCmdID)
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+            try
+            {
+                switch (nCmdID)
+                {
+                    case PackageGuids.CmdIdMovePageUp:
+                        return MovePage(itemid, -1);
+                    case PackageGuids.CmdIdMovePageDown:
+                        return MovePage(itemid, +1);
+                    case PackageGuids.CmdIdEditPageOrder:
+                        return EditPageOrder(itemid);
+                }
+            }
+            catch (Exception ex)
+            {
+                VsShellUtilities.ShowMessageBox(
+                    _serviceProvider, ex.Message, "Wikidown",
+                    OLEMSGICON.OLEMSGICON_CRITICAL, OLEMSGBUTTON.OLEMSGBUTTON_OK, OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
+                return VSConstants.E_FAIL;
+            }
+            return (int)Microsoft.VisualStudio.OLE.Interop.Constants.OLECMDERR_E_NOTSUPPORTED;
+        }
+
+        /// <summary>
+        /// The display order of a folder, fully written out: existing .order
+        /// entries that still exist, then everything unlisted alphabetically.
+        /// Includes bare subfolder names so they can be ordered too.
+        /// </summary>
+        private static List<string> MaterializeOrder(string dir)
+        {
+            var names = new List<string>();
+            foreach (var file in Directory.GetFiles(dir, "*.md"))
+                names.Add(Path.GetFileNameWithoutExtension(file));
+            foreach (var sub in Directory.GetDirectories(dir))
+            {
+                var name = Path.GetFileName(sub);
+                if (!names.Contains(name, StringComparer.OrdinalIgnoreCase)) names.Add(name);
+            }
+
+            var listed = ReadOrderEntries(dir);
+            var result = new List<string>();
+            foreach (var e in listed)
+            {
+                if (names.Contains(e, StringComparer.OrdinalIgnoreCase) &&
+                    !result.Contains(e, StringComparer.OrdinalIgnoreCase))
+                    result.Add(e);
+            }
+            names.Sort(StringComparer.OrdinalIgnoreCase);
+            foreach (var n in names)
+            {
+                if (!result.Contains(n, StringComparer.OrdinalIgnoreCase)) result.Add(n);
+            }
+            return result;
+        }
+
+        private int MovePage(uint itemid, int delta)
+        {
+            if (itemid == ItemIdRoot || !_nodes.TryGetValue(itemid, out var node))
+                return VSConstants.S_OK;
+
+            var dir = Path.GetDirectoryName(node.FullPath);
+            if (string.IsNullOrEmpty(dir)) return VSConstants.S_OK;
+
+            var baseName = node.IsPage
+                ? Path.GetFileNameWithoutExtension(node.FullPath)
+                : Path.GetFileName(node.FullPath);
+
+            var order = MaterializeOrder(dir);
+            var index = order.FindIndex(e => string.Equals(e, baseName, StringComparison.OrdinalIgnoreCase));
+            var target = index + delta;
+            if (index < 0 || target < 0 || target >= order.Count) return VSConstants.S_OK;
+
+            (order[index], order[target]) = (order[target], order[index]);
+            File.WriteAllText(Path.Combine(dir, ".order"), string.Join("\n", order) + "\n");
+
+            RebuildAndNotify();
+            return VSConstants.S_OK;
+        }
+
+        private int EditPageOrder(uint itemid)
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+            var dir = GetTargetDirectory(itemid);
+            Directory.CreateDirectory(dir);
+
+            var orderPath = Path.Combine(dir, ".order");
+            if (!File.Exists(orderPath))
+            {
+                var order = MaterializeOrder(dir);
+                File.WriteAllText(orderPath, order.Count == 0 ? "" : string.Join("\n", order) + "\n");
+            }
+
+            // .order is not a hierarchy item, so this opens it as a loose file
+            // (no OpenItem re-entrancy).
+            VsShellUtilities.OpenDocument(_serviceProvider, orderPath);
+            return VSConstants.S_OK;
         }
 
         // ── add page commands ────────────────────────────────────────────────

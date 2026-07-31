@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CommandTable xmlns="http://schemas.microsoft.com/VisualStudio/2005-10-18/CommandTable">
+  <Extern href="stdidcmd.h" />
+  <Extern href="vsshlids.h" />
+
+  <Commands package="guidWikidownPackage">
+    <Groups>
+      <!-- Primary parent is the item context menu; placements add the rest -->
+      <Group guid="guidWikidownCmdSet" id="WikiNodeGroup" priority="0x0200">
+        <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_ITEMNODE" />
+      </Group>
+    </Groups>
+
+    <Buttons>
+      <!--
+        DefaultInvisible + DynamicVisibility: these live on the shared
+        standard context menus, so they only appear when the Wikidown
+        hierarchy's command target enables them.
+      -->
+      <Button guid="guidWikidownCmdSet" id="cmdidMovePageUp" priority="0x0100" type="Button">
+        <Parent guid="guidWikidownCmdSet" id="WikiNodeGroup" />
+        <CommandFlag>DefaultInvisible</CommandFlag>
+        <CommandFlag>DefaultDisabled</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <Strings>
+          <ButtonText>Move Page Up</ButtonText>
+        </Strings>
+      </Button>
+      <Button guid="guidWikidownCmdSet" id="cmdidMovePageDown" priority="0x0101" type="Button">
+        <Parent guid="guidWikidownCmdSet" id="WikiNodeGroup" />
+        <CommandFlag>DefaultInvisible</CommandFlag>
+        <CommandFlag>DefaultDisabled</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <Strings>
+          <ButtonText>Move Page Down</ButtonText>
+        </Strings>
+      </Button>
+      <Button guid="guidWikidownCmdSet" id="cmdidEditPageOrder" priority="0x0102" type="Button">
+        <Parent guid="guidWikidownCmdSet" id="WikiNodeGroup" />
+        <CommandFlag>DefaultInvisible</CommandFlag>
+        <CommandFlag>DefaultDisabled</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <Strings>
+          <ButtonText>Edit Page Order</ButtonText>
+        </Strings>
+      </Button>
+    </Buttons>
+  </Commands>
+
+  <CommandPlacements>
+    <CommandPlacement guid="guidWikidownCmdSet" id="WikiNodeGroup" priority="0x0200">
+      <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_FOLDERNODE" />
+    </CommandPlacement>
+    <CommandPlacement guid="guidWikidownCmdSet" id="WikiNodeGroup" priority="0x0200">
+      <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_PROJNODE" />
+    </CommandPlacement>
+  </CommandPlacements>
+
+  <Symbols>
+    <GuidSymbol name="guidWikidownPackage" value="{5f8b2e3a-c4d7-4e9f-a0b1-234567890abc}" />
+    <GuidSymbol name="guidWikidownCmdSet" value="{8b7f3d5a-2c41-4e8f-9a6b-1d2e3f405162}">
+      <IDSymbol name="WikiNodeGroup" value="0x1020" />
+      <IDSymbol name="cmdidMovePageUp" value="0x0100" />
+      <IDSymbol name="cmdidMovePageDown" value="0x0101" />
+      <IDSymbol name="cmdidEditPageOrder" value="0x0102" />
+    </GuidSymbol>
+  </Symbols>
+</CommandTable>
