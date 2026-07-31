@@ -47,10 +47,11 @@ file. Edit the file to point to a different location:
 - Right-click the project, a folder, or a page for the standard context menus,
   including the **Git** submenu.
 - **Add → New Item** prompts for a page name, creates the page, and records it
-  in `.order`; **Add → Existing Item** copies `.md` files in. Both stay
-  consistent with the `wikidown` CLI and the `wiki_*` MCP tools, which remain
-  fully usable side by side — the tree refreshes live when they change files
-  or reorder `.order`.
+  in `.order`; **Add → Existing Item** copies `.md` files in; **Add → New
+  Folder** creates a folder plus a same-named page beside it, following the
+  CLI convention. All of it stays consistent with the `wikidown` CLI and the
+  `wiki_*` MCP tools, which remain fully usable side by side — the tree
+  refreshes live when they change files or reorder `.order`.
 - The project node is **display-only** — it never appears in Build, Rebuild, or
   Clean, and adds no compile items to the solution.
 
