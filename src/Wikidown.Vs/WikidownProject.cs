@@ -570,6 +570,12 @@ namespace Wikidown.Vs
 
         private uint _contextItemId = ItemIdRoot;
 
+        [StructLayout(LayoutKind.Sequential)]
+        private struct Win32Point { public int X; public int Y; }
+
+        [DllImport("user32.dll")]
+        private static extern bool GetCursorPos(out Win32Point lpPoint);
+
         private int ShowNodeContextMenu(uint itemid, IntPtr pvaIn)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
@@ -582,13 +588,26 @@ namespace Wikidown.Vs
                 : node.IsFolder ? IDM_VS_CTXT_FOLDERNODE
                 : IDM_VS_CTXT_ITEMNODE;
 
-            // pvaIn is a packed DWORD: x in the low word, y in the high word
+            // pvaIn is a variant holding a packed DWORD: x in the low word,
+            // y in the high word. The boxed type varies (UInt32 vs Int32), so
+            // convert defensively and fall back to the cursor position.
             var pnts = new POINTS[1];
+            var gotPoint = false;
             if (pvaIn != IntPtr.Zero)
             {
-                var packed = unchecked((uint)(int)Marshal.GetObjectForNativeVariant(pvaIn));
-                pnts[0].x = unchecked((short)(packed & 0xffff));
-                pnts[0].y = unchecked((short)((packed >> 16) & 0xffff));
+                try
+                {
+                    var packed = unchecked((uint)Convert.ToInt64(Marshal.GetObjectForNativeVariant(pvaIn)));
+                    pnts[0].x = unchecked((short)(packed & 0xffff));
+                    pnts[0].y = unchecked((short)((packed >> 16) & 0xffff));
+                    gotPoint = true;
+                }
+                catch { /* fall through to cursor position */ }
+            }
+            if (!gotPoint && GetCursorPos(out var cursor))
+            {
+                pnts[0].x = (short)cursor.X;
+                pnts[0].y = (short)cursor.Y;
             }
 
             var uiShell = _serviceProvider.GetService(typeof(SVsUIShell)) as IVsUIShell;
