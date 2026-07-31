@@ -385,18 +385,39 @@ namespace Wikidown.Vs
             if (itemid == ItemIdRoot || !_nodes.TryGetValue(itemid, out var node) || node.IsFolder)
                 return VSConstants.E_NOTIMPL;
 
-            // Not OpenDocumentViaProject — that routes back into this project's
-            // OpenItem. Open with VS's standard editor for the file type.
+            // If the document is already open, just activate it (RDT lookup,
+            // does not route through the project).
+            if (VsShellUtilities.IsDocumentOpen(_serviceProvider, node.FullPath, Guid.Empty, out _, out _, out ppWindowFrame))
+            {
+                ppWindowFrame?.Show();
+                return VSConstants.S_OK;
+            }
+
+            // OpenStandardEditor opens the editor directly. Anything that asks
+            // "which project owns this file?" (OpenDocumentViaProject and the
+            // VsShellUtilities.OpenDocument wrapper around it) finds this
+            // hierarchy via IsDocumentInProject and re-enters OpenItem forever.
+            var openDoc = _serviceProvider.GetService(typeof(SVsUIShellOpenDocument)) as IVsUIShellOpenDocument;
+            if (openDoc == null) return VSConstants.E_FAIL;
+
+            var oleSp = _serviceProvider.GetService(typeof(Microsoft.VisualStudio.OLE.Interop.IServiceProvider))
+                as Microsoft.VisualStudio.OLE.Interop.IServiceProvider;
+
             var logicalView = rguidLogicalView == Guid.Empty ? VSConstants.LOGVIEWID.Primary_guid : rguidLogicalView;
-            VsShellUtilities.OpenDocument(
-                _serviceProvider,
+            var hr = openDoc.OpenStandardEditor(
+                (uint)__VSOSEFLAGS.OSE_ChooseBestStdEditor,
                 node.FullPath,
-                logicalView,
-                out _,
-                out _,
+                ref logicalView,
+                "%3",
+                this,
+                itemid,
+                punkDocDataExisting,
+                oleSp,
                 out ppWindowFrame);
-            ppWindowFrame?.Show();
-            return ppWindowFrame != null ? VSConstants.S_OK : VSConstants.E_FAIL;
+
+            if (ErrorHandler.Succeeded(hr))
+                ppWindowFrame?.Show();
+            return hr;
         }
 
         public int GetMkDocument(uint itemid, out string pbstrMkDocument)
