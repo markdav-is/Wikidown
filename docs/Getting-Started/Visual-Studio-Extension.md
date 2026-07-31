@@ -47,13 +47,21 @@ file. Edit the file to point to a different location:
   pages sort by `.order` (listed entries first, then alphabetical).
 - Double-clicking a page opens it in VS's built-in markdown editor.
 - Right-click the project, a folder, or a page for the standard context menus,
-  including the **Git** submenu.
-- **Add → New Item** prompts for a page name, creates the page, and records it
-  in `.order`; **Add → Existing Item** copies `.md` files in; **Add → New
-  Folder** creates a folder plus a same-named page beside it, following the
-  CLI convention. All of it stays consistent with the `wikidown` CLI and the
-  `wiki_*` MCP tools, which remain fully usable side by side — the tree
-  refreshes live when they change files or reorder `.order`.
+  including the **Git** submenu, plus wiki-native commands:
+  - **Add Page…** prompts for a name, creates the page, and records it in
+    `.order`.
+  - **Add Folder…** creates a folder plus a same-named page beside it,
+    following the CLI's subpage convention.
+  - **Add Existing Pages…** copies `.md` files in and records them.
+  - **Move Page Up / Move Page Down** reorder the page within its folder's
+    `.order`.
+  - **Edit Page Order** opens the folder's `.order` in the editor (creating it
+    from the current display order if missing).
+  - **Delete Page** (a page and, for pages with children, its subpages) and
+    **Delete Folder** confirm and then delete — your git history is the undo.
+- Everything stays consistent with the `wikidown` CLI and the `wiki_*` MCP
+  tools, which remain fully usable side by side — the tree refreshes live when
+  they change files or reorder `.order`.
 - The project node is **display-only** — it never appears in Build, Rebuild, or
   Clean, and adds no compile items to the solution.
 
