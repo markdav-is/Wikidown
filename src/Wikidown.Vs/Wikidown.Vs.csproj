@@ -47,6 +47,8 @@
     <Reference Include="WindowsBase" />
     <!-- Project node icon -->
     <Reference Include="System.Drawing" />
+    <!-- Recycle-Bin deletes for Delete Page/Folder -->
+    <Reference Include="Microsoft.VisualBasic" />
   </ItemGroup>
 
   <ItemGroup>

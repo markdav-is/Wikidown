@@ -6,7 +6,13 @@
   <Commands package="guidWikidownPackage">
     <Groups>
       <!-- Primary parent is the item context menu; placements add the rest -->
+      <Group guid="guidWikidownCmdSet" id="WikiAddGroup" priority="0x0190">
+        <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_ITEMNODE" />
+      </Group>
       <Group guid="guidWikidownCmdSet" id="WikiNodeGroup" priority="0x0200">
+        <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_ITEMNODE" />
+      </Group>
+      <Group guid="guidWikidownCmdSet" id="WikiDeleteGroup" priority="0x0210">
         <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_ITEMNODE" />
       </Group>
     </Groups>
@@ -17,6 +23,51 @@
         standard context menus, so they only appear when the Wikidown
         hierarchy's command target enables them.
       -->
+      <Button guid="guidWikidownCmdSet" id="cmdidAddPage" priority="0x0100" type="Button">
+        <Parent guid="guidWikidownCmdSet" id="WikiAddGroup" />
+        <CommandFlag>DefaultInvisible</CommandFlag>
+        <CommandFlag>DefaultDisabled</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <Strings>
+          <ButtonText>Add Page...</ButtonText>
+        </Strings>
+      </Button>
+      <Button guid="guidWikidownCmdSet" id="cmdidAddFolder" priority="0x0101" type="Button">
+        <Parent guid="guidWikidownCmdSet" id="WikiAddGroup" />
+        <CommandFlag>DefaultInvisible</CommandFlag>
+        <CommandFlag>DefaultDisabled</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <Strings>
+          <ButtonText>Add Folder...</ButtonText>
+        </Strings>
+      </Button>
+      <Button guid="guidWikidownCmdSet" id="cmdidAddExistingPages" priority="0x0102" type="Button">
+        <Parent guid="guidWikidownCmdSet" id="WikiAddGroup" />
+        <CommandFlag>DefaultInvisible</CommandFlag>
+        <CommandFlag>DefaultDisabled</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <Strings>
+          <ButtonText>Add Existing Pages...</ButtonText>
+        </Strings>
+      </Button>
+      <Button guid="guidWikidownCmdSet" id="cmdidDeletePage" priority="0x0100" type="Button">
+        <Parent guid="guidWikidownCmdSet" id="WikiDeleteGroup" />
+        <CommandFlag>DefaultInvisible</CommandFlag>
+        <CommandFlag>DefaultDisabled</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <Strings>
+          <ButtonText>Delete Page</ButtonText>
+        </Strings>
+      </Button>
+      <Button guid="guidWikidownCmdSet" id="cmdidDeleteFolder" priority="0x0101" type="Button">
+        <Parent guid="guidWikidownCmdSet" id="WikiDeleteGroup" />
+        <CommandFlag>DefaultInvisible</CommandFlag>
+        <CommandFlag>DefaultDisabled</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <Strings>
+          <ButtonText>Delete Folder</ButtonText>
+        </Strings>
+      </Button>
       <Button guid="guidWikidownCmdSet" id="cmdidMovePageUp" priority="0x0100" type="Button">
         <Parent guid="guidWikidownCmdSet" id="WikiNodeGroup" />
         <CommandFlag>DefaultInvisible</CommandFlag>
@@ -48,11 +99,20 @@
   </Commands>
 
   <CommandPlacements>
+    <CommandPlacement guid="guidWikidownCmdSet" id="WikiAddGroup" priority="0x0190">
+      <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_FOLDERNODE" />
+    </CommandPlacement>
+    <CommandPlacement guid="guidWikidownCmdSet" id="WikiAddGroup" priority="0x0190">
+      <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_PROJNODE" />
+    </CommandPlacement>
     <CommandPlacement guid="guidWikidownCmdSet" id="WikiNodeGroup" priority="0x0200">
       <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_FOLDERNODE" />
     </CommandPlacement>
     <CommandPlacement guid="guidWikidownCmdSet" id="WikiNodeGroup" priority="0x0200">
       <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_PROJNODE" />
+    </CommandPlacement>
+    <CommandPlacement guid="guidWikidownCmdSet" id="WikiDeleteGroup" priority="0x0210">
+      <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_FOLDERNODE" />
     </CommandPlacement>
   </CommandPlacements>
 
@@ -60,9 +120,16 @@
     <GuidSymbol name="guidWikidownPackage" value="{5f8b2e3a-c4d7-4e9f-a0b1-234567890abc}" />
     <GuidSymbol name="guidWikidownCmdSet" value="{8b7f3d5a-2c41-4e8f-9a6b-1d2e3f405162}">
       <IDSymbol name="WikiNodeGroup" value="0x1020" />
+      <IDSymbol name="WikiAddGroup" value="0x1021" />
+      <IDSymbol name="WikiDeleteGroup" value="0x1022" />
       <IDSymbol name="cmdidMovePageUp" value="0x0100" />
       <IDSymbol name="cmdidMovePageDown" value="0x0101" />
       <IDSymbol name="cmdidEditPageOrder" value="0x0102" />
+      <IDSymbol name="cmdidAddPage" value="0x0103" />
+      <IDSymbol name="cmdidAddFolder" value="0x0104" />
+      <IDSymbol name="cmdidAddExistingPages" value="0x0105" />
+      <IDSymbol name="cmdidDeletePage" value="0x0106" />
+      <IDSymbol name="cmdidDeleteFolder" value="0x0107" />
     </GuidSymbol>
   </Symbols>
 </CommandTable>

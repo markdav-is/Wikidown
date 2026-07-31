@@ -624,8 +624,8 @@ namespace Wikidown.Vs
                 }
             }
 
-            if (pguidCmdGroup == VSConstants.GUID_VSStandardCommandSet97)
-                return ExecStd97(itemid, nCmdID);
+            if (pguidCmdGroup == PackageGuids.CmdSet)
+                return ExecWikidownCmd(itemid, nCmdID);
 
             return (int)Microsoft.VisualStudio.OLE.Interop.Constants.OLECMDERR_E_NOTSUPPORTED;
         }
@@ -709,8 +709,6 @@ namespace Wikidown.Vs
         public int Exec(ref Guid pguidCmdGroup, uint nCmdID, uint nCmdexecopt, IntPtr pvaIn, IntPtr pvaOut)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
-            if (pguidCmdGroup == VSConstants.GUID_VSStandardCommandSet97)
-                return ExecStd97(_contextItemId, nCmdID);
             if (pguidCmdGroup == PackageGuids.CmdSet)
                 return ExecWikidownCmd(_contextItemId, nCmdID);
             return (int)Microsoft.VisualStudio.OLE.Interop.Constants.OLECMDERR_E_UNKNOWNGROUP;
@@ -718,66 +716,44 @@ namespace Wikidown.Vs
 
         private int QueryStatusInternal(ref Guid pguidCmdGroup, uint cCmds, OLECMD[] prgCmds)
         {
-            if (pguidCmdGroup == VSConstants.GUID_VSStandardCommandSet97 && prgCmds != null)
-            {
-                var handledAny = false;
-                for (var i = 0; i < cCmds; i++)
-                {
-                    switch ((VSConstants.VSStd97CmdID)prgCmds[i].cmdID)
-                    {
-                        case VSConstants.VSStd97CmdID.AddNewItem:
-                        case VSConstants.VSStd97CmdID.AddExistingItem:
-                        case VSConstants.VSStd97CmdID.NewFolder:
-                            prgCmds[i].cmdf = (uint)(OLECMDF.OLECMDF_SUPPORTED | OLECMDF.OLECMDF_ENABLED);
-                            handledAny = true;
-                            break;
-                    }
-                }
-                if (handledAny) return VSConstants.S_OK;
-            }
-
             if (pguidCmdGroup == PackageGuids.CmdSet && prgCmds != null)
             {
                 var isRoot = _contextItemId == ItemIdRoot;
+                Node node = null;
+                if (!isRoot) _nodes.TryGetValue(_contextItemId, out node);
+
                 for (var i = 0; i < cCmds; i++)
                 {
-                    var enable = prgCmds[i].cmdID == PackageGuids.CmdIdEditPageOrder || !isRoot;
-                    prgCmds[i].cmdf = enable
+                    bool visible;
+                    switch (prgCmds[i].cmdID)
+                    {
+                        case PackageGuids.CmdIdAddPage:
+                        case PackageGuids.CmdIdAddFolder:
+                        case PackageGuids.CmdIdAddExistingPages:
+                        case PackageGuids.CmdIdEditPageOrder:
+                            visible = true;
+                            break;
+                        case PackageGuids.CmdIdMovePageUp:
+                        case PackageGuids.CmdIdMovePageDown:
+                            visible = !isRoot;
+                            break;
+                        case PackageGuids.CmdIdDeletePage:
+                            visible = node != null && node.IsPage;
+                            break;
+                        case PackageGuids.CmdIdDeleteFolder:
+                            visible = node != null && node.IsFolder && !node.IsPage;
+                            break;
+                        default:
+                            visible = false;
+                            break;
+                    }
+                    prgCmds[i].cmdf = visible
                         ? (uint)(OLECMDF.OLECMDF_SUPPORTED | OLECMDF.OLECMDF_ENABLED)
                         : (uint)(OLECMDF.OLECMDF_SUPPORTED | OLECMDF.OLECMDF_INVISIBLE);
                 }
                 return VSConstants.S_OK;
             }
 
-            return (int)Microsoft.VisualStudio.OLE.Interop.Constants.OLECMDERR_E_NOTSUPPORTED;
-        }
-
-        private int ExecStd97(uint itemid, uint nCmdID)
-        {
-            ThreadHelper.ThrowIfNotOnUIThread();
-            try
-            {
-                switch ((VSConstants.VSStd97CmdID)nCmdID)
-                {
-                    case VSConstants.VSStd97CmdID.AddNewItem:
-                        return AddNewPage(itemid);
-                    case VSConstants.VSStd97CmdID.AddExistingItem:
-                        return AddExistingPages(itemid);
-                    case VSConstants.VSStd97CmdID.NewFolder:
-                        return AddNewFolder(itemid);
-                }
-            }
-            catch (Exception ex)
-            {
-                VsShellUtilities.ShowMessageBox(
-                    _serviceProvider,
-                    ex.Message,
-                    "Wikidown",
-                    OLEMSGICON.OLEMSGICON_CRITICAL,
-                    OLEMSGBUTTON.OLEMSGBUTTON_OK,
-                    OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
-                return VSConstants.E_FAIL;
-            }
             return (int)Microsoft.VisualStudio.OLE.Interop.Constants.OLECMDERR_E_NOTSUPPORTED;
         }
 
@@ -794,6 +770,15 @@ namespace Wikidown.Vs
                         return MovePage(itemid, +1);
                     case PackageGuids.CmdIdEditPageOrder:
                         return EditPageOrder(itemid);
+                    case PackageGuids.CmdIdAddPage:
+                        return AddNewPage(itemid);
+                    case PackageGuids.CmdIdAddFolder:
+                        return AddNewFolder(itemid);
+                    case PackageGuids.CmdIdAddExistingPages:
+                        return AddExistingPages(itemid);
+                    case PackageGuids.CmdIdDeletePage:
+                    case PackageGuids.CmdIdDeleteFolder:
+                        return DeleteNode(itemid);
                 }
             }
             catch (Exception ex)
@@ -857,6 +842,58 @@ namespace Wikidown.Vs
 
             (order[index], order[target]) = (order[target], order[index]);
             File.WriteAllText(Path.Combine(dir, ".order"), string.Join("\n", order) + "\n");
+
+            RebuildAndNotify();
+            return VSConstants.S_OK;
+        }
+
+        private int DeleteNode(uint itemid)
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+            if (itemid == ItemIdRoot || !_nodes.TryGetValue(itemid, out var node))
+                return VSConstants.S_OK;
+
+            string question;
+            if (node.IsPage && node.ChildDir != null)
+                question = $"Delete page '{node.Name}' and all of its subpages?";
+            else if (node.IsPage)
+                question = $"Delete page '{node.Name}'?";
+            else
+                question = $"Delete folder '{node.Name}' and its contents?";
+
+            var choice = VsShellUtilities.ShowMessageBox(
+                _serviceProvider,
+                question + "\n\nThe files are moved to the Recycle Bin.",
+                "Wikidown",
+                OLEMSGICON.OLEMSGICON_WARNING,
+                OLEMSGBUTTON.OLEMSGBUTTON_YESNO,
+                OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_SECOND);
+            if (choice != 6) return VSConstants.S_OK; // IDYES
+
+            if (node.IsPage && File.Exists(node.FullPath))
+            {
+                Microsoft.VisualBasic.FileIO.FileSystem.DeleteFile(
+                    node.FullPath,
+                    Microsoft.VisualBasic.FileIO.UIOption.OnlyErrorDialogs,
+                    Microsoft.VisualBasic.FileIO.RecycleOption.SendToRecycleBin);
+            }
+            var dirToDelete = node.IsPage ? node.ChildDir : node.FullPath;
+            if (dirToDelete != null && Directory.Exists(dirToDelete))
+            {
+                Microsoft.VisualBasic.FileIO.FileSystem.DeleteDirectory(
+                    dirToDelete,
+                    Microsoft.VisualBasic.FileIO.UIOption.OnlyErrorDialogs,
+                    Microsoft.VisualBasic.FileIO.RecycleOption.SendToRecycleBin);
+            }
+
+            // Drop the entry from .order (materializing post-delete excludes it)
+            var parentDir = Path.GetDirectoryName(node.FullPath);
+            if (!string.IsNullOrEmpty(parentDir) && File.Exists(Path.Combine(parentDir, ".order")))
+            {
+                var order = MaterializeOrder(parentDir);
+                File.WriteAllText(Path.Combine(parentDir, ".order"),
+                    order.Count == 0 ? "" : string.Join("\n", order) + "\n");
+            }
 
             RebuildAndNotify();
             return VSConstants.S_OK;
