@@ -7,13 +7,15 @@ Welcome to Wikidown. This folder is itself a Wikidown-format wiki.
 - Page file on disk: `Getting-Started.md`; rendered title: `Getting Started`.
 - Subpages go in a folder with the same base name next to the page file.
 - Ordering lives in `.order` — one page base-name per line.
-- Links use the title path: `[Format](/Getting-Started/Format)`.
+- Body links are relative file paths (with the `.md` extension), not
+  absolute title paths — see [Format](Getting-Started/Format.md) for the
+  full rule.
 
 ## Next
 
-- [Format](/Getting-Started/Format) — full on-disk format reference
-- [Visual Studio Extension](/Getting-Started/Visual-Studio-Extension) — add a Wikidown project in VS 2022+
-- [CLI](/CLI) — `wikidown` dotnet tool
-- [MCP Server](/MCP-Server) — `wikidown-mcp` for AI agents
-- [Editor](/Editor) — Blazor WASM browser editor
-- [Agents](/Agents) — drop-in Claude + Copilot configs
+- [Format](Getting-Started/Format.md) — full on-disk format reference
+- [Visual Studio Extension](Getting-Started/Visual-Studio-Extension.md) — add a Wikidown project in VS 2022+
+- [CLI](CLI.md) — `wikidown` dotnet tool
+- [MCP Server](MCP-Server.md) — `wikidown-mcp` for AI agents
+- [Editor](Editor.md) — Blazor WASM browser editor
+- [Agents](Agents.md) — drop-in Claude + Copilot configs

@@ -1,7 +1,7 @@
 # Agents
 
 Wikidown ships drop-in configs so AI coding assistants can maintain your wiki
-through the [MCP Server](/MCP-Server) without you wiring anything up by hand.
+through the [MCP Server](MCP-Server.md) without you wiring anything up by hand.
 
 ## Shared skill
 
@@ -39,7 +39,7 @@ layered on top of the shared skill:
 
 ## Install
 
-The recommended install is the [CLI](/CLI):
+The recommended install is the [CLI](CLI.md):
 
 ```sh
 dotnet tool install -g Wikidown.Cli

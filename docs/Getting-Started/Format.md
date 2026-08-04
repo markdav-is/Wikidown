@@ -40,12 +40,31 @@ If a page exists in the folder but is not listed in the `.order` file, it is typ
 
 ## 4. Internal Links
 
-Internal links between wiki pages must use the **title path**, not the relative file path. This abstracts away the `.md` extension and the hyphenated filenames, making the raw markdown much easier to read.
+Internal links between wiki pages must be **relative file paths**, not
+absolute title paths. GitHub resolves an absolute path like
+`/Architecture/Data-Model` against the *repository* root, not the wiki root,
+so a link written that way 404s when the page is viewed directly on
+github.com. A relative path resolves correctly both on GitHub and in
+Wikidown-aware renderers.
 
-*   **Correct:** `[Read the Data Model](/Architecture/Data-Model)`
-*   **Incorrect:** `[Read the Data Model](./Architecture/Data-Model.md)`
+Write the link relative to the **linking page's own folder**, adjusted for
+depth, and include the `.md` extension:
 
-The leading slash `/` indicates the root of the wiki (typically the `/docs` folder). Relative title paths (e.g., `[Data Model](Data-Model)`) are also supported for linking to sibling pages.
+*   **Correct (sibling page):** `[Read the Data Model](Data-Model.md)`
+*   **Correct (page in a different folder):** `[Read the Data Model](../Architecture/Data-Model.md)`
+*   **Incorrect:** `[Read the Data Model](/Architecture/Data-Model)`
+
+Images and other repo assets follow the same rule, e.g.
+`![map](../.attachments/map.png)`.
+
+Run `wikidown check-links` (see [CLI](../CLI.md)) to walk every page and
+verify that relative links and image references resolve to real files; by
+default it also flags any absolute title-path links left in page bodies.
+
+This rule only applies to links **inside page bodies**. Addressing a page
+through a tool or the CLI — e.g. `wikidown read --path /Getting-Started/Format`,
+`wiki_read --path /Getting-Started/Format` — still uses the absolute title
+path, since that's a tool argument rather than a rendered link.
 
 ## 5. Markdown Dialect
 

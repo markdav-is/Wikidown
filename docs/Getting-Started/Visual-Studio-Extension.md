@@ -76,6 +76,6 @@ EndProject
 
 ## Related
 
-- [CLI](/CLI) — `wikidown` dotnet tool for editing from the terminal or a CI pipeline.
-- [MCP Server](/MCP-Server) — stdio MCP server for AI agents (Claude, Copilot).
-- [Editor](/Editor) — browser-based Blazor editor that commits directly to your repo.
+- [CLI](../CLI.md) — `wikidown` dotnet tool for editing from the terminal or a CI pipeline.
+- [MCP Server](../MCP-Server.md) — stdio MCP server for AI agents (Claude, Copilot).
+- [Editor](../Editor.md) — browser-based Blazor editor that commits directly to your repo.

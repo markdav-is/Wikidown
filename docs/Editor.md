@@ -39,7 +39,7 @@ treats `?code=` as a reserved function-key candidate and rejects requests
 that carry it with a pre-dispatch HTTP 500 — even on `AuthorizationLevel.Anonymous`
 routes. Since GitHub's OAuth redirect always appends `?code=…`, the callback
 URL has to land somewhere other than `/api/*`. See
-[`/Meta/Vibing-Phase-Recap`](/Meta/Vibing-Phase-Recap) for the war story.
+[Vibing Phase Recap](Meta/Vibing-Phase-Recap.md) for the war story.
 
 A "Use a PAT instead" toggle on the same page is kept as a fallback.
 

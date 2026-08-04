@@ -23,15 +23,23 @@ Selected in this order:
 - `wiki_read` — read a page
 - `wiki_write` — overwrite a page
 - `wiki_new` — create a new page
-- `wiki_move` — rename or move a page (with subpages)
+- `wiki_move` — rename or move a page (with subpages). Rewrites inbound links
+  from every other page that pointed at the old path, and rewrites the moved
+  page's own relative links and images if the move changed its folder depth,
+  reporting a count and a per-link list of what changed.
 - `wiki_delete` — delete a page (optionally recursive)
 - `wiki_reorder` — rewrite a folder's `.order`
 - `wiki_search` — search page bodies
 - `wiki_walk` — depth-first walk of every page
+
+There's no `wiki_check_links` tool yet — run `wikidown check-links` from the
+CLI (see [CLI](CLI.md)) to validate that relative links/images resolve and
+that page bodies don't contain absolute title-path links, which 404 when a
+page is viewed directly on github.com.
 
 ## Wiring it in
 
 Sample configs for Claude Code (`.mcp.json`) and Claude Desktop live in
 [`samples/mcp/`](https://github.com/markdav-is/Wikidown/tree/main/samples/mcp)
 in the repo. AI agents should prefer these tools over raw file edits so
-`.order` files stay consistent.
+`.order` files and internal links stay consistent.
