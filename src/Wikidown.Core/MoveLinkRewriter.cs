@@ -42,6 +42,13 @@ public static partial class MoveLinkRewriter
 
             for (var i = 0; i < lines.Length; i++)
             {
+                // WikiRepository.Move fully regenerates the breadcrumb line for
+                // every moved page (it's a structural ancestor summary, not a
+                // patchable link) — patching it here would be redundant and
+                // would misreport a "rewrite" that gets immediately discarded.
+                if (lines[i].TrimEnd('\r').EndsWith(Breadcrumb.Marker, StringComparison.Ordinal))
+                    continue;
+
                 var lineNumber = i + 1;
                 lines[i] = LinkChecker.LinkTarget().Replace(lines[i], match =>
                 {

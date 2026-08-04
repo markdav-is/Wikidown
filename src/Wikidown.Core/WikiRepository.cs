@@ -34,7 +34,8 @@ public sealed class WikiRepository
         var file = ResolveFile(page.Path);
         var dir = System.IO.Path.GetDirectoryName(file)!;
         Directory.CreateDirectory(dir);
-        File.WriteAllText(file, NormalizeNewlines(page.Markdown));
+        var content = Breadcrumb.Inject(page.Path, page.Markdown);
+        File.WriteAllText(file, NormalizeNewlines(content));
         EnsureOrderIncludes(page.Path);
     }
 
@@ -80,6 +81,21 @@ public sealed class WikiRepository
 
         RemoveFromOrder(from);
         EnsureOrderIncludes(to);
+
+        RefreshBreadcrumb(to);
+        foreach (var descendant in Walk(to)) RefreshBreadcrumb(descendant);
+    }
+
+    // The breadcrumb is a structural summary of a page's ancestor chain, not
+    // a link that can be patched in place — a move can change which
+    // ancestors a page has, not just how many "../" hops reach them. So it
+    // is always fully regenerated for every moved page, independent of
+    // MoveLinkRewriter (which only rewrites existing link targets).
+    private void RefreshBreadcrumb(PagePath page)
+    {
+        var file = ResolveFile(page);
+        var content = File.ReadAllText(file);
+        File.WriteAllText(file, NormalizeNewlines(Breadcrumb.Inject(page, content)));
     }
 
     public IReadOnlyList<PagePath> ListChildren(PagePath parent)
