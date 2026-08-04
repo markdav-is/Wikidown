@@ -71,8 +71,9 @@ public static class CommandRunner
         w.WriteLine("  delete   --path /P [--recursive]             delete a page (and optionally subpages)");
         w.WriteLine("  reorder  --folder /P --names a,b,c           rewrite .order for a folder");
         w.WriteLine("  search   --query <text> [--case-sensitive]   search all page bodies");
-        w.WriteLine("  check-links  [--no-absolute-check]           validate relative links/images;");
-        w.WriteLine("               also flags absolute title-path body links unless disabled");
+        w.WriteLine("  check-links  [--no-absolute-check] [--no-index-check]  validate relative");
+        w.WriteLine("               links/images; also flags absolute title-path body links and");
+        w.WriteLine("               folders with a missing or under-linking index page, unless disabled");
         w.WriteLine("  init     [--agents claude|copilot|all|none] [--force]");
         w.WriteLine("           seed the wiki and install AI agent configs (Claude Code +");
         w.WriteLine("           GitHub Copilot) in the folder containing the wiki root");

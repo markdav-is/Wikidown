@@ -103,7 +103,9 @@ public static class Commands
     public static int CheckLinks(WikiRepository repo, ParsedArgs args, TextWriter w)
     {
         var flagAbsolute = !args.Flag("no-absolute-check");
+        var checkIndex = !args.Flag("no-index-check");
         var issues = 0;
+
         foreach (var issue in LinkChecker.Check(repo, flagAbsolute))
         {
             var reason = issue.Kind == LinkIssueKind.AbsoluteTitlePath
@@ -112,6 +114,19 @@ public static class Commands
             w.WriteLine($"{issue.Page.ToLinkPath()}:{issue.LineNumber} -> {issue.Target}  ({reason})");
             issues++;
         }
+
+        if (checkIndex)
+        {
+            foreach (var issue in IndexChecker.Check(repo))
+            {
+                if (issue.Kind == IndexIssueKind.MissingParentPage)
+                    w.WriteLine($"{issue.Folder.ToLinkPath()} -> (no index page {issue.Folder.Name.FileName})");
+                else
+                    w.WriteLine($"{issue.Folder.ToLinkPath()} -> {issue.Child!.ToLinkPath()}  (not linked from parent)");
+                issues++;
+            }
+        }
+
         return issues > 0 ? 1 : 0;
     }
 
