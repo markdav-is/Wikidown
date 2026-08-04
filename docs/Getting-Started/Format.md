@@ -66,6 +66,47 @@ through a tool or the CLI — e.g. `wikidown read --path /Getting-Started/Format
 `wiki_read --path /Getting-Started/Format` — still uses the absolute title
 path, since that's a tool argument rather than a rendered link.
 
+### Fixing `check-links` failures
+
+`check-links` prints one line per issue:
+
+```text
+page:line -> target  (reason)
+```
+
+What to do depends on the `(reason)`:
+
+*   **`(absolute title-path link (404s on GitHub))`** — the link uses a
+    `/Title/Path` form instead of a relative `.md` path. Rewrite it relative
+    to the *linking page's own folder*, with the `.md` extension. For
+    example, if `/Foo.md` (at the wiki root) contains
+    `[Bar](/Bar)` and `Bar.md` is also at the wiki root, change it to
+    `[Bar](Bar.md)`. If `/Sub/Foo.md` links to root-level `/Bar`, it becomes
+    `[Bar](../Bar.md)`. Count the folder hops between the linking page and
+    the target page to get the right number of `../`.
+
+*   **`(broken link)`** — a relative link/image that doesn't resolve to a
+    real file. This is either a typo in the relative path or a stale link
+    left over from a page that moved or was deleted. Open the linking
+    page's folder and confirm the target filename, hop count, and
+    `.md`/`.attachments` spelling; fix the path to match the real file. If
+    the target page genuinely no longer exists, either remove the link or
+    point it at wherever that content now lives.
+
+*   **A link that broke because a page moved** — `wikidown move` /
+    `wiki_move` (see [CLI](../CLI.md) and
+    [MCP Server](../MCP-Server.md)) automatically rewrite inbound links and
+    the moved page's own relative links when they change a page's path or
+    folder depth. So a `check-links` failure pointing at a page that was
+    clearly moved usually means one of two things: the move happened before
+    that link-rewriting behavior shipped, or the link was added by hand
+    (e.g. typed into a body) after the move rather than being created
+    through `move`/`wiki_move`. Either way, fix it the same way as a
+    broken relative link above — retarget it at the page's current path and
+    depth.
+
+After editing, re-run `wikidown check-links` to confirm the line is gone.
+
 ## 5. Markdown Dialect
 
 Wikidown relies on standard CommonMark. There are no proprietary macros or shortcodes required to render the core text. An MVP renderer only needs a standard markdown parser plus the filename↔title mapping logic described above.

@@ -54,3 +54,10 @@ Manual copying still works: the
 [`agents/README.md`](https://github.com/markdav-is/Wikidown/blob/main/agents/README.md)
 maps each source file to its destination. Once installed, the agents call the
 `wiki_*` MCP tools so `.order` files and link targets stay consistent.
+
+## Keeping configs current
+
+These files are copied once, not auto-updated. See
+[Updating](Getting-Started/Updating.md) for how to re-run `wikidown init
+--agents all --force` to pick up config changes shipped in newer Wikidown
+releases.

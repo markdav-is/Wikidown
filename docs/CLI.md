@@ -10,6 +10,10 @@ link-checks pages in a Wikidown wiki. It keeps `.order` files (and, on
 dotnet tool install -g Wikidown.Cli
 ```
 
+To update an existing install, see
+[Updating](Getting-Started/Updating.md) — a plain push to `main` doesn't
+always mean a new NuGet version is available.
+
 ## Wiki root
 
 The CLI defaults to `./docs`. Override with `--root <path>`:
@@ -23,7 +27,8 @@ wikidown --root ./my-wiki list
 - `init [--root docs] [--agents claude|copilot|all|none] [--force]` — seed an
   empty wiki with a `/Home` page and install the AI agent configs (Claude Code
   + GitHub Copilot) into the folder containing the wiki root. See
-  [Agents](Agents.md).
+  [Agents](Agents.md). Re-run with `--force` to pick up updated agent configs
+  in an existing repo — see [Updating](Getting-Started/Updating.md).
 - `list [--path /P]` — list children of a page (or root). `wikidown list`
 - `read --path /P` — print page markdown to stdout. `wikidown read --path /Getting-Started`
 - `write --path /P [--file F | --stdin]` — overwrite a page.
@@ -46,7 +51,9 @@ wikidown --root ./my-wiki list
   root and they 404 when the wiki is browsed on github.com. Prints one line
   per issue as `page:line -> target  (reason)` and exits non-zero if any
   issues are found, so it's CI-friendly. Pass `--no-absolute-check` to skip
-  the absolute-path check.
+  the absolute-path check. See
+  [Format § Fixing check-links failures](Getting-Started/Format.md) for how
+  to resolve each kind of reported issue.
 
 See [Format](Getting-Started/Format.md) for the on-disk format the CLI
 maintains, including the relative-link convention that `check-links`

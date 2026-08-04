@@ -9,6 +9,10 @@ Claude Code, Claude Desktop, VS Code (Copilot), or any other MCP host.
 dotnet tool install -g Wikidown.Mcp
 ```
 
+To update an existing install, see
+[Updating](Getting-Started/Updating.md) — a plain push to `main` doesn't
+always mean a new NuGet version is available.
+
 ## Wiki root
 
 Selected in this order:
