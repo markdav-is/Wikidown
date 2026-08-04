@@ -46,15 +46,23 @@ wikidown --root ./my-wiki list
 - `delete --path /P [--recursive]` — delete a page (and optionally its subpages).
 - `reorder --folder /P --names a,b,c` — rewrite `.order` for a folder.
 - `search --query <text>` — full-text search across page bodies.
-- `check-links [--no-absolute-check]` — walk every page and validate that
-  relative markdown links (`[x](../Foo/Bar.md)`) and image references
-  (`![x](../.attachments/pic.png)`) resolve to real files relative to the
-  linking page's folder. By default also flags absolute title-path links in
-  page bodies (`[x](/Foo/Bar)`), since GitHub resolves those against the repo
-  root and they 404 when the wiki is browsed on github.com. Prints one line
-  per issue as `page:line -> target  (reason)` and exits non-zero if any
-  issues are found, so it's CI-friendly. Pass `--no-absolute-check` to skip
-  the absolute-path check. See
+- `check-links [--no-absolute-check] [--no-index-check]` — walk every page
+  and validate that relative markdown links (`[x](../Foo/Bar.md)`) and image
+  references (`![x](../.attachments/pic.png)`) resolve to real files
+  relative to the linking page's folder. By default also:
+  - flags absolute title-path links in page bodies (`[x](/Foo/Bar)`), since
+    GitHub resolves those against the repo root and they 404 when the wiki
+    is browsed on github.com (`--no-absolute-check` to skip);
+  - audits that every subpage folder has an index page and that the index
+    page links every child in its body, since `WikiRepository.Write` can
+    create a grandchild page without its parent ever existing, silently
+    orphaning the subtree from `wikidown list` / `wiki_search` / the rest
+    of `check-links` itself (`--no-index-check` to skip). See
+    [Format § Index Pages](Getting-Started/Format.md).
+
+  Prints one line per issue as `page:line -> target  (reason)` (link
+  issues) or `folder -> detail  (reason)` (index issues), and exits
+  non-zero if any issues are found, so it's CI-friendly. See
   [Format § Fixing check-links failures](Getting-Started/Format.md) for how
   to resolve each kind of reported issue.
 

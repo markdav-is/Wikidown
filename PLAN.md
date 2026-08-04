@@ -205,6 +205,30 @@ Blazor WASM PWA editor + marketing site hosted on GitHub Pages.
     - `/docs` backfilled (all five existing subpages) and
       `Getting-Started/Format` documents the behavior.
 
+12. **Index-page auditing.** *(shipped)*
+    - `Wikidown.Core.IndexChecker` audits the "every folder needs a linked
+      index page" invariant from issue #16, folded into
+      `check-links [--no-index-check]`. Found a real, previously invisible
+      gap: `WikiRepository.Write` can create `/A/B` without `/A` ever
+      existing — repo.Walk() (and everything built on it — `list`,
+      `search`, check-links' own link scan) can't see the orphaned subtree,
+      since it only descends into a page's subpage folder once that page
+      has itself been discovered. `IndexChecker` walks the raw filesystem
+      instead, specifically to find folders Walk() can't reach.
+    - Two issue kinds: `MissingParentPage` (folder exists, `<Folder>.md`
+      doesn't) and `ChildNotLinked` (parent exists but its body has no
+      link — relative or absolute — resolving to that child; `.order`
+      doesn't count, since it's invisible on GitHub's raw file view).
+    - Directly relevant to breadcrumbs (chunk 11): a breadcrumb link
+      always points at an ancestor's `.md` file, but never verified that
+      file exists — `IndexChecker` is what actually catches a dangling
+      breadcrumb caused by a missing index page, plus the child-side
+      "you can't get there from the parent" case breadcrumbs don't touch
+      at all (they only link upward).
+    - Dogfooding this against `/docs` found and fixed a real instance:
+      `/Meta.md` never linked its own `/Meta/Vibing-Phase-Recap` child.
+    - `Getting-Started/Format` gets a new § Index Pages section.
+
 ## Open questions / parking lot
 - `[[_TOC_]]`, mermaid, `:::` callouts rendering in WASM preview.
 - `/.attachments` upload from browser (REST base64 -> Contents API).

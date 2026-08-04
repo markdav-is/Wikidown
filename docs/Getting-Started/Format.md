@@ -25,6 +25,15 @@ Wikidown supports infinite nesting of pages. To create subpages for a given pare
 
 This sibling-folder structure ensures that deleting or moving a parent page can easily include all of its children.
 
+Every subpage folder's parent page should exist and should **link every
+child in its body** — see § Index pages below. `WikiRepository.Write` will
+happily create `/Architecture/Data-Model` even if `/Architecture` doesn't
+exist yet, which silently orphans the whole subtree: `wikidown list` /
+`wiki_search` / `wikidown check-links`' normal link scan all walk the wiki
+by descending from already-discovered pages, so a page whose parent was
+never created is invisible to all of them. `check-links` catches this
+specific case — see below.
+
 ## 3. Ordering
 
 Alphabetical sorting is rarely the correct way to read documentation. Wikidown uses `.order` files to explicitly define the navigation hierarchy.
@@ -39,6 +48,10 @@ API-Reference
 ```
 
 If a page exists in the folder but is not listed in the `.order` file, it is typically appended to the end of the list alphabetically by the renderer.
+
+`.order` controls navigation-widget ordering only — it has no effect on
+GitHub's raw file view, so it's never a substitute for real body links. See
+§ Index pages.
 
 ## 4. Internal Links
 
@@ -61,7 +74,8 @@ Images and other repo assets follow the same rule, e.g.
 
 Run `wikidown check-links` (see [CLI](../CLI.md)) to walk every page and
 verify that relative links and image references resolve to real files; by
-default it also flags any absolute title-path links left in page bodies.
+default it also flags any absolute title-path links left in page bodies,
+and audits that every folder has a linked index page (§ Index pages).
 
 This rule only applies to links **inside page bodies**. Addressing a page
 through a tool or the CLI — e.g. `wikidown read --path /Getting-Started/Format`,
@@ -107,9 +121,50 @@ What to do depends on the `(reason)`:
     broken relative link above — retarget it at the page's current path and
     depth.
 
+*   **`(no index page <Folder>.md)`** — a subpage folder exists but its
+    sibling parent page is missing. Create it (`wikidown new --path /Folder`
+    or `wiki_new`), then link every child from its body — see § Index pages.
+
+*   **`(not linked from parent)`** — the parent page exists but its body
+    never links this child, so a reader browsing rendered markdown (or the
+    raw file on GitHub, where `.order` means nothing) has no way to reach
+    it. Add a relative link to the child in the parent's body — see
+    § Index pages.
+
 After editing, re-run `wikidown check-links` to confirm the line is gone.
 
-## 5. Breadcrumb Navigation
+## 5. Index Pages
+
+A folder's parent page is that folder's **index** — the entry point a
+reader lands on before descending into its children. Two invariants keep
+that entry point real rather than aspirational, both audited by
+`wikidown check-links` (pass `--no-index-check` to skip this pass):
+
+*   **The index page must exist.** `/Architecture/Data-Model` can be
+    created without `/Architecture` ever existing — nothing in
+    `WikiRepository.Write` requires the parent first. When that happens the
+    whole subtree becomes invisible to every wiki-model-based tool
+    (`wikidown list`, `wiki_search`, and `check-links`' own link scan),
+    since they all discover pages by descending from an already-discovered
+    parent. `check-links` finds these orphans by walking the raw
+    filesystem instead, specifically because it can't rely on the page
+    model to see them.
+*   **The index page must link every child.** `.order` decides navigation
+    order in Wikidown-aware UIs, but it's invisible on GitHub's raw file
+    view — the only way a reader following links on github.com can reach a
+    child page is a real link in the parent's body. `check-links` verifies
+    every `*.md` file directly inside a folder is the resolved target of at
+    least one link (relative or absolute) in that folder's parent page.
+
+A page's own [breadcrumb](#6-breadcrumb-navigation) links upward to its
+ancestors, but that's a different direction from this check: the
+breadcrumb doesn't help a reader on the *parent* page discover its
+children, and it doesn't verify the ancestor pages it links to actually
+exist — a folder missing its index page still gets a breadcrumb pointing
+at a `.md` file that isn't there, which is exactly the case index-page
+auditing is meant to catch.
+
+## 6. Breadcrumb Navigation
 
 Every page with at least one ancestor gets a one-line breadcrumb trail
 auto-injected as its **first line**, e.g.:
@@ -150,8 +205,10 @@ Key behavior:
     structurally wrong (if still technically valid) breadcrumb behind.
 *   **Checked like any other link.** Breadcrumb links are ordinary
     relative markdown links, so `check-links` validates them the same way
-    it validates everything else in the body.
+    it validates everything else in the body — but only that they *resolve*.
+    Whether the ancestor page they point at *should* exist and is properly
+    indexed is § Index Pages' job, not this one.
 
-## 6. Markdown Dialect
+## 7. Markdown Dialect
 
 Wikidown relies on standard CommonMark. There are no proprietary macros or shortcodes required to render the core text. An MVP renderer only needs a standard markdown parser plus the filename↔title mapping logic described above.
