@@ -83,6 +83,21 @@ public static class Commands
         return hits > 0 ? 0 : 1;
     }
 
+    public static int CheckLinks(WikiRepository repo, ParsedArgs args, TextWriter w)
+    {
+        var flagAbsolute = !args.Flag("no-absolute-check");
+        var issues = 0;
+        foreach (var issue in LinkChecker.Check(repo, flagAbsolute))
+        {
+            var reason = issue.Kind == LinkIssueKind.AbsoluteTitlePath
+                ? "absolute title-path link (404s on GitHub)"
+                : "broken link";
+            w.WriteLine($"{issue.Page.ToLinkPath()}:{issue.LineNumber} -> {issue.Target}  ({reason})");
+            issues++;
+        }
+        return issues > 0 ? 1 : 0;
+    }
+
     private static string LoadContent(ParsedArgs args)
     {
         var file = args.Optional("file");
