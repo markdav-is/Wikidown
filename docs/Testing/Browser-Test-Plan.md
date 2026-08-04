@@ -1,3 +1,5 @@
+[Testing](../Testing.md) / Browser Test Plan <!-- wikidown:breadcrumb -->
+
 # Browser Test Plan
 
 A handoff checklist for an AI agent (or human) driving a real browser — e.g.

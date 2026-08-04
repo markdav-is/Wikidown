@@ -179,6 +179,32 @@ Blazor WASM PWA editor + marketing site hosted on GitHub Pages.
       both CLI and `wiki_move` report what was rewritten.
     - Fixes #15, #13, #14.
 
+11. **Breadcrumb navigation.** *(shipped)*
+    - `Wikidown.Core.Breadcrumb` computes a one-line ancestor trail purely
+      from a page's path segments (no ancestor page needs to be read),
+      e.g. `[Encounters](../Encounters.md) / The Sky Hunters`, using the
+      same relative-link convention as body links. Null for top-level
+      pages (nothing to show).
+    - `WikiRepository.Write` injects/refreshes it as the page's first line
+      on every save — idempotent via an HTML comment marker
+      (`<!-- wikidown:breadcrumb -->`) that's stripped and regenerated
+      each time, so it never accumulates and a caller never has to
+      preserve it through a read-edit-write round trip. `wikidown new` /
+      `wiki_new` get it for free since they write through the same path.
+    - `WikiRepository.Move` fully regenerates the breadcrumb for the moved
+      page and every moved descendant, rather than relying on
+      `MoveLinkRewriter`'s generic link-target patching — a move can
+      change *which* ancestors a page has, not just the hop count to
+      reach them, so patching in place can leave a structurally wrong
+      breadcrumb whose link still happens to resolve. `MoveLinkRewriter`
+      skips breadcrumb lines entirely during a move's link-rewrite pass
+      to avoid double-work and a misleading "rewritten" count.
+    - Breadcrumb links are ordinary relative markdown links, so
+      `check-links` validates them like any other link with no special
+      casing.
+    - `/docs` backfilled (all five existing subpages) and
+      `Getting-Started/Format` documents the behavior.
+
 ## Open questions / parking lot
 - `[[_TOC_]]`, mermaid, `:::` callouts rendering in WASM preview.
 - `/.attachments` upload from browser (REST base64 -> Contents API).

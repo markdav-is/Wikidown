@@ -25,12 +25,15 @@ Selected in this order:
 
 - `wiki_list` — list children of a page or the root
 - `wiki_read` — read a page
-- `wiki_write` — overwrite a page
+- `wiki_write` — overwrite a page. Auto-injects or refreshes the page's
+  breadcrumb navigation line — see
+  [Format § Breadcrumb Navigation](Getting-Started/Format.md).
 - `wiki_new` — create a new page
 - `wiki_move` — rename or move a page (with subpages). Rewrites inbound links
-  from every other page that pointed at the old path, and rewrites the moved
+  from every other page that pointed at the old path, rewrites the moved
   page's own relative links and images if the move changed its folder depth,
-  reporting a count and a per-link list of what changed.
+  regenerates the breadcrumb for the moved page and every moved descendant,
+  and reports a count and a per-link list of what changed.
 - `wiki_delete` — delete a page (optionally recursive)
 - `wiki_reorder` — rewrite a folder's `.order`
 - `wiki_search` — search page bodies

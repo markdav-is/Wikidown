@@ -1,3 +1,5 @@
+[Meta](../Meta.md) / Vibing Phase Recap <!-- wikidown:breadcrumb -->
+
 # Wikidown — "Vibing Phase" Recap
 
 A build log / field notes of getting the basics standing up, from nothing to a deployed WASM editor with a working Functions API, a marketing site on its own domain, and a CLI + MCP tool pair.

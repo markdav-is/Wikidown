@@ -1,3 +1,5 @@
+[Getting Started](../Getting-Started.md) / Format <!-- wikidown:breadcrumb -->
+
 # Format Specification
 
 Wikidown's on-disk format is deliberately minimal: markdown pages, folder-based hierarchy, and `.order` navigation files. The goal of this specification is to ensure that a repository's documentation is equally readable by humans browsing the file system, AI agents using the MCP server, and web-based renderers.
@@ -107,6 +109,49 @@ What to do depends on the `(reason)`:
 
 After editing, re-run `wikidown check-links` to confirm the line is gone.
 
-## 5. Markdown Dialect
+## 5. Breadcrumb Navigation
+
+Every page with at least one ancestor gets a one-line breadcrumb trail
+auto-injected as its **first line**, e.g.:
+
+```text
+[Encounters](../Encounters.md) / The Sky Hunters <!-- wikidown:breadcrumb -->
+```
+
+This exists because GitHub's own file-path breadcrumb (shown above the raw
+file view) reflects the *repository* path — `docs / Encounters / The-Sky-Hunters.md`
+— not the wiki's page hierarchy or titles. Wikidown's breadcrumb is built
+purely from the page's own title chain instead: each ancestor is a link
+(relative, per the convention above), and the current page's title is the
+final, unlinked segment — the same shape GitHub uses, just scoped to the
+wiki rather than the whole repo.
+
+Key behavior:
+
+*   **Automatic.** `wikidown write` / `wiki_write` (and `new` / `wiki_new`,
+    which write through the same path) inject or refresh the breadcrumb on
+    every save — there's nothing to opt into or maintain by hand. Write
+    whatever body content you want; the first line is managed for you.
+*   **Idempotent.** The line carries an HTML comment marker
+    (`<!-- wikidown:breadcrumb -->`) that's invisible when rendered. On
+    every write, whatever was on line one gets discarded if it carries that
+    marker, then a fresh one is computed from the page's *current* path —
+    so re-saving a page never accumulates duplicate breadcrumbs, and a
+    round-tripped `read` → edit → `write` doesn't need to preserve the line
+    itself.
+*   **Top-level pages have none.** A page with no ancestors (e.g. `/CLI`)
+    has nothing to show, so no breadcrumb line is injected — the page
+    starts directly with its own content.
+*   **Moves regenerate it, not just patch it.** `wikidown move` / `wiki_move`
+    fully regenerates the breadcrumb for the moved page and every moved
+    descendant, rather than trying to edit the existing links in place —
+    a move can change *which* ancestors a page has, not just how many
+    `../` hops reach them, so a patch-in-place approach can leave a
+    structurally wrong (if still technically valid) breadcrumb behind.
+*   **Checked like any other link.** Breadcrumb links are ordinary
+    relative markdown links, so `check-links` validates them the same way
+    it validates everything else in the body.
+
+## 6. Markdown Dialect
 
 Wikidown relies on standard CommonMark. There are no proprietary macros or shortcodes required to render the core text. An MVP renderer only needs a standard markdown parser plus the filename↔title mapping logic described above.

@@ -1,3 +1,5 @@
+[Getting Started](../Getting-Started.md) / Visual Studio Extension <!-- wikidown:breadcrumb -->
+
 # Visual Studio Extension
 
 The **Wikidown** Visual Studio extension surfaces your wiki's `docs/` folder directly in Solution Explorer — without it participating in the build.

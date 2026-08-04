@@ -1,8 +1,8 @@
 # CLI
 
 The `wikidown` dotnet tool reads, writes, moves, reorders, searches, and
-link-checks pages in a Wikidown wiki. It keeps `.order` files (and, on
-`move`, links) in sync automatically.
+link-checks pages in a Wikidown wiki. It keeps `.order` files, breadcrumb
+navigation, and (on `move`) links in sync automatically.
 
 ## Install
 
@@ -31,14 +31,17 @@ wikidown --root ./my-wiki list
   in an existing repo — see [Updating](Getting-Started/Updating.md).
 - `list [--path /P]` — list children of a page (or root). `wikidown list`
 - `read --path /P` — print page markdown to stdout. `wikidown read --path /Getting-Started`
-- `write --path /P [--file F | --stdin]` — overwrite a page.
+- `write --path /P [--file F | --stdin]` — overwrite a page. Auto-injects or
+  refreshes the page's breadcrumb line — see
+  [Format § Breadcrumb Navigation](Getting-Started/Format.md).
 - `new --path /P [--title T] [--file F | --stdin]` — create a new page.
 - `move --from /A --to /B [--dry-run]` — rename or move a page (subpages
   travel with it). Rewrites inbound links from every other page that pointed
-  at the old path, and rewrites the moved page's own relative links and
-  images if the move changed its folder depth (e.g. moving
-  `/Encounters/Foo` to `/Adventures/Bar/Foo` turns `../.attachments/x.png`
-  into `../../.attachments/x.png`). Reports a count and a per-link list of
+  at the old path, rewrites the moved page's own relative links and images
+  if the move changed its folder depth (e.g. moving `/Encounters/Foo` to
+  `/Adventures/Bar/Foo` turns `../.attachments/x.png` into
+  `../../.attachments/x.png`), and regenerates the breadcrumb for the moved
+  page and every moved descendant. Reports a count and a per-link list of
   what changed. `--dry-run` previews the rewrite without touching any files.
 - `delete --path /P [--recursive]` — delete a page (and optionally its subpages).
 - `reorder --folder /P --names a,b,c` — rewrite `.order` for a folder.
@@ -57,4 +60,4 @@ wikidown --root ./my-wiki list
 
 See [Format](Getting-Started/Format.md) for the on-disk format the CLI
 maintains, including the relative-link convention that `check-links`
-enforces.
+enforces and the breadcrumb navigation it injects.

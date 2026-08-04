@@ -1,3 +1,5 @@
+[Getting Started](../Getting-Started.md) / Updating <!-- wikidown:breadcrumb -->
+
 # Updating
 
 How a downstream repo picks up new Wikidown releases — CLI/MCP tool
