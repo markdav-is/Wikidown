@@ -14,7 +14,11 @@ files directly.
   the `Parent/` folder beside `Parent.md`.
 - Each folder's `.order` file controls navigation order. Page writes update
   it automatically; rewrite explicitly with `wikidown_wiki_reorder`.
-- Internal links use the title path: `[Format](/Getting-Started/Format)`.
+- Body links are relative, not title paths — GitHub resolves an absolute
+  `/Getting-Started/Format` link against the repo root and 404s. Write
+  relative `.md` links adjusted for depth, e.g. `[Format](Format.md)` or
+  `[API](../Reference/API.md)`; images: `![map](../.attachments/map.png)`.
+  Tool addressing (`wikidown_wiki_read path=...`) still uses title form.
 
 ## Workflow
 

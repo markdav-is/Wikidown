@@ -59,7 +59,15 @@ wikidown search --query <text>
 - **Order** — each folder's `.order` file controls navigation order. Page
   writes update it automatically; rewrite explicitly with
   `wikidown_wiki_reorder`.
-- **Internal links** — use the title path: `[Format](/Getting-Started/Format)`.
+- **Body links are relative, not title paths.** GitHub renders `/docs/*.md`
+  directly and resolves an absolute path like `/Getting-Started/Format`
+  against the repo root, not the wiki root — title-path links 404 on
+  github.com. Write body links relative to the linking page's folder with
+  the `.md` extension, adjusted for depth, e.g. from
+  `/Getting-Started/Install.md`: `[Format](Format.md)` (sibling),
+  `[API](../Reference/API.md)` (cousin). Images: `![map](../.attachments/map.png)`.
+  Tool addressing (`wikidown_wiki_read path=...`) still uses title form —
+  only page-body links are relative.
 - **Page structure** — start with `# Title` then a one-sentence summary.
 
 ## Workflow
@@ -74,5 +82,6 @@ wikidown search --query <text>
 ## Don'ts
 
 - Don't write `/docs/*.md` with file-edit tools — bypasses `.order`.
-- Don't link to GitHub blob URLs from inside the wiki — use `/Title/Path` form.
+- Don't link to GitHub blob URLs from inside the wiki, and don't use
+  absolute `/Title/Path` links in page bodies — use relative `.md` links.
 - Don't rename without checking inbound references first.
