@@ -162,6 +162,23 @@ Blazor WASM PWA editor + marketing site hosted on GitHub Pages.
    - `Wikidown.Web` csproj slimmed — TargetFramework/Nullable/ImplicitUsings
      now inherited from `Directory.Build.props`.
 
+10. **Link integrity — relative body links, `check-links`, link-aware move.** *(shipped)*
+    - Agent configs (`SKILL.md`, `CLAUDE.md`, subagent, Copilot agent/chatmode)
+      now prescribe relative `.md` body links (`../Parent/Child.md`) and
+      relative `.attachments` image paths instead of absolute title paths,
+      which 404 when a page is browsed directly on github.com. Tool
+      *addressing* (`wiki_read path=...`) is unaffected — still title form.
+    - `Wikidown.Core.LinkChecker` + `wikidown check-links [--no-absolute-check]`
+      walk every page, resolve each relative link/image against the linking
+      page's folder, and report broken targets plus (by default) absolute
+      title-path body links. Non-zero exit on any issue, for CI.
+    - `Wikidown.Core.MoveLinkRewriter` + link-aware `move`/`wiki_move`: plans
+      the rewrite from pre-move content (inbound links to the moved
+      subtree, and the moved pages' own relative links/images re-depthed),
+      moves the files, then applies it. CLI `move` gains `--dry-run`;
+      both CLI and `wiki_move` report what was rewritten.
+    - Fixes #15, #13, #14.
+
 ## Open questions / parking lot
 - `[[_TOC_]]`, mermaid, `:::` callouts rendering in WASM preview.
 - `/.attachments` upload from browser (REST base64 -> Contents API).
