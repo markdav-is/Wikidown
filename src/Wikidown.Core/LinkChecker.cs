@@ -47,7 +47,7 @@ public static partial class LinkChecker
             : new LinkIssue(page, lineNumber, target, LinkIssueKind.Broken);
     }
 
-    private static bool IsExternal(string target) =>
+    internal static bool IsExternal(string target) =>
         target.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
         target.StartsWith("https://", StringComparison.OrdinalIgnoreCase) ||
         target.StartsWith("mailto:", StringComparison.OrdinalIgnoreCase);
@@ -64,5 +64,5 @@ public static partial class LinkChecker
     }
 
     [GeneratedRegex(@"!?\[[^\]]*\]\(([^)\s]+)(?:\s+""[^""]*"")?\)")]
-    private static partial Regex LinkTarget();
+    internal static partial Regex LinkTarget();
 }

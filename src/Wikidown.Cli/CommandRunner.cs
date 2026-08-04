@@ -66,7 +66,8 @@ public static class CommandRunner
         w.WriteLine("  read     --path /Link/Path                   print page markdown to stdout");
         w.WriteLine("  write    --path /Link/Path [--file F | --stdin]  write/overwrite a page");
         w.WriteLine("  new      --path /Link/Path [--title T] [--file F | --stdin]  create a page");
-        w.WriteLine("  move     --from /A --to /B                   rename/move a page (and subpages)");
+        w.WriteLine("  move     --from /A --to /B [--dry-run]       rename/move a page (and subpages);");
+        w.WriteLine("           rewrites inbound links and the moved page's own relative links");
         w.WriteLine("  delete   --path /P [--recursive]             delete a page (and optionally subpages)");
         w.WriteLine("  reorder  --folder /P --names a,b,c           rewrite .order for a folder");
         w.WriteLine("  search   --query <text> [--case-sensitive]   search all page bodies");

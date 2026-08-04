@@ -60,15 +60,21 @@ public sealed class WikiTools(WikiRepository repo)
     }
 
     [McpServerTool(Name = "wiki_move")]
-    [Description("Rename or move a wiki page (and its subpages folder if present).")]
+    [Description("Rename or move a wiki page (and its subpages folder if present). " +
+                 "Rewrites inbound links across the wiki and the moved page's own " +
+                 "relative links/images for their new depth.")]
     public string Move(
         [Description("Source wiki link path.")] string from,
         [Description("Destination wiki link path.")] string to)
     {
         var src = PagePath.Parse(from);
         var dst = PagePath.Parse(to);
-        repo.Move(src, dst);
-        return $"moved {src.ToLinkPath()} -> {dst.ToLinkPath()}";
+        var rewrites = MoveLinkRewriter.MoveAndRewrite(repo, src, dst);
+        var summary = $"moved {src.ToLinkPath()} -> {dst.ToLinkPath()}; {rewrites.Count} link(s) rewritten";
+        if (rewrites.Count == 0) return summary;
+        var detail = string.Join("\n",
+            rewrites.Select(r => $"  {r.Page.ToLinkPath()}:{r.LineNumber}: {r.OldTarget} -> {r.NewTarget}"));
+        return $"{summary}\n{detail}";
     }
 
     [McpServerTool(Name = "wiki_delete")]

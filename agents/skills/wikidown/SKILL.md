@@ -54,7 +54,7 @@ wikidown list [--path /P]
 wikidown read --path /P
 wikidown write --path /P [--file F | --stdin]
 wikidown new --path /P [--title T] [--file F | --stdin]
-wikidown move --from /A --to /B
+wikidown move --from /A --to /B [--dry-run]
 wikidown delete --path /P [--recursive]
 wikidown reorder --folder /P --names a,b,c
 wikidown search --query <text>
@@ -71,8 +71,10 @@ wikidown search --query <text>
    sibling pages.
 5. **Order intentionally.** When adding a top-level concept, `wiki_reorder`
    so the new page lands where it makes sense in navigation.
-6. **Moves don't rewrite links.** After `wiki_move`, `wiki_search` for the
-   old path and fix references.
+6. **Moves rewrite links automatically.** `wiki_move` rewrites inbound links
+   across the wiki and the moved page's own relative links/images for their
+   new depth, and reports what it changed. Run `wiki_search` afterwards only
+   if you suspect a link the tool couldn't resolve (e.g. one already broken).
 
 ## Don'ts
 

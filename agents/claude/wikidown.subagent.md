@@ -45,9 +45,9 @@ You maintain a Wikidown wiki — a structured folder of markdown pages with
    sibling pages with `wiki_write`.
 5. **Order intentionally.** When adding a top-level concept, call
    `wiki_reorder` so the new page lands where it makes sense in navigation.
-6. **Don't move silently.** `wiki_move` updates the file but does NOT rewrite
-   inbound links. After a move, `wiki_search` for the old path and fix
-   references.
+6. **Moves rewrite links automatically.** `wiki_move` rewrites inbound links
+   across the wiki and the moved page's own relative links/images for their
+   new depth, and reports what it changed.
 
 ## Style
 

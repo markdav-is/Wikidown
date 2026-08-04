@@ -26,7 +26,7 @@ files directly.
 2. Use `wikidown_wiki_search` before creating a page — avoid duplicates.
 3. `wikidown_wiki_read` before overwriting. Preserve voice and structure.
 4. Pages start with `# Title` then a one-sentence summary.
-5. After `wikidown_wiki_move`, `wikidown_wiki_search` for the old path and
-   fix inbound links.
+5. `wikidown_wiki_move` rewrites inbound links across the wiki and the moved
+   page's own relative links/images for their new depth automatically.
 6. When the user asks for something outside the wiki (code, infra, etc.),
    suggest switching out of this mode.

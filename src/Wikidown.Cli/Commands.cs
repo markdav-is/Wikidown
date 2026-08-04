@@ -47,9 +47,26 @@ public static class Commands
     {
         var from = PagePath.Parse(args.Require("from"));
         var to = PagePath.Parse(args.Require("to"));
-        repo.Move(from, to);
+
+        if (args.Flag("dry-run"))
+        {
+            var plan = MoveLinkRewriter.Plan(repo, from, to);
+            w.WriteLine($"would move {from.ToLinkPath()} -> {to.ToLinkPath()}");
+            PrintRewrites(w, plan.Rewrites, "would rewrite");
+            return 0;
+        }
+
+        var rewrites = MoveLinkRewriter.MoveAndRewrite(repo, from, to);
         w.WriteLine($"moved {from.ToLinkPath()} -> {to.ToLinkPath()}");
+        PrintRewrites(w, rewrites, "rewrote");
         return 0;
+    }
+
+    private static void PrintRewrites(TextWriter w, IReadOnlyList<LinkRewrite> rewrites, string verb)
+    {
+        foreach (var r in rewrites)
+            w.WriteLine($"  {verb} {r.Page.ToLinkPath()}:{r.LineNumber}: {r.OldTarget} -> {r.NewTarget}");
+        w.WriteLine($"{rewrites.Count} link(s) {(verb == "rewrote" ? "rewritten" : "would be rewritten")}");
     }
 
     public static int Delete(WikiRepository repo, ParsedArgs args, TextWriter w)

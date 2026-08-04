@@ -45,7 +45,7 @@ wikidown list [--path /P]
 wikidown read --path /P
 wikidown write --path /P [--file F | --stdin]
 wikidown new --path /P [--title T] [--file F | --stdin]
-wikidown move --from /A --to /B
+wikidown move --from /A --to /B [--dry-run]
 wikidown delete --path /P [--recursive]
 wikidown reorder --folder /P --names a,b,c
 wikidown search --query <text>
@@ -75,7 +75,8 @@ wikidown search --query <text>
 1. Call `wikidown_wiki_walk` first to orient yourself.
 2. `wikidown_wiki_search` before creating — avoid duplicates.
 3. `wikidown_wiki_read` before overwriting — preserve voice and structure.
-4. After `wikidown_wiki_move`, search for the old path and fix inbound links.
+4. `wikidown_wiki_move` rewrites inbound links across the wiki and the moved
+   page's own relative links/images for their new depth automatically.
 5. For tasks outside the wiki (code, infra, etc.), hand off to a more
    appropriate agent or ask the user to switch context.
 
