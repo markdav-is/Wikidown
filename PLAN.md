@@ -229,6 +229,21 @@ Blazor WASM PWA editor + marketing site hosted on GitHub Pages.
       `/Meta.md` never linked its own `/Meta/Vibing-Phase-Recap` child.
     - `Getting-Started/Format` gets a new § Index Pages section.
 
+13. **`backfill-breadcrumbs` command.** *(shipped)*
+    - One-time catch-up for wikis that predate breadcrumb navigation
+      (chunk 11) — dnd-lost-ship's pages, for instance, were all written
+      before that shipped, so they have no breadcrumb line and won't get
+      one until re-saved. `wikidown backfill-breadcrumbs [--dry-run]`
+      walks every page with an ancestor, and for each one whose current
+      content differs from what `Breadcrumb.Inject` would produce,
+      re-`Write`s it (which performs the actual injection) and reports it;
+      already-backfilled pages are a no-op, so it's safe to re-run.
+    - CLI-only for now, consistent with `check-links` (no MCP counterpart
+      yet). Going forward, `write`/`new`/`move` (CLI and MCP) all maintain
+      breadcrumbs automatically — this command only exists to catch up
+      pages written before that logic existed, or by a tool version that
+      predates it.
+
 ## Open questions / parking lot
 - `[[_TOC_]]`, mermaid, `:::` callouts rendering in WASM preview.
 - `/.attachments` upload from browser (REST base64 -> Contents API).

@@ -65,6 +65,13 @@ wikidown --root ./my-wiki list
   non-zero if any issues are found, so it's CI-friendly. See
   [Format § Fixing check-links failures](Getting-Started/Format.md) for how
   to resolve each kind of reported issue.
+- `backfill-breadcrumbs [--dry-run]` — one-time catch-up for a wiki that
+  predates breadcrumb navigation (chunk 11): re-saves every page that has
+  an ancestor but is missing its breadcrumb line, so it picks one up. Only
+  needed once per existing wiki — `write`, `new`, and `move` all maintain
+  breadcrumbs automatically going forward, so a wiki that's always been
+  edited through this CLI (or the MCP tools) never needs it. `--dry-run`
+  lists which pages would change without writing anything. Prints a count.
 
 See [Format](Getting-Started/Format.md) for the on-disk format the CLI
 maintains, including the relative-link convention that `check-links`
