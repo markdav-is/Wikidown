@@ -234,15 +234,37 @@ Blazor WASM PWA editor + marketing site hosted on GitHub Pages.
       (chunk 11) — dnd-lost-ship's pages, for instance, were all written
       before that shipped, so they have no breadcrumb line and won't get
       one until re-saved. `wikidown backfill-breadcrumbs [--dry-run]`
-      walks every page with an ancestor, and for each one whose current
-      content differs from what `Breadcrumb.Inject` would produce,
-      re-`Write`s it (which performs the actual injection) and reports it;
-      already-backfilled pages are a no-op, so it's safe to re-run.
+      walks every page, and for each one whose current content differs
+      from what `Breadcrumb.Inject` would produce, re-`Write`s it (which
+      performs the actual injection) and reports it; already-backfilled
+      pages are a no-op, so it's safe to re-run.
     - CLI-only for now, consistent with `check-links` (no MCP counterpart
       yet). Going forward, `write`/`new`/`move` (CLI and MCP) all maintain
       breadcrumbs automatically — this command only exists to catch up
       pages written before that logic existed, or by a tool version that
       predates it.
+
+14. **Breadcrumb always leads back to `/Home`.** *(shipped)*
+    - User feedback on chunk 11: top-level pages got no breadcrumb at
+      all, and nested pages' breadcrumbs stopped at their nearest
+      ancestor rather than reaching all the way back to the wiki's own
+      entry point — "we should always be able to get home."
+    - `Breadcrumb.Render` now takes the `WikiRepository` and checks
+      whether `/Home` exists (the page `wikidown init` seeds). If it
+      does, every page's breadcrumb leads with a link to it — including
+      top-level pages, which previously got no breadcrumb line at all —
+      except `/Home` itself (no self-link) and pages already rooted under
+      `/Home` (no duplicate segment). If `/Home` doesn't exist (this
+      repo's own `/docs` predates the convention), behavior is unchanged
+      from chunk 11: no fabricated link to a page that isn't there.
+    - `backfill-breadcrumbs` needed a matching fix: it used to skip
+      top-level pages outright (nothing to backfill, before `/Home`
+      support existed) — now it considers every page, since a top-level
+      page can newly need a `Home` link once `/Home` is created after
+      the fact.
+    - `Breadcrumb.Inject`/`Render` signatures changed to take the repo;
+      updated at both call sites (`WikiRepository.Write` and `.Move`'s
+      breadcrumb-refresh step) and in tests.
 
 ## Open questions / parking lot
 - `[[_TOC_]]`, mermaid, `:::` callouts rendering in WASM preview.

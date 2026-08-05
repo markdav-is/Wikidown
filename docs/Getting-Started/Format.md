@@ -166,20 +166,20 @@ auditing is meant to catch.
 
 ## 6. Breadcrumb Navigation
 
-Every page with at least one ancestor gets a one-line breadcrumb trail
-auto-injected as its **first line**, e.g.:
+Every page gets a one-line breadcrumb trail auto-injected as its **first
+line**, always leading back to `/Home` when the wiki has one:
 
 ```text
-[Encounters](../Encounters.md) / The Sky Hunters <!-- wikidown:breadcrumb -->
+[Home](../Home.md) / [Encounters](../Encounters.md) / The Sky Hunters <!-- wikidown:breadcrumb -->
 ```
 
 This exists because GitHub's own file-path breadcrumb (shown above the raw
 file view) reflects the *repository* path — `docs / Encounters / The-Sky-Hunters.md`
 — not the wiki's page hierarchy or titles. Wikidown's breadcrumb is built
-purely from the page's own title chain instead: each ancestor is a link
-(relative, per the convention above), and the current page's title is the
-final, unlinked segment — the same shape GitHub uses, just scoped to the
-wiki rather than the whole repo.
+purely from the page's own title chain instead: `Home` (if it exists) leads,
+then each further ancestor is a link (relative, per the convention above),
+and the current page's title is the final, unlinked segment — the same
+shape GitHub uses, just scoped to the wiki rather than the whole repo.
 
 Key behavior:
 
@@ -194,9 +194,15 @@ Key behavior:
     so re-saving a page never accumulates duplicate breadcrumbs, and a
     round-tripped `read` → edit → `write` doesn't need to preserve the line
     itself.
-*   **Top-level pages have none.** A page with no ancestors (e.g. `/CLI`)
-    has nothing to show, so no breadcrumb line is injected — the page
-    starts directly with its own content.
+*   **Always leads back to `/Home`, when the wiki has one.** `wikidown init`
+    seeds a `/Home` page as the wiki's entry point; every other page's
+    breadcrumb — including top-level pages, which otherwise have no
+    ancestors — leads with a link to it, so there's always a way back. A
+    wiki with no `/Home` page (this repo's own `/docs` predates that
+    convention) never gets a fabricated link to a page that doesn't exist:
+    top-level pages simply have no breadcrumb, and nested pages' breadcrumbs
+    start from their nearest real ancestor, same as before `/Home` was
+    introduced. `/Home` itself never links to itself.
 *   **Moves regenerate it, not just patch it.** `wikidown move` / `wiki_move`
     fully regenerates the breadcrumb for the moved page and every moved
     descendant, rather than trying to edit the existing links in place —
@@ -208,6 +214,10 @@ Key behavior:
     it validates everything else in the body — but only that they *resolve*.
     Whether the ancestor page they point at *should* exist and is properly
     indexed is § Index Pages' job, not this one.
+*   **Wikis that predate `/Home`, or predate breadcrumbs entirely,** won't
+    have this line until each page is re-saved. Run
+    `wikidown backfill-breadcrumbs` once to catch every page up in one pass
+    — see [CLI](../CLI.md).
 
 ## 7. Markdown Dialect
 
