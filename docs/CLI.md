@@ -1,3 +1,5 @@
+[Home](Home.md) / CLI <!-- wikidown:breadcrumb -->
+
 # CLI
 
 The `wikidown` dotnet tool reads, writes, moves, reorders, searches, and

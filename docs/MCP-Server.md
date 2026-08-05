@@ -1,3 +1,5 @@
+[Home](Home.md) / MCP Server <!-- wikidown:breadcrumb -->
+
 # MCP Server
 
 `wikidown-mcp` is a stdio MCP server that exposes the Wikidown CLI surface to

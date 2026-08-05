@@ -1,4 +1,4 @@
-[Getting Started](../Getting-Started.md) / Visual Studio Extension <!-- wikidown:breadcrumb -->
+[Home](../Home.md) / [Getting Started](../Getting-Started.md) / Visual Studio Extension <!-- wikidown:breadcrumb -->
 
 # Visual Studio Extension
 

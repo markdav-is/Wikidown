@@ -1,3 +1,5 @@
+[Home](Home.md) / Getting Started <!-- wikidown:breadcrumb -->
+
 # Getting Started
 
 Welcome to Wikidown. This folder is itself a Wikidown-format wiki.
@@ -20,3 +22,5 @@ Welcome to Wikidown. This folder is itself a Wikidown-format wiki.
 - [MCP Server](MCP-Server.md) — `wikidown-mcp` for AI agents
 - [Editor](Editor.md) — Blazor WASM browser editor
 - [Agents](Agents.md) — drop-in Claude + Copilot configs
+- [Testing](Testing.md) — test plans and QA checklists for Wikidown's own public surfaces
+- [Meta](Meta.md) — build-log notes on how Wikidown itself gets built

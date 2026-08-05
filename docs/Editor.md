@@ -1,3 +1,5 @@
+[Home](Home.md) / Editor <!-- wikidown:breadcrumb -->
+
 # Editor
 
 Wikidown ships a Blazor WebAssembly PWA that lets you browse and edit any

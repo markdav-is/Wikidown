@@ -1,3 +1,5 @@
+[Home](Home.md) / Agents <!-- wikidown:breadcrumb -->
+
 # Agents
 
 Wikidown ships drop-in configs so AI coding assistants can maintain your wiki

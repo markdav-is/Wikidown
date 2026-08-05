@@ -254,9 +254,9 @@ Blazor WASM PWA editor + marketing site hosted on GitHub Pages.
       does, every page's breadcrumb leads with a link to it — including
       top-level pages, which previously got no breadcrumb line at all —
       except `/Home` itself (no self-link) and pages already rooted under
-      `/Home` (no duplicate segment). If `/Home` doesn't exist (this
-      repo's own `/docs` predates the convention), behavior is unchanged
-      from chunk 11: no fabricated link to a page that isn't there.
+      `/Home` (no duplicate segment). If a wiki has no `/Home` page,
+      behavior is unchanged from chunk 11: no fabricated link to a page
+      that isn't there.
     - `backfill-breadcrumbs` needed a matching fix: it used to skip
       top-level pages outright (nothing to backfill, before `/Home`
       support existed) — now it considers every page, since a top-level
@@ -265,6 +265,18 @@ Blazor WASM PWA editor + marketing site hosted on GitHub Pages.
     - `Breadcrumb.Inject`/`Render` signatures changed to take the repo;
       updated at both call sites (`WikiRepository.Write` and `.Move`'s
       breadcrumb-refresh step) and in tests.
+
+15. **`/docs` gets a `/Home` page.** *(shipped)*
+    - This repo's own `/docs` predated the `/Home` convention (`wikidown
+      init` seeds it for new wikis, but this wiki wasn't scaffolded that
+      way), so chunk 14's Home-anchored breadcrumb had nothing to anchor
+      to here — the one wiki that should be dogfooding it hardest was
+      exempt. Added `/Home` as a real landing page linking all seven
+      top-level sections (including Testing and Meta, which
+      `Getting-Started`'s own "Next" list had omitted — fixed there too),
+      reordered root `.order` to put it first, then ran
+      `backfill-breadcrumbs` to refresh all twelve existing pages with
+      the new `[Home](...) / ...` lead-in.
 
 ## Open questions / parking lot
 - `[[_TOC_]]`, mermaid, `:::` callouts rendering in WASM preview.

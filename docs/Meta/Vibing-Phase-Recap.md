@@ -1,4 +1,4 @@
-[Meta](../Meta.md) / Vibing Phase Recap <!-- wikidown:breadcrumb -->
+[Home](../Home.md) / [Meta](../Meta.md) / Vibing Phase Recap <!-- wikidown:breadcrumb -->
 
 # Wikidown — "Vibing Phase" Recap
 

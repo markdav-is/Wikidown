@@ -1,4 +1,4 @@
-[Getting Started](../Getting-Started.md) / Updating <!-- wikidown:breadcrumb -->
+[Home](../Home.md) / [Getting Started](../Getting-Started.md) / Updating <!-- wikidown:breadcrumb -->
 
 # Updating
 
