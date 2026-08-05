@@ -34,7 +34,7 @@ public sealed class WikiRepository
         var file = ResolveFile(page.Path);
         var dir = System.IO.Path.GetDirectoryName(file)!;
         Directory.CreateDirectory(dir);
-        var content = Breadcrumb.Inject(page.Path, page.Markdown);
+        var content = Breadcrumb.Inject(this, page.Path, page.Markdown);
         File.WriteAllText(file, NormalizeNewlines(content));
         EnsureOrderIncludes(page.Path);
     }
@@ -95,7 +95,7 @@ public sealed class WikiRepository
     {
         var file = ResolveFile(page);
         var content = File.ReadAllText(file);
-        File.WriteAllText(file, NormalizeNewlines(Breadcrumb.Inject(page, content)));
+        File.WriteAllText(file, NormalizeNewlines(Breadcrumb.Inject(this, page, content)));
     }
 
     public IReadOnlyList<PagePath> ListChildren(PagePath parent)

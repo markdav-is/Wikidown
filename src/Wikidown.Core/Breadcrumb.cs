@@ -1,20 +1,37 @@
 namespace Wikidown.Core;
 
 // A one-line ancestor trail auto-injected as a page's first line, e.g.
-// "[Encounters](../Encounters.md) / The Sky Hunters". Links are relative,
-// matching the wiki's body-link convention, and computed purely from the
-// page's path segments — no ancestor page needs to be read.
+// "[Home](../Home.md) / [Encounters](../Encounters.md) / The Sky Hunters".
+// Links are relative, matching the wiki's body-link convention.
 public static class Breadcrumb
 {
     public const string Marker = "<!-- wikidown:breadcrumb -->";
+    private const string HomeFileBase = "Home";
 
-    // Null for a top-level page (no ancestors to show).
-    public static string? Render(PagePath page)
+    // Null when there's nothing meaningful to show: the page IS /Home, or
+    // it's a top-level page and the wiki has no /Home to link back to.
+    public static string? Render(WikiRepository repo, PagePath page)
     {
-        if (page.IsRoot || page.Segments.Count <= 1) return null;
+        if (page.IsRoot) return null;
 
         var segments = page.Segments;
+        var topIsHome = string.Equals(segments[0].FileBase, HomeFileBase, StringComparison.OrdinalIgnoreCase);
+        if (segments.Count == 1 && topIsHome) return null; // this page IS Home
+
+        var hasHome = repo.Exists(PagePath.Parse("/" + HomeFileBase));
+        if (segments.Count == 1 && !hasHome) return null; // nothing to link back to
+
         var crumbs = new List<string>();
+
+        // Always lead with Home, unless the page's own ancestor chain
+        // already starts with it (added below, so this would duplicate it).
+        if (hasHome && !topIsHome)
+        {
+            var homeUps = segments.Count - 1;
+            var homeLink = string.Concat(Enumerable.Repeat("../", homeUps)) + HomeFileBase + ".md";
+            crumbs.Add($"[Home]({homeLink})");
+        }
+
         for (var i = 0; i < segments.Count - 1; i++)
         {
             var ups = segments.Count - 1 - i;
@@ -41,10 +58,10 @@ public static class Breadcrumb
     }
 
     // Strips any existing breadcrumb, then prepends a fresh one for `page`.
-    public static string Inject(PagePath page, string markdown)
+    public static string Inject(WikiRepository repo, PagePath page, string markdown)
     {
         var stripped = Strip(markdown);
-        var crumb = Render(page);
+        var crumb = Render(repo, page);
         return crumb is null ? stripped : crumb + "\n\n" + stripped.TrimStart('\n');
     }
 }

@@ -120,4 +120,41 @@ public class WikiRepositoryBreadcrumbTests : IDisposable
 
         Assert.Empty(LinkChecker.Check(_repo));
     }
+
+    [Fact]
+    public void Write_TopLevelPage_LeadsWithHome_WhenHomeExists()
+    {
+        _repo.Write(new WikiPage(PagePath.Parse("/Home"), "# Home\n"));
+        _repo.Write(new WikiPage(PagePath.Parse("/CLI"), "# CLI\n"));
+
+        var markdown = _repo.Read(PagePath.Parse("/CLI")).Markdown;
+        Assert.StartsWith("[Home](Home.md) / CLI", markdown);
+    }
+
+    [Fact]
+    public void Move_RegeneratedBreadcrumb_StillLeadsWithHome()
+    {
+        _repo.Write(new WikiPage(PagePath.Parse("/Home"), "# Home\n"));
+        _repo.Write(new WikiPage(PagePath.Parse("/Encounters"), "# Encounters\n"));
+        _repo.Write(new WikiPage(PagePath.Parse("/Encounters/Foo"), "# Foo\n"));
+
+        _repo.Move(
+            PagePath.Parse("/Encounters/Foo"),
+            PagePath.Parse("/Adventures/Chapter-One/Foo"));
+
+        var markdown = _repo.Read(PagePath.Parse("/Adventures/Chapter-One/Foo")).Markdown;
+        Assert.StartsWith(
+            "[Home](../../Home.md) / [Adventures](../../Adventures.md) / [Chapter One](../Chapter-One.md) / Foo",
+            markdown);
+    }
+
+    [Fact]
+    public void BreadcrumbLinks_ResolveCleanly_WithHome_UnderCheckLinks()
+    {
+        _repo.Write(new WikiPage(PagePath.Parse("/Home"), "# Home\n"));
+        _repo.Write(new WikiPage(PagePath.Parse("/A"), "# A\n"));
+        _repo.Write(new WikiPage(PagePath.Parse("/A/B"), "# B\n"));
+
+        Assert.Empty(LinkChecker.Check(_repo));
+    }
 }
