@@ -29,6 +29,7 @@ public static class CommandRunner
                 "reorder" => Commands.Reorder(repo, parsed, stdout),
                 "search" => Commands.Search(repo, parsed, stdout),
                 "check-links" => Commands.CheckLinks(repo, parsed, stdout),
+                "backfill-breadcrumbs" => Commands.BackfillBreadcrumbs(repo, parsed, stdout),
                 "init" => InitCommand.Run(repo, parsed, stdout),
                 _ => Unknown(parsed.Command, stderr),
             };
@@ -74,6 +75,9 @@ public static class CommandRunner
         w.WriteLine("  check-links  [--no-absolute-check] [--no-index-check]  validate relative");
         w.WriteLine("               links/images; also flags absolute title-path body links and");
         w.WriteLine("               folders with a missing or under-linking index page, unless disabled");
+        w.WriteLine("  backfill-breadcrumbs [--dry-run]             add/refresh the breadcrumb line");
+        w.WriteLine("               on every existing page that predates it (write/move do this");
+        w.WriteLine("               automatically going forward; this is a one-time catch-up)");
         w.WriteLine("  init     [--agents claude|copilot|all|none] [--force]");
         w.WriteLine("           seed the wiki and install AI agent configs (Claude Code +");
         w.WriteLine("           GitHub Copilot) in the folder containing the wiki root");

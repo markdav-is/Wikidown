@@ -130,6 +130,28 @@ public static class Commands
         return issues > 0 ? 1 : 0;
     }
 
+    public static int BackfillBreadcrumbs(WikiRepository repo, ParsedArgs args, TextWriter w)
+    {
+        var dryRun = args.Flag("dry-run");
+        var verb = dryRun ? "would update" : "updated";
+        var count = 0;
+
+        foreach (var page in repo.Walk())
+        {
+            if (page.Segments.Count <= 1) continue; // no breadcrumb expected
+
+            var current = repo.Read(page).Markdown;
+            if (Breadcrumb.Inject(page, current) == current) continue;
+
+            w.WriteLine($"{verb} {page.ToLinkPath()}");
+            if (!dryRun) repo.Write(new WikiPage(page, current));
+            count++;
+        }
+
+        w.WriteLine($"{count} page(s) {(dryRun ? "would be updated" : "updated")}");
+        return 0;
+    }
+
     private static string LoadContent(ParsedArgs args)
     {
         var file = args.Optional("file");
