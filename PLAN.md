@@ -308,12 +308,16 @@ Blazor WASM PWA editor + marketing site hosted on GitHub Pages.
       license restriction), whose `Heading1`-`Heading9` styles map
       directly to real `OutlineLevel`s, so the per-page heading depth
       (`NavTree`-derived) drives a genuine sidebar outline for free.
-    - Known limitation, not hidden: the `PDFsharp-MigraDoc` package ships
-      with no font resolver by default on *any* platform, including
-      Windows. `GlobalFontSettings.UseWindowsFontsUnderWindows` unblocks
-      it using the six typefaces it maps to `C:\Windows\Fonts` — good
-      enough to ship, but Windows-only; a custom resolver (embedded fonts)
-      is the real fix for Linux/Mac and is a follow-up, not scoped here.
+    - Font resolution is cross-platform: the `PDFsharp-MigraDoc` package
+      ships with no font resolver by default on any platform. The initial
+      `GlobalFontSettings.UseWindowsFontsUnderWindows` shortcut worked
+      locally but silently broke both GitHub Actions CI (`ubuntu-latest`)
+      and any non-Windows host — discovered only once a version bump
+      triggered a NuGet release and the workflow failed. Replaced with
+      `EmbeddedFontResolver`, a custom `IFontResolver` serving DejaVu
+      Sans/DejaVu Sans Mono TTFs embedded as resources in `Wikidown.Pdf`
+      (Bitstream Vera License, redistribution explicitly permitted) — so
+      rendering no longer depends on what fonts the host OS has installed.
     - Broken images/links degrade instead of failing the export: a missing
       relative image target renders a visible placeholder and is reported
       as `warning: {page}: image not found: {target}` with exit code 1 —
@@ -339,8 +343,6 @@ Blazor WASM PWA editor + marketing site hosted on GitHub Pages.
 - `/.attachments` upload from browser (REST base64 -> Contents API).
 - Conflict resolution UX when remote HEAD moves during edit.
 - ADO OAuth (vs PAT) — requires proxy; defer.
-- `export-pdf`: a real font resolver (embedded fonts) for Linux/Mac, since
-  `UseWindowsFontsUnderWindows` only works on Windows.
 - `export-pdf`: multi-target `Wikidown.Core`/`Wikidown.Pdf` to `net472` if
   an "Export to PDF" VS command is ever wanted — `Wikidown.Vs` can't
   reference either project until then.

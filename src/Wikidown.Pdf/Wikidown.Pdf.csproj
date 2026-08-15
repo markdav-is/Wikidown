@@ -10,4 +10,7 @@
   <ItemGroup>
     <PackageReference Include="PDFsharp-MigraDoc" />
   </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Fonts\*.ttf" />
+  </ItemGroup>
 </Project>

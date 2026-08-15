@@ -16,12 +16,8 @@ public static class MigraDocRenderer
     private static readonly object FontResolverLock = new();
     private static bool _fontResolverRegistered;
 
-    // Fonts used below are limited to the set PDFsharp's built-in
-    // UseWindowsFontsUnderWindows resolver maps to C:\Windows\Fonts (Arial,
-    // Times New Roman, Courier New, Verdana, Lucida Console, Symbol) — see
-    // EnsureFontResolverRegistered.
-    private const string BodyFont = "Arial";
-    private const string MonospaceFont = "Courier New";
+    private const string BodyFont = EmbeddedFontResolver.BodyFamily;
+    private const string MonospaceFont = EmbeddedFontResolver.MonospaceFamily;
     private static readonly Color LinkColor = Color.FromRgb(0x05, 0x63, 0xC1);
 
     // Renders a whole wiki (or the subtree WikiPdfContent.BuildAll was
@@ -134,21 +130,20 @@ public static class MigraDocRenderer
     // The PDFsharp-MigraDoc package is platform-agnostic and has no font
     // resolver wired up by default (unlike its -GDI/-WPF Windows-only
     // siblings), so document/error fonts can't be created at all without
-    // one. UseWindowsFontsUnderWindows is PDFsharp's own quick-start
-    // resolver: it maps a fixed set of common typeface names to
-    // C:\Windows\Fonts. That's a real limitation (Windows-only, and
-    // PDFsharp's own docs recommend a proper custom resolver for
-    // production) but is enough to render real PDFs today; a resolver with
-    // embedded fonts for Linux/Mac support is a follow-up, not blocking
-    // this chunk. May only be set once per process, before any font
-    // operation — guard against a second Render call trying to set it again.
+    // one. EmbeddedFontResolver serves DejaVu Sans/DejaVu Sans Mono from
+    // TTF files embedded in this assembly, so rendering works identically
+    // on any OS — no dependency on what's installed on the host (an
+    // earlier Windows-only approach broke both this repo's own Linux CI
+    // and any future non-Windows host). May only be set once per process,
+    // before any font operation — guard against a second Render call
+    // trying to set it again.
     private static void EnsureFontResolverRegistered()
     {
         if (_fontResolverRegistered) return;
         lock (FontResolverLock)
         {
             if (_fontResolverRegistered) return;
-            GlobalFontSettings.UseWindowsFontsUnderWindows = true;
+            GlobalFontSettings.FontResolver = new EmbeddedFontResolver();
             _fontResolverRegistered = true;
         }
     }
