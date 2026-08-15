@@ -338,6 +338,32 @@ Blazor WASM PWA editor + marketing site hosted on GitHub Pages.
       real migration affecting every existing Core consumer, not something
       to take on silently as a side effect of this chunk.
 
+17. **Web editor: export the wiki to PDF via browser print.** *(shipped)*
+    - `Wikidown.Web`'s `/export` page (linked from a new toolbar button on
+      `/browse`) assembles the whole connected wiki into one print-friendly
+      HTML document — `PdfExportHtmlBuilder` walks the `.order`-respecting
+      `NavTree`, strips each page's breadcrumb, rewrites internal wiki
+      links to in-page `#page-...` anchors, and renders with the same
+      Markdig pipeline (`UsePipeTables`/`UseAutoIdentifiers`) the CLI's IR
+      builder uses — then hands off to `window.print()` for the browser's
+      own Save-as-PDF.
+    - Deliberately not CLI parity: MigraDoc can't run in Blazor WASM, and
+      routing through `Wikidown.Api` to render server-side would mean
+      sending repo contents to the server for the first time — a real
+      change to `docs/Editor.md`'s "the Functions app never sees your repo
+      contents" privacy claim, not something to do silently. This path
+      never leaves the browser, so nothing about that claim changes. No
+      real embedded PDF outline/bookmarks or MigraDoc typography — "good
+      enough browser print," not a second renderer to keep in sync with
+      the CLI's.
+    - Verified via the browser preview against this repo's own `/docs`
+      wiki: nav-ordered TOC, breadcrumb stripped, and internal links
+      (absolute, same-level, and multi-level `../`) all resolve to the
+      right in-page anchor — checked with a standalone harness exercising
+      `PdfExportHtmlBuilder` directly, since GitHub's Contents API doesn't
+      allow a truly anonymous (empty-token) read against a public repo
+      from this backend.
+
 ## Open questions / parking lot
 - `[[_TOC_]]`, mermaid, `:::` callouts rendering in WASM preview.
 - `/.attachments` upload from browser (REST base64 -> Contents API).
