@@ -48,7 +48,7 @@ public static class MigraDocRenderer
     // Kept for the chunk-3 render spike / single-page tests: wraps one page
     // as a single-item PdfExportContent with no nav (so no TOC section).
     public static void Render(PageIr page, Stream output) =>
-        Render(new PdfExportContent(new[] { page }, Array.Empty<NavNode>()), output);
+        Render(new PdfExportContent(new[] { page }, Array.Empty<NavNode>(), Array.Empty<PdfExportWarning>()), output);
 
     // Depth of each page in the nav tree (1 = top level), used as the
     // page's own heading level so the outline panel nests the way the wiki

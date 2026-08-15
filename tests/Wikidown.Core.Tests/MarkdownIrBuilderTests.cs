@@ -145,6 +145,26 @@ public class MarkdownIrBuilderTests : IDisposable
     }
 
     [Fact]
+    public void MissingImage_RecordsWarning()
+    {
+        MarkdownIrBuilder.Build(
+            "![alt](missing.png)\n", PagePath.Parse("/A"), _repo, allowHtmlSkip: false, out var warnings);
+
+        var warning = Assert.Single(warnings);
+        Assert.Equal("/A", warning.Page.ToLinkPath());
+        Assert.Equal("missing.png", warning.Target);
+    }
+
+    [Fact]
+    public void ExternalImage_ProducesNoWarning()
+    {
+        MarkdownIrBuilder.Build(
+            "![alt](https://example.com/pic.png)\n", PagePath.Parse("/A"), _repo, allowHtmlSkip: false, out var warnings);
+
+        Assert.Empty(warnings);
+    }
+
+    [Fact]
     public void RawHtmlBlock_ThrowsByDefault()
     {
         Assert.Throws<NotSupportedException>(

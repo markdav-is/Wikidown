@@ -66,4 +66,20 @@ public class ExportPdfCommandTests : IDisposable
         var args = new[] { "export-pdf", "--root", _root };
         Assert.Equal(2, CommandRunner.Run(args, TextWriter.Null, TextWriter.Null));
     }
+
+    [Fact]
+    public void ExportPdf_MissingImage_WarnsAndStillSucceeds()
+    {
+        _repo.Write(new WikiPage(PagePath.Parse("/A"), "# A\n\n![gone](does-not-exist.png)\n"));
+
+        var outputPath = Path.Combine(_root, "wiki.pdf");
+        var args = new[] { "export-pdf", "--root", _root, "--output", outputPath };
+        var stdout = new StringWriter();
+        var exitCode = CommandRunner.Run(args, stdout, TextWriter.Null);
+
+        Assert.Equal(1, exitCode);
+        Assert.Contains("image not found: does-not-exist.png", stdout.ToString());
+        var bytes = File.ReadAllBytes(outputPath);
+        Assert.Equal("%PDF-", System.Text.Encoding.ASCII.GetString(bytes, 0, 5));
+    }
 }

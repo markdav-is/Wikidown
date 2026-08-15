@@ -17,7 +17,10 @@ public static class ExportPdfCommand
         using (var stream = File.Create(outputPath))
             MigraDocRenderer.Render(content, stream);
 
+        foreach (var warning in content.Warnings)
+            w.WriteLine($"warning: {warning.Page.ToLinkPath()}: image not found: {warning.Target}");
+
         w.WriteLine($"wrote {outputPath} ({content.Pages.Count} page(s))");
-        return 0;
+        return content.Warnings.Count > 0 ? 1 : 0;
     }
 }

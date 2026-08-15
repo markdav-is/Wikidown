@@ -13,14 +13,21 @@ public static class MarkdownIrBuilder
         new MarkdownPipelineBuilder().UsePipeTables().UseAutoIdentifiers().Build();
 
     public static IReadOnlyList<IrBlock> Build(
-        string markdown, PagePath page, WikiRepository repo, bool allowHtmlSkip = false)
+        string markdown, PagePath page, WikiRepository repo, bool allowHtmlSkip = false) =>
+        Build(markdown, page, repo, allowHtmlSkip, out _);
+
+    public static IReadOnlyList<IrBlock> Build(
+        string markdown, PagePath page, WikiRepository repo, bool allowHtmlSkip,
+        out IReadOnlyList<PdfExportWarning> warnings)
     {
         var document = Markdown.Parse(markdown, Pipeline);
-        var ctx = new BuildContext(page, repo, allowHtmlSkip);
-        return BuildBlocks(document, ctx);
+        var ctx = new BuildContext(page, repo, allowHtmlSkip, new List<PdfExportWarning>());
+        var blocks = BuildBlocks(document, ctx);
+        warnings = ctx.Warnings;
+        return blocks;
     }
 
-    private sealed record BuildContext(PagePath Page, WikiRepository Repo, bool AllowHtmlSkip);
+    private sealed record BuildContext(PagePath Page, WikiRepository Repo, bool AllowHtmlSkip, List<PdfExportWarning> Warnings);
 
     private static IReadOnlyList<IrBlock> BuildBlocks(ContainerBlock container, BuildContext ctx)
     {
@@ -68,16 +75,23 @@ public static class MarkdownIrBuilder
     {
         var alt = ExtractPlainText(img);
         var target = img.Url ?? string.Empty;
-        return new IrImage(alt, target, ResolveImagePath(ctx.Repo, ctx.Page, target));
+        return new IrImage(alt, target, ResolveImagePath(ctx, target));
     }
 
-    private static string? ResolveImagePath(WikiRepository repo, PagePath page, string target)
+    // Null covers two very different cases: an external image (not a wiki
+    // authoring mistake, just unsupported for embedding — no warning) and a
+    // relative path that doesn't resolve to a real file (a broken
+    // reference — recorded so the CLI can report it and reflect it in the
+    // exit code, same as check-links does for broken body links).
+    private static string? ResolveImagePath(BuildContext ctx, string target)
     {
         if (LinkChecker.IsExternal(target)) return null;
         var withoutFragment = target.Split('#')[0];
         if (withoutFragment.Length == 0) return null;
-        var full = LinkChecker.ResolveFullPath(repo, page, withoutFragment);
-        return File.Exists(full) ? full : null;
+        var full = LinkChecker.ResolveFullPath(ctx.Repo, ctx.Page, withoutFragment);
+        if (File.Exists(full)) return full;
+        ctx.Warnings.Add(new PdfExportWarning(ctx.Page, target));
+        return null;
     }
 
     private static IrBlock BuildHtml(HtmlBlock html, BuildContext ctx) =>
@@ -163,7 +177,7 @@ public static class MarkdownIrBuilder
                 {
                     var alt = ExtractPlainText(img);
                     var target = img.Url ?? string.Empty;
-                    result.Add(new IrInlineImage(alt, target, ResolveImagePath(ctx.Repo, ctx.Page, target)));
+                    result.Add(new IrInlineImage(alt, target, ResolveImagePath(ctx, target)));
                     break;
                 }
 

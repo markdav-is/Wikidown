@@ -57,4 +57,30 @@ public class MigraDocRendererTests : IDisposable
         var bytes = stream.ToArray();
         Assert.Equal("%PDF-", System.Text.Encoding.ASCII.GetString(bytes, 0, 5));
     }
+
+    // A minimal valid 1x1 transparent PNG — exercises the real AddImage
+    // codepath (not just the "not found" placeholder), since MigraDoc's
+    // image loading turned out to be one more thing worth verifying at
+    // runtime rather than assuming from the API shape (see the font
+    // resolver surprise in the single-page render chunk).
+    private static readonly byte[] MinimalPng = Convert.FromBase64String(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=");
+
+    [Fact]
+    public void Render_WithRealImage_EmbedsItWithoutError()
+    {
+        var imagePath = Path.Combine(_root, "pic.png");
+        File.WriteAllBytes(imagePath, MinimalPng);
+
+        _repo.Write(new WikiPage(PagePath.Parse("/A"), "# A\n\n![a real picture](pic.png)\n"));
+        var blocks = MarkdownIrBuilder.Build(_repo.Read(PagePath.Parse("/A")).Markdown, PagePath.Parse("/A"), _repo);
+        var image = Assert.IsType<IrImage>(blocks[1]);
+        Assert.Equal(imagePath, image.ResolvedPath);
+
+        var page = new PageIr(PagePath.Parse("/A"), "A", blocks);
+        using var stream = new MemoryStream();
+        MigraDocRenderer.Render(page, stream);
+
+        Assert.Equal("%PDF-", System.Text.Encoding.ASCII.GetString(stream.ToArray(), 0, 5));
+    }
 }

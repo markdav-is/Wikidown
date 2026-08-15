@@ -60,6 +60,19 @@ public class WikiPdfContentTests : IDisposable
     }
 
     [Fact]
+    public void BuildAll_AggregatesWarningsAcrossPages()
+    {
+        _repo.Write(new WikiPage(PagePath.Parse("/A"), "# A\n\n![x](missing-a.png)\n"));
+        _repo.Write(new WikiPage(PagePath.Parse("/B"), "# B\n\n![y](missing-b.png)\n"));
+
+        var content = WikiPdfContent.BuildAll(_repo);
+
+        Assert.Equal(2, content.Warnings.Count);
+        Assert.Contains(content.Warnings, w => w.Page.ToLinkPath() == "/A" && w.Target == "missing-a.png");
+        Assert.Contains(content.Warnings, w => w.Page.ToLinkPath() == "/B" && w.Target == "missing-b.png");
+    }
+
+    [Fact]
     public void BuildAll_StripsBreadcrumbBeforeParsing()
     {
         _repo.Write(new WikiPage(PagePath.Parse("/Home"), "# Home\n"));
