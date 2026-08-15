@@ -56,11 +56,19 @@ public static partial class LinkChecker
     {
         var withoutFragment = target.Split('#')[0];
         if (withoutFragment.Length == 0) return true;
+        return File.Exists(ResolveFullPath(repo, page, withoutFragment));
+    }
 
+    // Resolves a relative link/image target (fragment already stripped) to an
+    // absolute disk path, relative to the page it appears on. Shared with
+    // PdfExport, which needs the resolved path itself, not just whether it
+    // exists.
+    internal static string ResolveFullPath(WikiRepository repo, PagePath page, string targetWithoutFragment)
+    {
         var pageDir = Path.GetDirectoryName(page.ToFilePath()) ?? string.Empty;
-        var relative = withoutFragment.Replace('/', Path.DirectorySeparatorChar);
+        var relative = targetWithoutFragment.Replace('/', Path.DirectorySeparatorChar);
         var combined = Path.Combine(repo.RootPath, pageDir, relative);
-        return File.Exists(Path.GetFullPath(combined));
+        return Path.GetFullPath(combined);
     }
 
     [GeneratedRegex(@"!?\[[^\]]*\]\(([^)\s]+)(?:\s+""[^""]*"")?\)")]
