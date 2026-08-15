@@ -18,9 +18,11 @@ Blazor WASM PWA editor + marketing site hosted on GitHub Pages.
 ## Architecture
 ```
 /src
-  Wikidown.Core/       shared lib: page model, filename<->title, .order, links, md I/O
-  Wikidown.Cli/        dotnet tool: list/read/write/move/reorder/new/search
+  Wikidown.Core/       shared lib: page model, filename<->title, .order, links, md I/O,
+                        markdown->PDF intermediate representation (PdfExport/)
+  Wikidown.Cli/        dotnet tool: list/read/write/move/reorder/new/search/export-pdf
   Wikidown.Mcp/        MCP stdio server wrapping Core
+  Wikidown.Pdf/        renders Wikidown.Core's PDF IR to an actual PDF via PDFsharp/MigraDoc
   Wikidown.Web/        Blazor WASM PWA editor
   Wikidown.Site/       Blazor static marketing site
 /tests
@@ -278,8 +280,68 @@ Blazor WASM PWA editor + marketing site hosted on GitHub Pages.
       `backfill-breadcrumbs` to refresh all twelve existing pages with
       the new `[Home](...) / ...` lead-in.
 
+16. **`export-pdf` — combine the wiki into one linked PDF.** *(shipped)*
+    - `wikidown export-pdf --output <path> [--from /Link/Path] [--title T]
+      [--no-cover] [--no-toc] [--allow-html-skip]` renders the whole wiki
+      (or a subtree) into one PDF: an optional cover page, an in-document
+      table of contents with page numbers, then one section per page with
+      the sidebar bookmark/outline panel nested to match the wiki's nav
+      hierarchy. Internal wiki links (relative `.md` links, legacy absolute
+      title-paths, and same-page `#fragment` links) become real in-PDF
+      jumps instead of dead hrefs.
+    - Split into two new pieces to keep the PDF dependency out of
+      `Wikidown.Web`'s WASM bundle and `Wikidown.Mcp`: `Wikidown.Core`
+      gains a `PdfExport/` namespace (`MarkdownIrBuilder`, `PdfAnchors`,
+      `WikiPdfContent`) that turns a page's markdown (via Markdig) into a
+      plain, PDF-library-agnostic block/run IR — no MigraDoc types, so
+      it's usable anywhere Core already is. A new project,
+      `Wikidown.Pdf`, is the only place touching MigraDoc/PDFsharp
+      (`MigraDocRenderer`), consumed only by `Wikidown.Cli` today; its
+      `Render(content, Stream, options)` shape doesn't assume a
+      console/file host, so a future non-CLI caller (e.g. `Wikidown.Api`
+      streaming a browser download) can reuse it without rework.
+    - Library pivot mid-build: started with QuestPDF, dropped it once its
+      own maintainers confirmed there's no API to draw a real PDF
+      outline/bookmark panel (GitHub discussion #181) — shipping a
+      TOC-only substitute would have silently undersold "matches the nav
+      hierarchy." Landed on `PDFsharp-MigraDoc` (MIT, no revenue-based
+      license restriction), whose `Heading1`-`Heading9` styles map
+      directly to real `OutlineLevel`s, so the per-page heading depth
+      (`NavTree`-derived) drives a genuine sidebar outline for free.
+    - Known limitation, not hidden: the `PDFsharp-MigraDoc` package ships
+      with no font resolver by default on *any* platform, including
+      Windows. `GlobalFontSettings.UseWindowsFontsUnderWindows` unblocks
+      it using the six typefaces it maps to `C:\Windows\Fonts` — good
+      enough to ship, but Windows-only; a custom resolver (embedded fonts)
+      is the real fix for Linux/Mac and is a follow-up, not scoped here.
+    - Broken images/links degrade instead of failing the export: a missing
+      relative image target renders a visible placeholder and is reported
+      as `warning: {page}: image not found: {target}` with exit code 1 —
+      the same non-fatal, exit-code-reflects-issues contract `check-links`
+      already uses. Raw HTML blocks are the one thing that fails loudly by
+      default (`--allow-html-skip` to degrade instead), consistent with
+      "no silent drops."
+    - Verified end to end against this repo's own `/docs` wiki (19 real
+      pages, code fences, a table, a genuine raw-HTML page that correctly
+      tripped the fail-loud path) by reading the rendered PDF back, not
+      just by passing the test suite.
+    - Not done here, deliberately: a `/docs` page documenting `export-pdf`
+      (follow-up via the `wikidown-editor` subagent, never a direct edit
+      per `CLAUDE.md`), and multi-targeting `Wikidown.Core`/`Wikidown.Pdf`
+      to `net472` so `Wikidown.Vs` could add an "Export to PDF" command —
+      `Wikidown.Vs` doesn't reference `Wikidown.Core` at all today (it
+      hand-duplicates `.order`/page-listing logic), so that's a separate,
+      real migration affecting every existing Core consumer, not something
+      to take on silently as a side effect of this chunk.
+
 ## Open questions / parking lot
 - `[[_TOC_]]`, mermaid, `:::` callouts rendering in WASM preview.
 - `/.attachments` upload from browser (REST base64 -> Contents API).
 - Conflict resolution UX when remote HEAD moves during edit.
 - ADO OAuth (vs PAT) — requires proxy; defer.
+- `export-pdf`: a real font resolver (embedded fonts) for Linux/Mac, since
+  `UseWindowsFontsUnderWindows` only works on Windows.
+- `export-pdf`: multi-target `Wikidown.Core`/`Wikidown.Pdf` to `net472` if
+  an "Export to PDF" VS command is ever wanted — `Wikidown.Vs` can't
+  reference either project until then.
+- `export-pdf`: a `/docs` page documenting the command (via `wikidown-editor`).
