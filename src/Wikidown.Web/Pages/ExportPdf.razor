@@ -1,0 +1,95 @@
+@page "/export"
+@inject ConnectionStore Store
+@inject BackendResolver Backends
+@inject IJSRuntime JS
+@using Wikidown.Core
+@using Wikidown.Web.Services
+
+<PageTitle>Export PDF — Wikidown</PageTitle>
+
+@if (_conn is null)
+{
+    <MudText Typo="Typo.h4" GutterBottom="true">Export PDF</MudText>
+    <MudAlert Severity="Severity.Info">
+        No wiki connected. <MudLink Href="connect">Connect one</MudLink>.
+    </MudAlert>
+}
+else if (_error is { } err)
+{
+    <MudText Typo="Typo.h4" GutterBottom="true">Export PDF</MudText>
+    <MudAlert Severity="Severity.Error">@err</MudAlert>
+}
+else if (_html is null)
+{
+    <MudText Typo="Typo.h4" GutterBottom="true">Export PDF</MudText>
+    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mb-2">
+        <MudProgressCircular Indeterminate="true" Size="Size.Small" />
+        <MudText>Loading page @_loaded of @_total@(_currentTitle is null ? "" : $": {_currentTitle}")…</MudText>
+    </MudStack>
+    <MudProgressLinear Value="@ProgressPercent" Color="Color.Primary" Class="my-2" />
+}
+else
+{
+    <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-4 wd-pdf-toolbar">
+        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Print"
+                   OnClick="PrintAsync">
+            Print / Save as PDF
+        </MudButton>
+    </MudStack>
+    @((MarkupString)_html)
+}
+
+@code {
+    private WikiConnection? _conn;
+    private string? _error;
+    private string? _html;
+    private bool _printed;
+    private int _loaded;
+    private int _total;
+    private string? _currentTitle;
+
+    private double ProgressPercent => _total == 0 ? 0 : 100.0 * _loaded / _total;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _conn = await Store.LoadAsync();
+        if (_conn is null) return;
+
+        try
+        {
+            var backend = Backends.For(_conn.Provider);
+            var snapshot = await backend.WalkAsync(_conn);
+            var tree = NavTree.Build(snapshot.Pages, snapshot.OrderFor);
+            var paths = PdfExportHtmlBuilder.FlattenInNavOrder(tree).ToList();
+            _total = paths.Count;
+
+            var pages = new List<(PagePath Path, string Markdown)>(paths.Count);
+            foreach (var path in paths)
+            {
+                _currentTitle = path.Name.Title;
+                StateHasChanged();
+                var page = await backend.ReadPageAsync(_conn, path);
+                pages.Add((path, page.Markdown));
+                _loaded++;
+            }
+
+            _html = PdfExportHtmlBuilder.BuildDocument(_conn.Repo, tree, pages);
+        }
+        catch (Exception ex)
+        {
+            _error = $"Export failed: {ex.Message}";
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_html is not null && !_printed)
+        {
+            _printed = true;
+            await PrintAsync();
+        }
+    }
+
+    private async Task PrintAsync() => await JS.InvokeVoidAsync("print");
+}

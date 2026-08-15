@@ -101,9 +101,11 @@ wikidown --root ./my-wiki list
   `[unsupported HTML block omitted]` placeholder and continue.
   For example: `wikidown export-pdf --output wiki.pdf`.
 
-  PDF font resolution currently only works on Windows (it resolves fonts
-  from `C:\Windows\Fonts`); running `export-pdf` on Linux or macOS fails
-  until an embedded-font resolver ships as a follow-up.
+  PDF font resolution is cross-platform: an embedded `EmbeddedFontResolver`
+  ships DejaVu Sans and DejaVu Sans Mono TrueType fonts inside the
+  Wikidown.Pdf assembly (Bitstream Vera License, redistribution permitted)
+  instead of resolving fonts from the host OS. `export-pdf` works
+  identically on Windows, Linux, and macOS.
 
 See [Format](Getting-Started/Format.md) for the on-disk format the CLI
 maintains, including the relative-link convention that `check-links`
