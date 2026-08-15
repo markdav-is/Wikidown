@@ -26,5 +26,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Wikidown.Core\Wikidown.Core.csproj" />
+    <ProjectReference Include="..\Wikidown.Pdf\Wikidown.Pdf.csproj" />
   </ItemGroup>
 </Project>

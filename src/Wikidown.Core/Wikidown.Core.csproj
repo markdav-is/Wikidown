@@ -4,4 +4,7 @@
     <PackageId>Wikidown.Core</PackageId>
     <Description>Read and write Wikidown wiki pages on disk — markdown pages, folder hierarchy, and .order navigation files.</Description>
   </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Markdig" />
+  </ItemGroup>
 </Project>

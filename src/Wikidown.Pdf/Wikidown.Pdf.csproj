@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>Wikidown.Pdf</RootNamespace>
+    <Description>Renders Wikidown wiki content (built via Wikidown.Core's PDF intermediate representation) into a single PDF using PDFsharp/MigraDoc.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Wikidown.Core\Wikidown.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="PDFsharp-MigraDoc" />
+  </ItemGroup>
+</Project>

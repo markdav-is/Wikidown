@@ -30,6 +30,7 @@ public static class CommandRunner
                 "search" => Commands.Search(repo, parsed, stdout),
                 "check-links" => Commands.CheckLinks(repo, parsed, stdout),
                 "backfill-breadcrumbs" => Commands.BackfillBreadcrumbs(repo, parsed, stdout),
+                "export-pdf" => ExportPdfCommand.Run(repo, parsed, stdout),
                 "init" => InitCommand.Run(repo, parsed, stdout),
                 _ => Unknown(parsed.Command, stderr),
             };
@@ -78,6 +79,9 @@ public static class CommandRunner
         w.WriteLine("  backfill-breadcrumbs [--dry-run]             add/refresh the breadcrumb line");
         w.WriteLine("               on every existing page that predates it (write/move do this");
         w.WriteLine("               automatically going forward; this is a one-time catch-up)");
+        w.WriteLine("  export-pdf --output <path> [--title T] [--from /Link/Path]");
+        w.WriteLine("               [--no-toc] [--no-cover] [--allow-html-skip]");
+        w.WriteLine("               combine the wiki (or a subtree) into one linked PDF");
         w.WriteLine("  init     [--agents claude|copilot|all|none] [--force]");
         w.WriteLine("           seed the wiki and install AI agent configs (Claude Code +");
         w.WriteLine("           GitHub Copilot) in the folder containing the wiki root");
