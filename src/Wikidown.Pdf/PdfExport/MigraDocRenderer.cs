@@ -99,7 +99,7 @@ public static class MigraDocRenderer
 
         var section = document.AddSection();
         var title = section.AddParagraph("Table of Contents");
-        title.Style = "Heading1";
+        ApplyHeadingFormat(title, semanticLevel: 1, outlineDepth: 1);
 
         foreach (var node in nav) RenderTocNode(section, node, depth: 0);
     }
@@ -154,6 +154,7 @@ public static class MigraDocRenderer
         var normal = document.Styles["Normal"]!;
         normal.Font.Name = BodyFont;
         normal.Font.Size = 10;
+        normal.ParagraphFormat.SpaceAfter = Unit.FromPoint(6);
         return document;
     }
 
@@ -172,14 +173,14 @@ public static class MigraDocRenderer
 
         if (page.Blocks.Count > 0 && page.Blocks[0] is IrHeading firstHeading)
         {
-            RenderHeading(section, firstHeading, pageAnchor, pageLevel);
+            RenderHeading(section, firstHeading, pageAnchor, firstHeading.Level, pageLevel);
             var offset = pageLevel - firstHeading.Level;
             foreach (var block in page.Blocks.Skip(1)) RenderBlock(section, block, depth: 0, offset);
         }
         else
         {
             var heading = section.AddParagraph(page.Title);
-            heading.Style = "Heading" + pageLevel;
+            ApplyHeadingFormat(heading, semanticLevel: 1, outlineDepth: pageLevel);
             heading.AddBookmark(pageAnchor);
             foreach (var block in page.Blocks) RenderBlock(section, block, depth: 0, headingOffset: pageLevel - 1);
         }
@@ -189,7 +190,7 @@ public static class MigraDocRenderer
     {
         switch (block)
         {
-            case IrHeading h: RenderHeading(section, h, extraAnchor: null, h.Level + headingOffset); break;
+            case IrHeading h: RenderHeading(section, h, extraAnchor: null, h.Level, h.Level + headingOffset); break;
             case IrParagraph p: RenderRuns(section.AddParagraph(), p.Runs); break;
             case IrList l: RenderList(section, l, depth); break;
             case IrCodeBlock c: RenderCodeBlock(section, c); break;
@@ -200,14 +201,41 @@ public static class MigraDocRenderer
         }
     }
 
-    private static void RenderHeading(Section section, IrHeading heading, string? extraAnchor, int level)
+    // Visual size, semanticLevel, comes from the heading's own markdown
+    // level (1 = biggest) so a page's title always looks like a title and
+    // an H2 always looks like an H2, regardless of how deep the page sits
+    // in the wiki. outlineDepth (nav depth + relative offset) is a
+    // completely separate axis that only controls sidebar-bookmark
+    // nesting — conflating the two (the original bug here) made headings
+    // on deeply-nested pages shrink toward invisible.
+    private static readonly double[] HeadingFontSizes = { 20, 16, 14, 12, 11, 10.5 };
+
+    private static void RenderHeading(Section section, IrHeading heading, string? extraAnchor, int semanticLevel, int outlineDepth)
     {
         var paragraph = section.AddParagraph();
-        paragraph.Style = "Heading" + Math.Clamp(level, 1, 9);
+        ApplyHeadingFormat(paragraph, semanticLevel, outlineDepth);
         paragraph.AddBookmark(heading.AnchorId);
         if (extraAnchor is not null) paragraph.AddBookmark(extraAnchor);
         RenderRuns(paragraph, heading.Runs);
     }
+
+    private static void ApplyHeadingFormat(Paragraph paragraph, int semanticLevel, int outlineDepth)
+    {
+        var sizeIndex = Math.Clamp(semanticLevel, 1, HeadingFontSizes.Length) - 1;
+        paragraph.Format.Font.Size = HeadingFontSizes[sizeIndex];
+        paragraph.Format.Font.Bold = true;
+        paragraph.Format.SpaceBefore = Unit.FromPoint(sizeIndex == 0 ? 20 : 14);
+        paragraph.Format.SpaceAfter = Unit.FromPoint(6);
+        paragraph.Format.OutlineLevel = OutlineLevelFor(outlineDepth);
+    }
+
+    private static readonly OutlineLevel[] OutlineLevels =
+    {
+        OutlineLevel.Level1, OutlineLevel.Level2, OutlineLevel.Level3, OutlineLevel.Level4, OutlineLevel.Level5,
+        OutlineLevel.Level6, OutlineLevel.Level7, OutlineLevel.Level8, OutlineLevel.Level9,
+    };
+
+    private static OutlineLevel OutlineLevelFor(int depth) => OutlineLevels[Math.Clamp(depth, 1, 9) - 1];
 
     private static void RenderList(Section section, IrList list, int depth)
     {
@@ -216,6 +244,7 @@ public static class MigraDocRenderer
         {
             var paragraph = section.AddParagraph();
             paragraph.Format.LeftIndent = Unit.FromCentimeter(0.6 * (depth + 1));
+            paragraph.Format.SpaceAfter = Unit.FromPoint(2);
             var marker = list.Ordered ? $"{index}. " : "• ";
             paragraph.AddFormattedText(marker);
             RenderRuns(paragraph, item.Runs);
