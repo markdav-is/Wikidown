@@ -25,16 +25,18 @@ public static class MigraDocRenderer
     private static readonly Color LinkColor = Color.FromRgb(0x05, 0x63, 0xC1);
 
     // Renders a whole wiki (or the subtree WikiPdfContent.BuildAll was
-    // scoped to) into one PDF: an in-document TOC page, then one section per
-    // page. Each page's own leading heading is placed at the outline depth
-    // NavTree gave it, so the sidebar bookmark panel mirrors the wiki's nav
-    // hierarchy rather than listing every page as a flat top-level entry.
-    public static void Render(PdfExportContent content, Stream output)
+    // scoped to) into one PDF: an optional cover page, an optional in-doc
+    // TOC page, then one section per page. Each page's own leading heading
+    // is placed at the outline depth NavTree gave it, so the sidebar
+    // bookmark panel mirrors the wiki's nav hierarchy rather than listing
+    // every page as a flat top-level entry.
+    public static void Render(PdfExportContent content, Stream output, PdfExportOptions options)
     {
         EnsureFontResolverRegistered();
         var document = NewDocument();
 
-        RenderToc(document, content.Nav);
+        if (options.IncludeCover) RenderCover(document, options.Title);
+        if (options.IncludeToc) RenderToc(document, content.Nav);
 
         var depths = ComputePageDepths(content.Nav);
         foreach (var page in content.Pages)
@@ -45,10 +47,32 @@ public static class MigraDocRenderer
         renderer.PdfDocument.Save(output);
     }
 
+    // Convenience overload for tests exercising block-rendering behavior in
+    // isolation: no cover, TOC only if there's a nav to show.
+    public static void Render(PdfExportContent content, Stream output) =>
+        Render(content, output, new PdfExportOptions(Title: "", IncludeCover: false, IncludeToc: true));
+
     // Kept for the chunk-3 render spike / single-page tests: wraps one page
     // as a single-item PdfExportContent with no nav (so no TOC section).
     public static void Render(PageIr page, Stream output) =>
         Render(new PdfExportContent(new[] { page }, Array.Empty<NavNode>(), Array.Empty<PdfExportWarning>()), output);
+
+    private static void RenderCover(Document document, string title)
+    {
+        var section = document.AddSection();
+
+        var titleParagraph = section.AddParagraph(title);
+        titleParagraph.Format.Font.Size = 28;
+        titleParagraph.Format.Font.Bold = true;
+        titleParagraph.Format.Alignment = ParagraphAlignment.Center;
+        titleParagraph.Format.SpaceBefore = Unit.FromCentimeter(8);
+
+        var subtitle = section.AddParagraph($"Generated {DateTime.Now:yyyy-MM-dd}");
+        subtitle.Format.Alignment = ParagraphAlignment.Center;
+        subtitle.Format.SpaceBefore = Unit.FromCentimeter(1);
+        subtitle.Format.Font.Size = 11;
+        subtitle.Format.Font.Color = Color.FromRgb(0x66, 0x66, 0x66);
+    }
 
     // Depth of each page in the nav tree (1 = top level), used as the
     // page's own heading level so the outline panel nests the way the wiki

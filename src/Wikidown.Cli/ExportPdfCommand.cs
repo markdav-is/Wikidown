@@ -11,11 +11,14 @@ public static class ExportPdfCommand
         var outputPath = args.Require("output");
         var fromArg = args.Optional("from");
         var from = fromArg is null ? (PagePath?)null : PagePath.Parse(fromArg);
+        var title = args.Optional("title") ?? Path.GetFileName(repo.RootPath);
+        var options = new PdfExportOptions(
+            title, IncludeCover: !args.Flag("no-cover"), IncludeToc: !args.Flag("no-toc"));
 
         var content = WikiPdfContent.BuildAll(repo, from, allowHtmlSkip: args.Flag("allow-html-skip"));
 
         using (var stream = File.Create(outputPath))
-            MigraDocRenderer.Render(content, stream);
+            MigraDocRenderer.Render(content, stream, options);
 
         foreach (var warning in content.Warnings)
             w.WriteLine($"warning: {warning.Page.ToLinkPath()}: image not found: {warning.Target}");

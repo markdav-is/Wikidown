@@ -68,6 +68,31 @@ public class ExportPdfCommandTests : IDisposable
     }
 
     [Fact]
+    public void ExportPdf_WithTitleAndNoCoverNoToc_StillProducesValidPdf()
+    {
+        _repo.Write(new WikiPage(PagePath.Parse("/Home"), "# Home\n"));
+
+        var outputPath = Path.Combine(_root, "wiki.pdf");
+        var exitCode = Run(outputPath, "--title", "My Wiki", "--no-cover", "--no-toc");
+
+        Assert.Equal(0, exitCode);
+        var bytes = File.ReadAllBytes(outputPath);
+        Assert.Equal("%PDF-", System.Text.Encoding.ASCII.GetString(bytes, 0, 5));
+    }
+
+    [Fact]
+    public void ExportPdf_DefaultsToRepoFolderNameAsCoverTitle()
+    {
+        // No assertion on rendered text (no PDF text-extraction here) —
+        // this just confirms --title's default (repo folder name) doesn't
+        // throw when left unset, since it reads Path.GetFileName(root).
+        _repo.Write(new WikiPage(PagePath.Parse("/Home"), "# Home\n"));
+
+        var outputPath = Path.Combine(_root, "wiki.pdf");
+        Assert.Equal(0, Run(outputPath));
+    }
+
+    [Fact]
     public void ExportPdf_MissingImage_WarnsAndStillSucceeds()
     {
         _repo.Write(new WikiPage(PagePath.Parse("/A"), "# A\n\n![gone](does-not-exist.png)\n"));
