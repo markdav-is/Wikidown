@@ -107,9 +107,14 @@ public static class MigraDocRenderer
     private static void RenderTocNode(Section section, NavNode node, int depth)
     {
         var paragraph = section.AddParagraph();
-        var indent = Unit.FromCentimeter(0.5 * depth);
-        paragraph.Format.LeftIndent = indent;
-        paragraph.Format.TabStops.AddTabStop(PageContentWidth - indent, TabAlignment.Right, TabLeader.Dots);
+        paragraph.Format.LeftIndent = Unit.FromCentimeter(0.5 * depth);
+        // MigraDoc measures tab stop positions from the page margin, not
+        // from the paragraph's (indented) left edge, so every depth targets
+        // the same absolute PageContentWidth — no indent compensation.
+        // Subtracting indent here (an earlier attempt) pulled indented
+        // rows' page numbers short of the top-level rows' by exactly the
+        // indent amount.
+        paragraph.Format.TabStops.AddTabStop(PageContentWidth, TabAlignment.Right, TabLeader.Dots);
 
         if (node.IsPage)
         {
