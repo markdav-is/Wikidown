@@ -74,6 +74,36 @@ wikidown --root ./my-wiki list
   breadcrumbs automatically going forward, so a wiki that's always been
   edited through this CLI (or the MCP tools) never needs it. `--dry-run`
   lists which pages would change without writing anything. Prints a count.
+- `export-pdf --output <path> [--from /Link/Path] [--title T] [--no-cover] [--no-toc] [--allow-html-skip]` —
+  combine the whole wiki (or a subtree, with `--from`) into a single linked
+  PDF:
+  - an optional cover page (title defaults to the repo's folder name,
+    override with `--title`, skip with `--no-cover`);
+  - an optional in-document table of contents page with page numbers and
+    clickable entries, indented to match the nav hierarchy (skip with
+    `--no-toc`);
+  - one section per wiki page, with each page's own leading `# Title`
+    heading placed at its nav depth, so the PDF's bookmark/outline panel
+    mirrors the wiki's folder structure instead of listing every page flat;
+  - internal wiki links — relative `.md` links, legacy absolute
+    title-paths, and same-page `#fragment` links to headings — become real
+    in-PDF jumps, not dead hrefs;
+  - full markdown fidelity: headings, bold/italic, inline code, nested
+    bullet/numbered lists, fenced code blocks, pipe tables, and images
+    (embedded when the relative path resolves).
+
+  A missing/broken image renders a visible placeholder and prints
+  `warning: {page}: image not found: {target}` (mirroring `check-links`);
+  the export still completes, but the command exits 1 if there were any
+  warnings (0 otherwise). Raw HTML in a page's markdown (e.g. a `<div>`)
+  is unsupported and fails the whole export by default — pass
+  `--allow-html-skip` to instead render a
+  `[unsupported HTML block omitted]` placeholder and continue.
+  For example: `wikidown export-pdf --output wiki.pdf`.
+
+  PDF font resolution currently only works on Windows (it resolves fonts
+  from `C:\Windows\Fonts`); running `export-pdf` on Linux or macOS fails
+  until an embedded-font resolver ships as a follow-up.
 
 See [Format](Getting-Started/Format.md) for the on-disk format the CLI
 maintains, including the relative-link convention that `check-links`
