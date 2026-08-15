@@ -59,7 +59,7 @@ public static class MigraDocRenderer
 
     private static void RenderCover(Document document, string title)
     {
-        var section = document.AddSection();
+        var section = AddSection(document);
 
         var titleParagraph = section.AddParagraph(title);
         titleParagraph.Format.Font.Size = 28;
@@ -97,7 +97,7 @@ public static class MigraDocRenderer
     {
         if (nav.Count == 0) return;
 
-        var section = document.AddSection();
+        var section = AddSection(document);
         var title = section.AddParagraph("Table of Contents");
         ApplyHeadingFormat(title, semanticLevel: 1, outlineDepth: 1);
 
@@ -109,7 +109,7 @@ public static class MigraDocRenderer
         var paragraph = section.AddParagraph();
         var indent = Unit.FromCentimeter(0.5 * depth);
         paragraph.Format.LeftIndent = indent;
-        paragraph.Format.TabStops.AddTabStop(Unit.FromCentimeter(16.5) - indent, TabAlignment.Right, TabLeader.Dots);
+        paragraph.Format.TabStops.AddTabStop(PageContentWidth - indent, TabAlignment.Right, TabLeader.Dots);
 
         if (node.IsPage)
         {
@@ -148,6 +148,13 @@ public static class MigraDocRenderer
         }
     }
 
+    // A4 width (21cm) minus 2cm margins on each side. Set explicitly —
+    // rather than guessing at MigraDoc's own default margins — so the TOC's
+    // right-aligned tab stop (PageContentWidth below) can target the exact
+    // usable width instead of a guessed value that silently falls outside
+    // the printable area for some paragraphs and not others.
+    private static readonly Unit PageContentWidth = Unit.FromCentimeter(17);
+
     private static Document NewDocument()
     {
         var document = new Document();
@@ -156,6 +163,22 @@ public static class MigraDocRenderer
         normal.Font.Size = 10;
         normal.ParagraphFormat.SpaceAfter = Unit.FromPoint(6);
         return document;
+    }
+
+    // Document.DefaultPageSetup is frozen (read-only template) — every
+    // section needs its own Clone() of it before margins can be changed.
+    // Every call site that used to call document.AddSection() directly
+    // goes through here instead so every section gets the same margins.
+    private static Section AddSection(Document document)
+    {
+        var section = document.AddSection();
+        section.PageSetup = section.PageSetup.Clone();
+        section.PageSetup.PageFormat = PageFormat.A4;
+        section.PageSetup.LeftMargin = Unit.FromCentimeter(2);
+        section.PageSetup.RightMargin = Unit.FromCentimeter(2);
+        section.PageSetup.TopMargin = Unit.FromCentimeter(2);
+        section.PageSetup.BottomMargin = Unit.FromCentimeter(2);
+        return section;
     }
 
     // Every page written via `wikidown new`/Commands.New starts its body
@@ -167,7 +190,7 @@ public static class MigraDocRenderer
     // the body shift by the same offset so they nest underneath it.
     private static void RenderPage(Document document, PageIr page, int navDepth)
     {
-        var section = document.AddSection();
+        var section = AddSection(document);
         var pageAnchor = PdfAnchors.PageAnchor(page.Path);
         var pageLevel = Math.Clamp(navDepth, 1, 9);
 
@@ -277,7 +300,7 @@ public static class MigraDocRenderer
         mdTable.Borders.Width = Unit.FromPoint(0.5);
         var columnCount = Math.Max(table.HeaderCells.Count, 1);
         for (var i = 0; i < columnCount; i++)
-            mdTable.AddColumn(Unit.FromCentimeter(16.0 / columnCount));
+            mdTable.AddColumn(PageContentWidth / columnCount);
 
         var headerRow = mdTable.AddRow();
         headerRow.Format.Font.Bold = true;
