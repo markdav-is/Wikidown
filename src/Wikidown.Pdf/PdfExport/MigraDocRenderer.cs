@@ -2,6 +2,7 @@ using MigraDoc.DocumentObjectModel;
 using MigraDoc.DocumentObjectModel.Tables;
 using MigraDoc.Rendering;
 using PdfSharp.Fonts;
+using Wikidown.Core;
 using Wikidown.Core.PdfExport;
 
 namespace Wikidown.Pdf.PdfExport;
@@ -21,19 +22,84 @@ public static class MigraDocRenderer
     // EnsureFontResolverRegistered.
     private const string BodyFont = "Arial";
     private const string MonospaceFont = "Courier New";
+    private static readonly Color LinkColor = Color.FromRgb(0x05, 0x63, 0xC1);
 
-    // Single-page entry point: renders one page's IR into a standalone PDF.
-    // Multi-page assembly (TOC, cover, cross-page bookmarks/outline) lands
-    // in a later chunk once this translation is validated end to end.
-    public static void Render(PageIr page, Stream output)
+    // Renders a whole wiki (or the subtree WikiPdfContent.BuildAll was
+    // scoped to) into one PDF: an in-document TOC page, then one section per
+    // page. Each page's own leading heading is placed at the outline depth
+    // NavTree gave it, so the sidebar bookmark panel mirrors the wiki's nav
+    // hierarchy rather than listing every page as a flat top-level entry.
+    public static void Render(PdfExportContent content, Stream output)
     {
         EnsureFontResolverRegistered();
         var document = NewDocument();
-        RenderPage(document, page);
+
+        RenderToc(document, content.Nav);
+
+        var depths = ComputePageDepths(content.Nav);
+        foreach (var page in content.Pages)
+            RenderPage(document, page, depths.GetValueOrDefault(page.Path.ToLinkPath(), 1));
 
         var renderer = new PdfDocumentRenderer { Document = document };
         renderer.RenderDocument();
         renderer.PdfDocument.Save(output);
+    }
+
+    // Kept for the chunk-3 render spike / single-page tests: wraps one page
+    // as a single-item PdfExportContent with no nav (so no TOC section).
+    public static void Render(PageIr page, Stream output) =>
+        Render(new PdfExportContent(new[] { page }, Array.Empty<NavNode>()), output);
+
+    // Depth of each page in the nav tree (1 = top level), used as the
+    // page's own heading level so the outline panel nests the way the wiki
+    // does. Bare folders (no page content) don't get an entry here — only
+    // IsPage nodes correspond to a PageIr this renderer ever sees.
+    private static Dictionary<string, int> ComputePageDepths(IReadOnlyList<NavNode> nav)
+    {
+        var result = new Dictionary<string, int>();
+        void Walk(IReadOnlyList<NavNode> nodes, int depth)
+        {
+            foreach (var node in nodes)
+            {
+                if (node.IsPage) result[node.Path.ToLinkPath()] = depth;
+                Walk(node.Children, depth + 1);
+            }
+        }
+        Walk(nav, 1);
+        return result;
+    }
+
+    private static void RenderToc(Document document, IReadOnlyList<NavNode> nav)
+    {
+        if (nav.Count == 0) return;
+
+        var section = document.AddSection();
+        var title = section.AddParagraph("Table of Contents");
+        title.Style = "Heading1";
+
+        foreach (var node in nav) RenderTocNode(section, node, depth: 0);
+    }
+
+    private static void RenderTocNode(Section section, NavNode node, int depth)
+    {
+        var paragraph = section.AddParagraph();
+        var indent = Unit.FromCentimeter(0.5 * depth);
+        paragraph.Format.LeftIndent = indent;
+        paragraph.Format.TabStops.AddTabStop(Unit.FromCentimeter(16.5) - indent, TabAlignment.Right, TabLeader.Dots);
+
+        if (node.IsPage)
+        {
+            var anchor = PdfAnchors.PageAnchor(node.Path);
+            StyleAsLink(paragraph.AddHyperlink(anchor, HyperlinkType.Bookmark).AddFormattedText(node.Title));
+            paragraph.AddTab();
+            paragraph.AddPageRefField(anchor);
+        }
+        else
+        {
+            paragraph.AddFormattedText(node.Title).Font.Bold = true;
+        }
+
+        foreach (var child in node.Children) RenderTocNode(section, child, depth + 1);
     }
 
     // The PDFsharp-MigraDoc package is platform-agnostic and has no font
@@ -71,31 +137,35 @@ public static class MigraDocRenderer
     // with "# Title" (its own IrHeading), so synthesizing a second Heading1
     // here would print the title twice. The page's own leading heading (if
     // it has one) carries the PageAnchor bookmark instead; only pages that
-    // genuinely don't open with a heading get a synthesized one.
-    private static void RenderPage(Document document, PageIr page)
+    // genuinely don't open with a heading get a synthesized one. Its
+    // outline level is the page's nav depth, and any further headings in
+    // the body shift by the same offset so they nest underneath it.
+    private static void RenderPage(Document document, PageIr page, int navDepth)
     {
         var section = document.AddSection();
         var pageAnchor = PdfAnchors.PageAnchor(page.Path);
+        var pageLevel = Math.Clamp(navDepth, 1, 9);
 
         if (page.Blocks.Count > 0 && page.Blocks[0] is IrHeading firstHeading)
         {
-            RenderHeading(section, firstHeading, pageAnchor);
-            foreach (var block in page.Blocks.Skip(1)) RenderBlock(section, block, depth: 0);
+            RenderHeading(section, firstHeading, pageAnchor, pageLevel);
+            var offset = pageLevel - firstHeading.Level;
+            foreach (var block in page.Blocks.Skip(1)) RenderBlock(section, block, depth: 0, offset);
         }
         else
         {
             var heading = section.AddParagraph(page.Title);
-            heading.Style = "Heading1";
+            heading.Style = "Heading" + pageLevel;
             heading.AddBookmark(pageAnchor);
-            foreach (var block in page.Blocks) RenderBlock(section, block, depth: 0);
+            foreach (var block in page.Blocks) RenderBlock(section, block, depth: 0, headingOffset: pageLevel - 1);
         }
     }
 
-    private static void RenderBlock(Section section, IrBlock block, int depth)
+    private static void RenderBlock(Section section, IrBlock block, int depth, int headingOffset)
     {
         switch (block)
         {
-            case IrHeading h: RenderHeading(section, h); break;
+            case IrHeading h: RenderHeading(section, h, extraAnchor: null, h.Level + headingOffset); break;
             case IrParagraph p: RenderRuns(section.AddParagraph(), p.Runs); break;
             case IrList l: RenderList(section, l, depth); break;
             case IrCodeBlock c: RenderCodeBlock(section, c); break;
@@ -106,10 +176,10 @@ public static class MigraDocRenderer
         }
     }
 
-    private static void RenderHeading(Section section, IrHeading heading, string? extraAnchor = null)
+    private static void RenderHeading(Section section, IrHeading heading, string? extraAnchor, int level)
     {
         var paragraph = section.AddParagraph();
-        paragraph.Style = "Heading" + Math.Clamp(heading.Level, 1, 9);
+        paragraph.Style = "Heading" + Math.Clamp(level, 1, 9);
         paragraph.AddBookmark(heading.AnchorId);
         if (extraAnchor is not null) paragraph.AddBookmark(extraAnchor);
         RenderRuns(paragraph, heading.Runs);
@@ -217,11 +287,11 @@ public static class MigraDocRenderer
                     break;
 
                 case IrLink link:
-                    paragraph.AddHyperlink(link.AnchorId, HyperlinkType.Bookmark).AddText(PlainText(link.Content));
+                    StyleAsLink(paragraph.AddHyperlink(link.AnchorId, HyperlinkType.Bookmark).AddFormattedText(PlainText(link.Content)));
                     break;
 
                 case IrExternalLink ext:
-                    paragraph.AddHyperlink(ext.Url, HyperlinkType.Web).AddText(PlainText(ext.Content));
+                    StyleAsLink(paragraph.AddHyperlink(ext.Url, HyperlinkType.Web).AddFormattedText(PlainText(ext.Content)));
                     break;
 
                 case IrInlineImage img when img.ResolvedPath is not null:
@@ -233,6 +303,12 @@ public static class MigraDocRenderer
                     break;
             }
         }
+    }
+
+    private static void StyleAsLink(FormattedText text)
+    {
+        text.Font.Color = LinkColor;
+        text.Font.Underline = Underline.Single;
     }
 
     private static string PlainText(IReadOnlyList<IrRun> runs) =>
