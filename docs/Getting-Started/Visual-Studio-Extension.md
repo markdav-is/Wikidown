@@ -61,6 +61,13 @@ file. Edit the file to point to a different location:
     from the current display order if missing).
   - **Delete Page** (a page and, for pages with children, its subpages) and
     **Delete Folder** confirm and then delete — your git history is the undo.
+  - **Export to PDF...** — right-click the project root, a folder, or a page
+    and export it to a single linked PDF: the selected node plus all of its
+    descendants (the project root exports the whole wiki). Prompts for a save
+    location, then generates the PDF the same way `wikidown export-pdf` does
+    (cover page, table of contents, per-page bookmarks/outline, embedded
+    fonts) — the extension bundles the CLI internally, so no separate install
+    step is needed. Offers to open the finished PDF when done.
 - Everything stays consistent with the `wikidown` CLI and the `wiki_*` MCP
   tools, which remain fully usable side by side — the tree refreshes live when
   they change files or reorder `.order`.
