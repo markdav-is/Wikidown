@@ -28,5 +28,6 @@ namespace Wikidown.Vs
         public const uint CmdIdAddExistingPages = 0x0105;
         public const uint CmdIdDeletePage       = 0x0106;
         public const uint CmdIdDeleteFolder     = 0x0107;
+        public const uint CmdIdExportPdf        = 0x0108;
     }
 }

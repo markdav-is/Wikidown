@@ -1,8 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using System.Xml.Linq;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.OLE.Interop;
@@ -743,6 +746,9 @@ namespace Wikidown.Vs
                         case PackageGuids.CmdIdDeleteFolder:
                             visible = node != null && node.IsFolder && !node.IsPage;
                             break;
+                        case PackageGuids.CmdIdExportPdf:
+                            visible = true;
+                            break;
                         default:
                             visible = false;
                             break;
@@ -779,6 +785,8 @@ namespace Wikidown.Vs
                     case PackageGuids.CmdIdDeletePage:
                     case PackageGuids.CmdIdDeleteFolder:
                         return DeleteNode(itemid);
+                    case PackageGuids.CmdIdExportPdf:
+                        return ExportPdf(itemid);
                 }
             }
             catch (Exception ex)
@@ -906,6 +914,154 @@ namespace Wikidown.Vs
             // (no OpenItem re-entrancy).
             VsShellUtilities.OpenDocument(_serviceProvider, orderPath);
             return VSConstants.S_OK;
+        }
+
+        // ── export to PDF ────────────────────────────────────────────────────
+        // Shells out to the Wikidown CLI (bundled with this VSIX under
+        // Tools\cli\, published framework-dependent for net10.0 — see the
+        // PublishBundledCli target in Wikidown.Vs.csproj) rather than
+        // rendering in-process: Wikidown.Core/Wikidown.Pdf target net10.0 and
+        // this project targets net472 (a VS SDK requirement), so reusing the
+        // CLI's already-tested MigraDoc pipeline via `dotnet exec` avoids a
+        // much larger multi-targeting migration for a single command.
+
+        private int ExportPdf(uint itemid)
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+
+            var isRoot = itemid == ItemIdRoot;
+            Node node = null;
+            if (!isRoot && !_nodes.TryGetValue(itemid, out node))
+                return VSConstants.S_OK;
+
+            var linkPath = isRoot ? null : GetLinkPath(node);
+            var title = isRoot ? Path.GetFileNameWithoutExtension(_projectFile) : node.Name;
+
+            var dlg = new Microsoft.Win32.SaveFileDialog
+            {
+                Title = "Export to PDF",
+                Filter = "PDF files (*.pdf)|*.pdf",
+                FileName = SanitizeFileName(title) + ".pdf",
+                InitialDirectory = Path.GetDirectoryName(_projectFile),
+            };
+            if (dlg.ShowDialog() != true) return VSConstants.S_OK;
+
+            var cliDll = Path.Combine(
+                Path.GetDirectoryName(typeof(WikidownProject).Assembly.Location) ?? "",
+                "Tools", "cli", "wikidown.dll");
+            if (!File.Exists(cliDll))
+            {
+                VsShellUtilities.ShowMessageBox(
+                    _serviceProvider,
+                    "The bundled Wikidown CLI is missing from this extension install (Tools\\cli\\wikidown.dll not found).",
+                    "Wikidown",
+                    OLEMSGICON.OLEMSGICON_CRITICAL, OLEMSGBUTTON.OLEMSGBUTTON_OK, OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
+                return VSConstants.S_OK;
+            }
+
+            var cliArgs = new List<string> { "exec", cliDll, "export-pdf", "--root", _wikiRoot, "--output", dlg.FileName, "--title", title };
+            if (linkPath != null) { cliArgs.Add("--from"); cliArgs.Add(linkPath); }
+
+            SetStatusBarText("Wikidown: exporting to PDF...");
+            RunExportAsync(BuildArguments(cliArgs), dlg.FileName);
+            return VSConstants.S_OK;
+        }
+
+        // Node.FullPath is always rooted under _wikiRoot (built entirely from
+        // Directory.GetFiles/GetDirectories under it in PopulateFolder), so a
+        // plain prefix strip is safe — no need for Path.GetRelativePath
+        // (unavailable on net472).
+        private string GetLinkPath(Node node)
+        {
+            var full = node.IsPage ? node.FullPath.Substring(0, node.FullPath.Length - 3) : node.FullPath;
+            var rel = full.Length > _wikiRoot.Length ? full.Substring(_wikiRoot.Length) : "";
+            rel = rel.TrimStart('\\', '/').Replace('\\', '/');
+            return rel.Length == 0 ? "/" : "/" + rel;
+        }
+
+        private static string SanitizeFileName(string name)
+        {
+            foreach (var c in Path.GetInvalidFileNameChars())
+                name = name.Replace(c.ToString(), "");
+            return name;
+        }
+
+        private static string BuildArguments(IEnumerable<string> parts) =>
+            string.Join(" ", parts.Select(p => "\"" + p.Replace("\"", "\\\"") + "\""));
+
+        private void RunExportAsync(string arguments, string outputPath)
+        {
+            ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
+            {
+                var (exitCode, stdOut, stdErr) = await Task.Run(() => RunCli(arguments));
+                await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+                ShowExportResult(exitCode, stdOut, stdErr, outputPath);
+            });
+        }
+
+        private static (int ExitCode, string StdOut, string StdErr) RunCli(string arguments)
+        {
+            try
+            {
+                using (var proc = new Process
+                {
+                    StartInfo = new ProcessStartInfo("dotnet", arguments)
+                    {
+                        UseShellExecute = false,
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                        CreateNoWindow = true,
+                    }
+                })
+                {
+                    proc.Start();
+                    var stdOut = proc.StandardOutput.ReadToEnd();
+                    var stdErr = proc.StandardError.ReadToEnd();
+                    proc.WaitForExit();
+                    return (proc.ExitCode, stdOut, stdErr);
+                }
+            }
+            catch (Win32Exception)
+            {
+                return (-1, "", "Could not launch 'dotnet'. Install the .NET runtime (needed to run the bundled Wikidown CLI) and try again.");
+            }
+        }
+
+        private void ShowExportResult(int exitCode, string stdOut, string stdErr, string outputPath)
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+            SetStatusBarText("Wikidown: PDF export complete.");
+
+            // export-pdf exits 1 for non-fatal warnings (e.g. a missing
+            // image) with the PDF still written — worth surfacing, not
+            // treating as failure.
+            if (exitCode == 0 || (exitCode == 1 && File.Exists(outputPath)))
+            {
+                var message = exitCode == 1
+                    ? $"Exported with warnings:\n\n{stdOut.Trim()}\n\nOpen the PDF?"
+                    : "Export complete. Open the PDF?";
+                var choice = VsShellUtilities.ShowMessageBox(
+                    _serviceProvider, message, "Wikidown",
+                    exitCode == 1 ? OLEMSGICON.OLEMSGICON_WARNING : OLEMSGICON.OLEMSGICON_INFO,
+                    OLEMSGBUTTON.OLEMSGBUTTON_YESNO, OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
+                if (choice == 6) // IDYES
+                    Process.Start(new ProcessStartInfo(outputPath) { UseShellExecute = true });
+            }
+            else
+            {
+                VsShellUtilities.ShowMessageBox(
+                    _serviceProvider,
+                    string.IsNullOrWhiteSpace(stdErr) ? stdOut : stdErr,
+                    "Wikidown export failed",
+                    OLEMSGICON.OLEMSGICON_CRITICAL, OLEMSGBUTTON.OLEMSGBUTTON_OK, OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
+            }
+        }
+
+        private void SetStatusBarText(string text)
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+            var statusBar = _serviceProvider.GetService(typeof(SVsStatusbar)) as IVsStatusbar;
+            statusBar?.SetText(text);
         }
 
         // ── add page commands ────────────────────────────────────────────────

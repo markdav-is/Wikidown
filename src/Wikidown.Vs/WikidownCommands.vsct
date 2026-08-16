@@ -15,6 +15,9 @@
       <Group guid="guidWikidownCmdSet" id="WikiDeleteGroup" priority="0x0210">
         <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_ITEMNODE" />
       </Group>
+      <Group guid="guidWikidownCmdSet" id="WikiExportGroup" priority="0x0220">
+        <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_ITEMNODE" />
+      </Group>
     </Groups>
 
     <Buttons>
@@ -95,6 +98,15 @@
           <ButtonText>Edit Page Order</ButtonText>
         </Strings>
       </Button>
+      <Button guid="guidWikidownCmdSet" id="cmdidExportPdf" priority="0x0100" type="Button">
+        <Parent guid="guidWikidownCmdSet" id="WikiExportGroup" />
+        <CommandFlag>DefaultInvisible</CommandFlag>
+        <CommandFlag>DefaultDisabled</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <Strings>
+          <ButtonText>Export to PDF...</ButtonText>
+        </Strings>
+      </Button>
     </Buttons>
   </Commands>
 
@@ -114,6 +126,12 @@
     <CommandPlacement guid="guidWikidownCmdSet" id="WikiDeleteGroup" priority="0x0210">
       <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_FOLDERNODE" />
     </CommandPlacement>
+    <CommandPlacement guid="guidWikidownCmdSet" id="WikiExportGroup" priority="0x0220">
+      <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_FOLDERNODE" />
+    </CommandPlacement>
+    <CommandPlacement guid="guidWikidownCmdSet" id="WikiExportGroup" priority="0x0220">
+      <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_PROJNODE" />
+    </CommandPlacement>
   </CommandPlacements>
 
   <Symbols>
@@ -122,6 +140,7 @@
       <IDSymbol name="WikiNodeGroup" value="0x1020" />
       <IDSymbol name="WikiAddGroup" value="0x1021" />
       <IDSymbol name="WikiDeleteGroup" value="0x1022" />
+      <IDSymbol name="WikiExportGroup" value="0x1023" />
       <IDSymbol name="cmdidMovePageUp" value="0x0100" />
       <IDSymbol name="cmdidMovePageDown" value="0x0101" />
       <IDSymbol name="cmdidEditPageOrder" value="0x0102" />
@@ -130,6 +149,7 @@
       <IDSymbol name="cmdidAddExistingPages" value="0x0105" />
       <IDSymbol name="cmdidDeletePage" value="0x0106" />
       <IDSymbol name="cmdidDeleteFolder" value="0x0107" />
+      <IDSymbol name="cmdidExportPdf" value="0x0108" />
     </GuidSymbol>
   </Symbols>
 </CommandTable>

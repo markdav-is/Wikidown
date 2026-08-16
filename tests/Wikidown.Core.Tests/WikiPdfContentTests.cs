@@ -34,9 +34,22 @@ public class WikiPdfContentTests : IDisposable
     }
 
     [Fact]
-    public void BuildAll_FromSubtree_ScopesToDescendants()
+    public void BuildAll_FromSubtree_ScopesToNodeAndDescendants()
     {
         _repo.Write(new WikiPage(PagePath.Parse("/Guides"), "# Guides\n"));
+        _repo.Write(new WikiPage(PagePath.Parse("/Guides/Install"), "# Install\n"));
+        _repo.Write(new WikiPage(PagePath.Parse("/Other"), "# Other\n"));
+
+        var content = WikiPdfContent.BuildAll(_repo, PagePath.Parse("/Guides"));
+
+        Assert.Equal(new[] { "Guides", "Install" }, content.Pages.Select(p => p.Title));
+    }
+
+    [Fact]
+    public void BuildAll_FromBareFolder_ScopesToDescendantsOnly()
+    {
+        // /Guides here is a folder with no paired Guides.md — from should
+        // still work, just with nothing to include for the folder itself.
         _repo.Write(new WikiPage(PagePath.Parse("/Guides/Install"), "# Install\n"));
         _repo.Write(new WikiPage(PagePath.Parse("/Other"), "# Other\n"));
 

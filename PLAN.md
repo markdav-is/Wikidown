@@ -364,6 +364,41 @@ Blazor WASM PWA editor + marketing site hosted on GitHub Pages.
       allow a truly anonymous (empty-token) read against a public repo
       from this backend.
 
+18. **VS extension: "Export to PDF..." context menu, on any node.** *(shipped)*
+    - Right-clicking the project root, a folder, or a page in Solution
+      Explorer now shows "Export to PDF...", scoped to that node and all of
+      its descendants (root exports the whole wiki). Prompts for a save
+      location, then shells out to the same `export-pdf` the CLI ships,
+      with a `Yes/No` "open the PDF?" prompt on completion (or the CLI's
+      own stderr on failure).
+    - Real bug fixed along the way, not VS-specific: `export-pdf --from
+      /Path` (`WikiPdfContent.BuildAll`) walked `WikiRepository.Walk(from)`,
+      which yields `from`'s *descendants* only — the page at `from` itself
+      was silently dropped from every scoped export, CLI included, contrary
+      to `docs/CLI.md`'s own "a subtree, with `--from`" description. Fixed
+      by prepending `from` to the walked paths when it's itself a real
+      page; a bare folder (no paired page) still scopes to descendants only,
+      unchanged. `WikiPdfContentTests` covers both cases now.
+    - No in-process render: `Wikidown.Core`/`Wikidown.Pdf` target net10.0,
+      `Wikidown.Vs` targets net472 (a VS SDK requirement), and MigraDoc's
+      dependency surface makes a net472 multi-target a real migration, not
+      a one-command fix — deferred, not attempted here (see the standing
+      parking-lot item). Instead, `Wikidown.Vs.csproj` gains a
+      `PublishBundledCli` build target that `dotnet publish`es
+      `Wikidown.Cli` (framework-dependent, no RID) straight into the VSIX
+      under `Tools\cli\`; the command shells out to it via `dotnet exec`.
+      Reuses the exact same tested renderer (embedded DejaVu fonts
+      included) with no separate install step for VSIX users, at the cost
+      of VSIX size and a `dotnet` on `PATH` runtime dependency — both
+      judged acceptable for a tool whose whole ecosystem already assumes
+      the .NET 10 runtime is present.
+    - Verified end to end: built the VSIX, confirmed `Tools\cli\` contains
+      `wikidown.dll` + its dependencies, then invoked the published CLI
+      exactly as the extension does (`dotnet exec wikidown.dll export-pdf
+      --from /Getting-Started ...`) against this repo's own `/docs` and
+      read the resulting PDF back — correct cover, TOC, and outline scoped
+      to `Getting-Started` and its three children.
+
 ## Open questions / parking lot
 - `[[_TOC_]]`, mermaid, `:::` callouts rendering in WASM preview.
 - `/.attachments` upload from browser (REST base64 -> Contents API).

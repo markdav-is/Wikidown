@@ -129,4 +129,27 @@
     <Error Condition="!Exists('$(VSToolsPath)\VSSDK\Microsoft.VsSDK.targets')"
            Text="Microsoft.VsSDK.targets not found (VSToolsPath='$(VSToolsPath)') — restore Microsoft.VSSDK.BuildTools first." />
   </Target>
+
+  <!--
+    Bundle the Wikidown CLI (framework-dependent, net10.0) so "Export to
+    PDF" can shell out to it at run time without requiring a separate
+    `dotnet tool install` step. Wikidown.Core/Wikidown.Pdf target net10.0
+    and this project targets net472 (a VS SDK requirement), so an in-process
+    reference isn't an option — see WikidownProject.ExportPdf.
+  -->
+  <Target Name="PublishBundledCli" BeforeTargets="GetVsixSourceItems">
+    <PropertyGroup>
+      <_CliPublishDir>$(MSBuildThisFileDirectory)$(IntermediateOutputPath)cli-publish\</_CliPublishDir>
+    </PropertyGroup>
+    <MSBuild Projects="..\Wikidown.Cli\Wikidown.Cli.csproj"
+             Targets="Publish"
+             Properties="Configuration=$(Configuration);TargetFramework=net10.0;SelfContained=false;PublishDir=$(_CliPublishDir)" />
+    <ItemGroup>
+      <_CliPublishFiles Include="$(_CliPublishDir)**\*.*" Exclude="$(_CliPublishDir)**\*.pdb" />
+      <VSIXSourceItem Include="@(_CliPublishFiles)">
+        <VSIXSubPath>Tools\cli\%(RecursiveDir)</VSIXSubPath>
+      </VSIXSourceItem>
+      <FileWrites Include="@(_CliPublishFiles)" />
+    </ItemGroup>
+  </Target>
 </Project>

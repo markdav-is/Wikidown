@@ -11,7 +11,13 @@ public static class WikiPdfContent
 {
     public static PdfExportContent BuildAll(WikiRepository repo, PagePath? from = null, bool allowHtmlSkip = false)
     {
-        var paths = repo.Walk(from).ToList();
+        // Walk(from) yields from's descendants only, not from itself — a
+        // scoped export needs the page it's scoped to as well, so the
+        // subtree's own root content isn't silently dropped.
+        var paths = new List<PagePath>();
+        if (from is { IsRoot: false } start && repo.Exists(start))
+            paths.Add(start);
+        paths.AddRange(repo.Walk(from));
         var warnings = new List<PdfExportWarning>();
 
         var pages = paths.Select(path =>
