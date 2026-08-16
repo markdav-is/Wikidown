@@ -141,8 +141,13 @@
     <PropertyGroup>
       <_CliPublishDir>$(MSBuildThisFileDirectory)$(IntermediateOutputPath)cli-publish\</_CliPublishDir>
     </PropertyGroup>
+    <!--
+      CI only restores this project (see vsix.yml), not Wikidown.Cli, so
+      restore it explicitly here — a plain Publish target assumes an
+      up-to-date project.assets.json and fails without one.
+    -->
     <MSBuild Projects="..\Wikidown.Cli\Wikidown.Cli.csproj"
-             Targets="Publish"
+             Targets="Restore;Publish"
              Properties="Configuration=$(Configuration);TargetFramework=net10.0;SelfContained=false;PublishDir=$(_CliPublishDir)" />
     <ItemGroup>
       <_CliPublishFiles Include="$(_CliPublishDir)**\*.*" Exclude="$(_CliPublishDir)**\*.pdb" />
