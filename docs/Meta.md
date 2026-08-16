@@ -9,3 +9,6 @@ Behind-the-scenes notes about how Wikidown itself gets built — build-log posts
 - [Vibing Phase Recap](Meta/Vibing-Phase-Recap.md) — build log from getting
   the WASM editor, Functions API, marketing site, and CLI/MCP tool pair
   standing up.
+- [Release Quirks](Meta/Release-Quirks.md) — maintainer-facing gotchas in
+  this repo's NuGet and VS Marketplace VSIX release pipelines, discovered
+  the hard way.

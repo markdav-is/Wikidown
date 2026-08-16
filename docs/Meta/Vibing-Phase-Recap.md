@@ -124,3 +124,9 @@ Lessons:
 This phase was a lot of "the docs say X; the platform does Y; the build runs but the thing 404s anyway." The pattern that paid off over and over: when the hosted builder can't do it, move the work onto the GitHub runner. When the service worker is in the way, read the service worker. When the Azure Portal banner contradicts the row below it, read the row below it.
 
 What's in place is the boring-but-load-bearing foundation — infra, auth, deploy, two live origins, a dogfed wiki, a CLI, an MCP server, a PWA. Next loop gets to actually build features on top.
+
+## See also
+
+- [Release Quirks](Release-Quirks.md) — maintainer-facing gotchas in the
+  NuGet and VS Marketplace VSIX release pipelines, in the same "learned it
+  the hard way" spirit as this page.
