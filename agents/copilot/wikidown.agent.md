@@ -51,6 +51,15 @@ wikidown reorder --folder /P --names a,b,c
 wikidown search --query <text>
 ```
 
+## Exporting
+
+- `wikidown export-pdf --output <path> [--from /P] [--title T]` combines the
+  whole wiki (or a subtree, with `--from`) into one linked PDF — cover page,
+  table of contents, per-page bookmarks matching the nav hierarchy, and
+  in-PDF jumps for internal links. CLI-only, no MCP equivalent — use it
+  whenever asked for a PDF, a printable copy, or "the whole wiki as one
+  document."
+
 ## Format rules
 
 - **Link path** — title form, hyphens for spaces: `/Getting-Started/Format`.

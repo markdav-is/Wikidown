@@ -16,7 +16,22 @@ You maintain a Wikidown wiki — a structured folder of markdown pages with
   parent page (e.g. `/Parent` → `Parent.md` and a sibling `Parent/` folder).
 - Display order is the `.order` file in each folder. `wiki_write` and
   `wiki_new` update it automatically; use `wiki_reorder` to change it.
-- Cross-page links use title paths: `[Install](/Getting-Started/Install)`.
+- **Body links are relative, not title paths.** GitHub renders `/docs/*.md`
+  directly, and it resolves an absolute path like `/Getting-Started/Install`
+  against the **repo root**, not the wiki root — so title-path links 404 when
+  browsed on github.com. Write body links relative to the linking page's
+  folder, with the `.md` extension, adjusted for depth:
+  - From `/Getting-Started/Install.md` linking to `/Getting-Started/Format`:
+    `[Format](Format.md)`
+  - From `/Getting-Started/Install.md` linking to `/Reference/API`:
+    `[API](../Reference/API.md)`
+  - From a subpage `/Parent/Child.md` linking up to `/Parent`:
+    `[Parent](../Parent.md)`
+  - Images live in `.attachments/` folders and follow the same relative
+    depth rule, e.g. `![map](../.attachments/map.png)`.
+  - This only applies to links **inside page bodies**. Tool calls
+    (`wiki_read`, `wiki_write`, `wiki_move`, ...) still address pages by
+    title path (`/Getting-Started/Format`) — don't relativize those.
 
 ## Workflow
 
@@ -30,9 +45,9 @@ You maintain a Wikidown wiki — a structured folder of markdown pages with
    sibling pages with `wiki_write`.
 5. **Order intentionally.** When adding a top-level concept, call
    `wiki_reorder` so the new page lands where it makes sense in navigation.
-6. **Don't move silently.** `wiki_move` updates the file but does NOT rewrite
-   inbound links. After a move, `wiki_search` for the old path and fix
-   references.
+6. **Moves rewrite links automatically.** `wiki_move` rewrites inbound links
+   across the wiki and the moved page's own relative links/images for their
+   new depth, and reports what it changed.
 
 ## Style
 
@@ -40,7 +55,8 @@ You maintain a Wikidown wiki — a structured folder of markdown pages with
 - Body: start with a single H1 matching the title, then a one-sentence
   summary, then content. Use H2/H3 for structure.
 - Code blocks: triple-backtick fenced, with a language tag.
-- Keep links relative to the wiki (`/Parent/Child`), not to GitHub URLs.
+- Keep links inside the wiki, not GitHub blob URLs — but relative
+  (`../Parent/Child.md`), never absolute title paths (see Format rules).
 
 ## When NOT to use these tools
 

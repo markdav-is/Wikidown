@@ -45,11 +45,20 @@ wikidown list [--path /P]
 wikidown read --path /P
 wikidown write --path /P [--file F | --stdin]
 wikidown new --path /P [--title T] [--file F | --stdin]
-wikidown move --from /A --to /B
+wikidown move --from /A --to /B [--dry-run]
 wikidown delete --path /P [--recursive]
 wikidown reorder --folder /P --names a,b,c
 wikidown search --query <text>
 ```
+
+## Exporting
+
+- `wikidown export-pdf --output <path> [--from /P] [--title T]` combines the
+  whole wiki (or a subtree, with `--from`) into one linked PDF — cover page,
+  table of contents, per-page bookmarks matching the nav hierarchy, and
+  in-PDF jumps for internal links. CLI-only, no MCP equivalent — use it
+  whenever asked for a PDF, a printable copy, or "the whole wiki as one
+  document."
 
 ## Format rules
 
@@ -59,7 +68,15 @@ wikidown search --query <text>
 - **Order** — each folder's `.order` file controls navigation order. Page
   writes update it automatically; rewrite explicitly with
   `wikidown_wiki_reorder`.
-- **Internal links** — use the title path: `[Format](/Getting-Started/Format)`.
+- **Body links are relative, not title paths.** GitHub renders `/docs/*.md`
+  directly and resolves an absolute path like `/Getting-Started/Format`
+  against the repo root, not the wiki root — title-path links 404 on
+  github.com. Write body links relative to the linking page's folder with
+  the `.md` extension, adjusted for depth, e.g. from
+  `/Getting-Started/Install.md`: `[Format](Format.md)` (sibling),
+  `[API](../Reference/API.md)` (cousin). Images: `![map](../.attachments/map.png)`.
+  Tool addressing (`wikidown_wiki_read path=...`) still uses title form —
+  only page-body links are relative.
 - **Page structure** — start with `# Title` then a one-sentence summary.
 
 ## Workflow
@@ -67,12 +84,14 @@ wikidown search --query <text>
 1. Call `wikidown_wiki_walk` first to orient yourself.
 2. `wikidown_wiki_search` before creating — avoid duplicates.
 3. `wikidown_wiki_read` before overwriting — preserve voice and structure.
-4. After `wikidown_wiki_move`, search for the old path and fix inbound links.
+4. `wikidown_wiki_move` rewrites inbound links across the wiki and the moved
+   page's own relative links/images for their new depth automatically.
 5. For tasks outside the wiki (code, infra, etc.), hand off to a more
    appropriate agent or ask the user to switch context.
 
 ## Don'ts
 
 - Don't write `/docs/*.md` with file-edit tools — bypasses `.order`.
-- Don't link to GitHub blob URLs from inside the wiki — use `/Title/Path` form.
+- Don't link to GitHub blob URLs from inside the wiki, and don't use
+  absolute `/Title/Path` links in page bodies — use relative `.md` links.
 - Don't rename without checking inbound references first.

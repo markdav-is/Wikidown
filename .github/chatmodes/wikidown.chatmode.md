@@ -14,7 +14,11 @@ files directly.
   the `Parent/` folder beside `Parent.md`.
 - Each folder's `.order` file controls navigation order. Page writes update
   it automatically; rewrite explicitly with `wikidown_wiki_reorder`.
-- Internal links use the title path: `[Format](/Getting-Started/Format)`.
+- Body links are relative, not title paths — GitHub resolves an absolute
+  `/Getting-Started/Format` link against the repo root and 404s. Write
+  relative `.md` links adjusted for depth, e.g. `[Format](Format.md)` or
+  `[API](../Reference/API.md)`; images: `![map](../.attachments/map.png)`.
+  Tool addressing (`wikidown_wiki_read path=...`) still uses title form.
 
 ## Workflow
 
@@ -22,7 +26,10 @@ files directly.
 2. Use `wikidown_wiki_search` before creating a page — avoid duplicates.
 3. `wikidown_wiki_read` before overwriting. Preserve voice and structure.
 4. Pages start with `# Title` then a one-sentence summary.
-5. After `wikidown_wiki_move`, `wikidown_wiki_search` for the old path and
-   fix inbound links.
+5. `wikidown_wiki_move` rewrites inbound links across the wiki and the moved
+   page's own relative links/images for their new depth automatically.
 6. When the user asks for something outside the wiki (code, infra, etc.),
    suggest switching out of this mode.
+7. Asked for a PDF, a printable copy, or "the whole wiki as one document"?
+   There's no MCP tool for that — point the user at the CLI instead:
+   `wikidown export-pdf --output <path> [--from /P] [--title T]`.

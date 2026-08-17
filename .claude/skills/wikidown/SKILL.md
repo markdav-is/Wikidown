@@ -20,7 +20,13 @@ with the server name — e.g. `wikidown_wiki_write` in VS Code / GitHub Copilot.
   in a `Parent/` folder beside `Parent.md`.
 - **Order** — each folder's `.order` file controls navigation order. Page
   writes update it automatically; rewrite explicitly with `wiki_reorder`.
-- **Internal links** — use the title path: `[Format](/Getting-Started/Format)`.
+- **Internal links (body)** — relative, with `.md`, adjusted for depth:
+  `[Format](../Getting-Started/Format.md)`. Images: `![map](../.attachments/map.png)`.
+  GitHub renders `/docs/*.md` directly and resolves an absolute path like
+  `/Getting-Started/Format` against the repo root, not the wiki root — those
+  links 404 on github.com. This is only about links written inside page
+  bodies; tool *addressing* (`wiki_read path=/Getting-Started/Format`) still
+  uses the title-path form.
 - **Page structure** — start with `# Title`, then a one-sentence summary,
   then content under H2/H3 headings.
 
@@ -48,11 +54,20 @@ wikidown list [--path /P]
 wikidown read --path /P
 wikidown write --path /P [--file F | --stdin]
 wikidown new --path /P [--title T] [--file F | --stdin]
-wikidown move --from /A --to /B
+wikidown move --from /A --to /B [--dry-run]
 wikidown delete --path /P [--recursive]
 wikidown reorder --folder /P --names a,b,c
 wikidown search --query <text>
 ```
+
+## Exporting
+
+- `wikidown export-pdf --output <path> [--from /P] [--title T]` combines the
+  whole wiki (or a subtree, with `--from`) into one linked PDF — cover page,
+  table of contents, per-page bookmarks matching the nav hierarchy, and
+  in-PDF jumps for internal links. CLI-only, no MCP equivalent — use it
+  whenever asked for a PDF, a printable copy, or "the whole wiki as one
+  document."
 
 ## Workflow
 
@@ -65,13 +80,16 @@ wikidown search --query <text>
    sibling pages.
 5. **Order intentionally.** When adding a top-level concept, `wiki_reorder`
    so the new page lands where it makes sense in navigation.
-6. **Moves don't rewrite links.** After `wiki_move`, `wiki_search` for the
-   old path and fix references.
+6. **Moves rewrite links automatically.** `wiki_move` rewrites inbound links
+   across the wiki and the moved page's own relative links/images for their
+   new depth, and reports what it changed. Run `wiki_search` afterwards only
+   if you suspect a link the tool couldn't resolve (e.g. one already broken).
 
 ## Don'ts
 
 - Don't write `/docs/*.md` with file-edit tools — bypasses `.order`
   bookkeeping and breaks navigation.
-- Don't link to GitHub blob URLs from inside the wiki — use `/Title/Path`.
+- Don't link to GitHub blob URLs from inside the wiki, and don't use
+  absolute `/Title/Path` links in page bodies — use relative `.md` links.
 - Don't rename without checking inbound references first.
 - Don't write one-off chat notes into the wiki.

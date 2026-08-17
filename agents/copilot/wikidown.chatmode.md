@@ -30,3 +30,6 @@ files directly.
    page's own relative links/images for their new depth automatically.
 6. When the user asks for something outside the wiki (code, infra, etc.),
    suggest switching out of this mode.
+7. Asked for a PDF, a printable copy, or "the whole wiki as one document"?
+   There's no MCP tool for that — point the user at the CLI instead:
+   `wikidown export-pdf --output <path> [--from /P] [--title T]`.
