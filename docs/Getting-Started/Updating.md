@@ -21,11 +21,11 @@ workflow runs on every push to `main` that touches `Directory.Build.props`,
 `src/Wikidown.Cli/**`, `src/Wikidown.Mcp/**`, `src/Wikidown.Core/**`,
 `assets/**`, or the workflow file itself, and it packs + pushes to NuGet with
 `--skip-duplicate`. The package version comes from `<VersionPrefix>` in
-`Directory.Build.props` (currently `0.2.1`) — and that value is **not**
-auto-incremented per push. `--skip-duplicate` means a push that doesn't bump
-`VersionPrefix` re-packs and tries to push the *same* version, which NuGet
-rejects as a duplicate and the step just no-ops. So a plain code-fix push
-only becomes something `dotnet tool update` can see once a maintainer bumps
+`Directory.Build.props` — and that value is **not** auto-incremented per
+push. `--skip-duplicate` means a push that doesn't bump `VersionPrefix`
+re-packs and tries to push the *same* version, which NuGet rejects as a
+duplicate and the step just no-ops. So a plain code-fix push only becomes
+something `dotnet tool update` can see once a maintainer bumps
 `VersionPrefix` in the same push (or a later one).
 
 If `dotnet tool update` reports you're already on the latest version but you
