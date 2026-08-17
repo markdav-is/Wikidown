@@ -41,6 +41,10 @@ public class MigraDocRendererTests : IDisposable
             | --- | --- |
             | 1 | 2 |
 
+            > A quoted line.
+            >
+            > > A nested quote.
+
             ---
 
             ![missing image](does-not-exist.png)

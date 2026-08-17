@@ -89,8 +89,8 @@ wikidown --root ./my-wiki list
     title-paths, and same-page `#fragment` links to headings — become real
     in-PDF jumps, not dead hrefs;
   - full markdown fidelity: headings, bold/italic, inline code, nested
-    bullet/numbered lists, fenced code blocks, pipe tables, and images
-    (embedded when the relative path resolves).
+    bullet/numbered lists, fenced code blocks, block quotes, pipe tables,
+    and images (embedded when the relative path resolves).
 
   A missing/broken image renders a visible placeholder and prints
   `warning: {page}: image not found: {target}` (mirroring `check-links`);

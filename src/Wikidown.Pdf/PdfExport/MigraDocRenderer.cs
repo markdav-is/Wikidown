@@ -217,6 +217,7 @@ public static class MigraDocRenderer
             case IrParagraph p: RenderRuns(section.AddParagraph(), p.Runs); break;
             case IrList l: RenderList(section, l, depth); break;
             case IrCodeBlock c: RenderCodeBlock(section, c); break;
+            case IrBlockQuote bq: RenderBlockQuote(section, bq, depth, headingOffset); break;
             case IrTable t: RenderTable(section, t); break;
             case IrImage img: RenderImage(section, img); break;
             case IrThematicBreak: RenderThematicBreak(section); break;
@@ -292,6 +293,45 @@ public static class MigraDocRenderer
             if (i > 0) paragraph.AddLineBreak();
             paragraph.AddText(lines[i]);
         }
+    }
+
+    // Only IrParagraph children get the indented/bordered/italic quote
+    // styling directly — other block types (a nested list, say) fall
+    // through to the normal dispatch, which still indents via the same
+    // `depth` RenderList already scales by, just without the border/italic
+    // treatment. A nested IrBlockQuote increases depth again so `>>` reads
+    // as visually deeper than a single `>`.
+    private static void RenderBlockQuote(Section section, IrBlockQuote quote, int depth, int headingOffset)
+    {
+        foreach (var block in quote.Blocks)
+        {
+            switch (block)
+            {
+                case IrParagraph p:
+                    var paragraph = section.AddParagraph();
+                    ApplyBlockQuoteFormat(paragraph, depth);
+                    RenderRuns(paragraph, p.Runs);
+                    break;
+                case IrBlockQuote nested:
+                    RenderBlockQuote(section, nested, depth + 1, headingOffset);
+                    break;
+                default:
+                    RenderBlock(section, block, depth, headingOffset);
+                    break;
+            }
+        }
+    }
+
+    private static void ApplyBlockQuoteFormat(Paragraph paragraph, int depth)
+    {
+        paragraph.Format.LeftIndent = Unit.FromCentimeter(0.6 * (depth + 1));
+        paragraph.Format.Borders.Left.Width = Unit.FromPoint(2);
+        paragraph.Format.Borders.Left.Color = Color.FromRgb(0xCC, 0xCC, 0xCC);
+        paragraph.Format.Borders.DistanceFromLeft = Unit.FromPoint(8);
+        paragraph.Format.Font.Italic = true;
+        paragraph.Format.Font.Color = Color.FromRgb(0x55, 0x55, 0x55);
+        paragraph.Format.SpaceBefore = Unit.FromPoint(4);
+        paragraph.Format.SpaceAfter = Unit.FromPoint(4);
     }
 
     private static void RenderTable(Section section, IrTable table)

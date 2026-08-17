@@ -337,6 +337,15 @@ Blazor WASM PWA editor + marketing site hosted on GitHub Pages.
       hand-duplicates `.order`/page-listing logic), so that's a separate,
       real migration affecting every existing Core consumer, not something
       to take on silently as a side effect of this chunk.
+    - Follow-up fix, found by asking "does it support block quotes?": it
+      didn't, and worse than a graceful degrade — `MarkdownIrBuilder`'s
+      block-type switch had no `QuoteBlock` case, so a `>` anywhere in a
+      page aborted the *entire* export with `NotSupportedException`, no
+      PDF written at all. Added `IrBlockQuote` (any nested block content,
+      not just paragraphs, matching Markdig's own `QuoteBlock` shape) and
+      MigraDoc rendering — left border, italic, indented, deeper for each
+      level of `>>` nesting. Verified by reading back a rendered PDF with
+      nested quotes containing bold/link runs, not just the test suite.
 
 17. **Web editor: export the wiki to PDF via browser print.** *(shipped)*
     - `Wikidown.Web`'s `/export` page (linked from a new toolbar button on

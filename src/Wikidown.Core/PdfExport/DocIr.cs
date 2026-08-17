@@ -34,6 +34,8 @@ public sealed record IrList(bool Ordered, IReadOnlyList<IrListItem> Items) : IrB
 
 public sealed record IrCodeBlock(string? Language, string Code) : IrBlock;
 
+public sealed record IrBlockQuote(IReadOnlyList<IrBlock> Blocks) : IrBlock;
+
 public sealed record IrTable(
     IReadOnlyList<IReadOnlyList<IrRun>> HeaderCells,
     IReadOnlyList<IReadOnlyList<IReadOnlyList<IrRun>>> Rows) : IrBlock;

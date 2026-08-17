@@ -44,6 +44,7 @@ public static class MarkdownIrBuilder
         ListBlock l => BuildList(l, ctx),
         FencedCodeBlock fc => new IrCodeBlock(fc.Info, fc.Lines.ToString()),
         CodeBlock c => new IrCodeBlock(null, c.Lines.ToString()),
+        QuoteBlock q => new IrBlockQuote(BuildBlocks(q, ctx)),
         ThematicBreakBlock => new IrThematicBreak(),
         ParagraphBlock p => BuildParagraph(p, ctx),
         HtmlBlock html => BuildHtml(html, ctx),

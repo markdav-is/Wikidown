@@ -165,6 +165,27 @@ public class MarkdownIrBuilderTests : IDisposable
     }
 
     [Fact]
+    public void BlockQuote_ProducesBlockQuoteWithParagraph()
+    {
+        var blocks = MarkdownIrBuilder.Build("> A quoted line.\n", PagePath.Parse("/A"), _repo);
+
+        var quote = Assert.IsType<IrBlockQuote>(Assert.Single(blocks));
+        var para = Assert.IsType<IrParagraph>(Assert.Single(quote.Blocks));
+        Assert.Equal("A quoted line.", Assert.IsType<IrText>(Assert.Single(para.Runs)).Text);
+    }
+
+    [Fact]
+    public void NestedBlockQuote_ProducesNestedBlockQuote()
+    {
+        var blocks = MarkdownIrBuilder.Build("> Outer\n>\n> > Inner\n", PagePath.Parse("/A"), _repo);
+
+        var quote = Assert.IsType<IrBlockQuote>(Assert.Single(blocks));
+        var nested = Assert.IsType<IrBlockQuote>(quote.Blocks[1]);
+        var para = Assert.IsType<IrParagraph>(Assert.Single(nested.Blocks));
+        Assert.Equal("Inner", Assert.IsType<IrText>(Assert.Single(para.Runs)).Text);
+    }
+
+    [Fact]
     public void RawHtmlBlock_ThrowsByDefault()
     {
         Assert.Throws<NotSupportedException>(
