@@ -50,7 +50,8 @@ Wikidown format, a starter theme with a left-nav tree driven by your
 `.order` files, and an `index.html` redirect to Home — then push and set
 **Settings → Pages → Source: main, /docs**. The nav data
 (`_data/navigation.yml`) is regenerated automatically by the CLI and MCP
-server on every change. Details in
+server on every change. The same scaffold publishes on GitLab Pages with a
+short `.gitlab-ci.yml` that runs Jekyll in a container. Details for both in
 [`/docs/Getting-Started/Publishing-to-GitHub-Pages`](./docs/Getting-Started/Publishing-to-GitHub-Pages.md).
 
 ### Give agents the MCP server
