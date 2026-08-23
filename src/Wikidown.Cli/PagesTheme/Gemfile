@@ -1,8 +1,0 @@
-# Local preview of the GitHub Pages build:
-#   bundle install
-#   bundle exec jekyll serve
-# GitHub Pages itself ignores this file and uses its own pinned versions.
-source "https://rubygems.org"
-
-gem "github-pages", group: :jekyll_plugins
-gem "webrick"

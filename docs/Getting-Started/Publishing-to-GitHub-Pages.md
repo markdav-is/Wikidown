@@ -3,7 +3,8 @@
 # Publishing to GitHub Pages
 
 GitHub Pages can publish a Wikidown wiki straight from the repo using Jekyll,
-its built-in static-site generator — no build pipeline. `wikidown pages`
+its built-in static-site generator — no build pipeline, and nothing to
+install: GitHub's servers run Jekyll, your machine never does. `wikidown pages`
 scaffolds everything Jekyll needs into the wiki root, plus a starter theme
 with a left-navigation tree that follows your `.order` files.
 
@@ -34,7 +35,6 @@ Everything lands inside the wiki root:
 | `_layouts/wikidown.html`, `_includes/nav-tree.html` | The starter theme: top bar, collapsible left nav (active page highlighted, ancestors expanded), content column, footer. Responsive — the nav becomes a slide-in drawer on narrow screens. |
 | `assets/wikidown.css` | Styling, same palette as wikidown.org. Edit freely; `pages` never overwrites it without `--force`. |
 | `index.html` | Redirects the site root to `/Home.html` (or the first top-level page if there is no Home). |
-| `Gemfile` | For local preview only: `cd docs && bundle install && bundle exec jekyll serve`. |
 
 ## Why it works with the Wikidown format
 
@@ -60,6 +60,9 @@ Everything lands inside the wiki root:
   `.md` files.
 - **Keep `_data/navigation.yml` committed.** If it's missing the layout
   falls back to a flat alphabetical page list.
+- **Previewing locally** means running Jekyll yourself, which needs Ruby —
+  Wikidown deliberately doesn't scaffold that. Push to a branch and let
+  GitHub build it, or check the rendered markdown on github.com.
 
 See [CLI](../CLI.md) for the full command list, and
 [Format](Format.md) for the on-disk conventions the generated site relies on.

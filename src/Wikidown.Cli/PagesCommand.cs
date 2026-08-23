@@ -10,7 +10,6 @@ public static class PagesCommand
     private static readonly string[] ThemeFiles =
     {
         "_config.yml",
-        "Gemfile",
         "index.html",
         "_layouts/wikidown.html",
         "_includes/nav-tree.html",
@@ -37,7 +36,6 @@ public static class PagesCommand
         w.WriteLine();
         w.WriteLine("Next: in GitHub, Settings → Pages → Source: \"Deploy from a branch\",");
         w.WriteLine($"      branch: main, folder: /{Path.GetFileName(repo.RootPath)}. Push, and the wiki is live.");
-        w.WriteLine("      Local preview: cd into the wiki folder, `bundle install`, `bundle exec jekyll serve`.");
         return 0;
     }
 

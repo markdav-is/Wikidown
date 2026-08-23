@@ -477,8 +477,7 @@ Blazor WASM PWA editor + marketing site hosted on GitHub Pages.
       root: `_config.yml` (GFM, `jekyll-relative-links` so the format's
       relative `.md` links and breadcrumbs resolve, `titles-from-headings`
       so pages need no front matter, `include: [.attachments]` because
-      Jekyll skips dot-folders, default layout), `Gemfile` (local
-      preview), `index.html` (Liquid redirect to `/Home.html` or the
+      Jekyll skips dot-folders, default layout), `index.html` (Liquid redirect to `/Home.html` or the
       first top-level page), and the starter theme —
       `_layouts/wikidown.html`, `_includes/nav-tree.html` (recursive
       include), `assets/wikidown.css` (wikidown.org palette; collapsible
@@ -501,7 +500,9 @@ Blazor WASM PWA editor + marketing site hosted on GitHub Pages.
       example-link issues and nothing new; one page hand-rendered through
       the layout with the generated nav and checked in a browser (tree
       order, active/open state, responsive drawer). No Ruby/Jekyll on the
-      dev box, so the Liquid itself hasn't been executed locally — first
+      dev box — deliberately: `pages` adds no Ruby/Python/Node
+      dependency, GitHub's builder is the only Jekyll in the story — so the
+      Liquid itself hasn't been executed locally — first
       real Pages deploy by a user is the remaining proof point.
     - Not dogfooded on this repo's Pages: wikidown.org already occupies the
       repo's one Pages site. Docs: `/Getting-Started/Publishing-to-GitHub-Pages`.

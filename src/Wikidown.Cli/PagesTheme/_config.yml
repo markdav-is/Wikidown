@@ -16,8 +16,7 @@ kramdown:
   hard_wrap: false
   syntax_highlighter: rouge
 
-# All three ship with GitHub Pages' builder; listed so `bundle exec jekyll
-# serve` behaves the same locally.
+# All three ship with GitHub Pages' builder — nothing to install.
 plugins:
   - jekyll-relative-links
   - jekyll-titles-from-headings
@@ -46,7 +45,5 @@ include:
   - .attachments
 
 exclude:
-  - Gemfile
-  - Gemfile.lock
   - vendor
   - node_modules

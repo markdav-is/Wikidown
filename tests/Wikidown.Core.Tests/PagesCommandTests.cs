@@ -49,7 +49,6 @@ public class PagesCommandTests : IDisposable
         Assert.Equal(0, Run());
 
         Assert.True(File.Exists(At("_config.yml")));
-        Assert.True(File.Exists(At("Gemfile")));
         Assert.True(File.Exists(At("index.html")));
         Assert.True(File.Exists(At("_layouts/wikidown.html")));
         Assert.True(File.Exists(At("_includes/nav-tree.html")));

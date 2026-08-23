@@ -136,8 +136,9 @@ wikidown --root ./my-wiki list
 - `pages [--title T] [--force]` — scaffold everything GitHub Pages' built-in
   Jekyll needs to publish the wiki as a static site, straight from the repo
   with no build pipeline: `_config.yml`, a starter theme (top bar, collapsible
-  left nav that follows `.order`, content column), `assets/wikidown.css`, a
-  root `index.html` redirect, and a `Gemfile` for local preview. The nav
+  left nav that follows `.order`, content column), `assets/wikidown.css`, and
+  a root `index.html` redirect. Nothing to install locally — GitHub runs
+  Jekyll for you. The nav
   tree lives in `_data/navigation.yml`, which the CLI and MCP server
   regenerate on every write/move/delete/reorder once it exists. `--title`
   sets the site title (defaults to the repo folder name); `--force`
