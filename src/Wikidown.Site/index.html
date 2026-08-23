@@ -78,8 +78,8 @@
               <span class="card-kicker">CLI</span>
               <h3>wikidown</h3>
             </div>
-            <p>Dotnet tool that reads, writes, moves, reorders, and searches pages while keeping <code>.order</code> consistent.</p>
-            <pre><code>dotnet tool install -g Wikidown.Cli
+            <p>Reads, writes, moves, reorders, and searches pages while keeping <code>.order</code> consistent. The install script auto-detects .NET — no runtime required either way.</p>
+            <pre><code>curl -fsSL https://wikidown.org/install.sh | sh
 wikidown list
 wikidown new "/Getting Started/Format"</code></pre>
           </div>
@@ -98,7 +98,7 @@ wikidown new "/Getting Started/Format"</code></pre>
               <h3>Drop-in</h3>
             </div>
             <p>One shared Agent Skills <code>SKILL.md</code> for Claude Code <em>and</em> GitHub Copilot, plus subagent, custom agent, and chat-mode wiring — installed by one command.</p>
-            <pre><code>dotnet tool install -g Wikidown.Cli
+            <pre><code>curl -fsSL https://wikidown.org/install.sh | sh
 wikidown init --agents all</code></pre>
           </div>
         </div>

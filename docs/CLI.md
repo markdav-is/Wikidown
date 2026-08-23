@@ -16,6 +16,33 @@ To update an existing install, see
 [Updating](Getting-Started/Updating.md) — a plain push to `main` doesn't
 always mean a new NuGet version is available.
 
+### Quick install (no .NET required)
+
+```sh
+curl -fsSL https://wikidown.org/install.sh | sh
+```
+
+```powershell
+irm https://wikidown.org/install.ps1 | iex
+```
+
+Both scripts auto-detect: if `dotnet` is on `PATH` they run
+`dotnet tool install -g Wikidown.Cli` exactly as above; otherwise they
+download a self-contained single-file binary for your platform
+(win-x64/win-arm64/linux-x64/linux-arm64/osx-x64/osx-arm64) from this repo's
+GitHub Releases (tagged `cli-v*`), extract it, and add it to `PATH`. Either
+way nothing else needs installing — the binaries bundle their own .NET
+runtime.
+
+The binaries aren't code-signed or notarized yet, so the scripts work around
+the resulting OS friction themselves: `install.ps1` runs `Unblock-File` on
+the downloaded exe so Windows SmartScreen doesn't flag it, and `install.sh`
+strips the `com.apple.quarantine` attribute on macOS so Gatekeeper doesn't
+block it. This is a known gap, not a bug — signing/notarization is planned
+but not done.
+
+Either install path, the next step is the same: `wikidown init`.
+
 ## Wiki root
 
 The CLI defaults to `./docs`. Override with `--root <path>`:

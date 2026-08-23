@@ -408,6 +408,55 @@ Blazor WASM PWA editor + marketing site hosted on GitHub Pages.
       read the resulting PDF back — correct cover, TOC, and outline scoped
       to `Getting-Started` and its three children.
 
+19. **Self-contained native CLI binaries + a smart install script.** *(shipped)*
+    - Goal: someone tells an LLM coding agent "install wikidown from
+      wikidown.org and init" in an empty repo and it just works — no
+      manual .NET setup. Before this, the CLI was NuGet-tool-only
+      (`dotnet tool install -g Wikidown.Cli`), which fails outright with
+      no `dotnet` on `PATH`.
+    - New workflow `.github/workflows/cli-native.yml`, triggered by a
+      `cli-v*` tag (mirrors the existing `vsix-v*` convention, kept as a
+      separate track from the NuGet release so cutting a NuGet version
+      doesn't force a 6-way native build every time): matrix-publishes
+      `dotnet publish -r <rid> --self-contained -p:PublishSingleFile=true`
+      for win-x64/win-arm64/linux-x64/linux-arm64/osx-x64/osx-arm64,
+      attaches all six archives to the GitHub Release.
+    - Deliberately **no trimming/AOT** — verified locally (win-x64,
+      linux-x64, osx-arm64 all self-contained-publish cleanly with zero
+      code changes) that plain self-contained publish already works,
+      including `export-pdf`'s reflection-heavy MigraDoc/PDFsharp font
+      path; trimming that same reflection-based code is a real risk not
+      worth taking for a ~80MB-per-platform size win.
+    - New `src/Wikidown.Site/install.sh` / `install.ps1` (served at
+      `wikidown.org/install.sh` for free via the existing `pages.yml`
+      deploy — no new hosting). Both are a **single smart entry point**,
+      not two options for the LLM to pick between: `dotnet tool install`
+      if `dotnet` is already on `PATH`, otherwise resolve the RID and pull
+      the matching binary from the newest `cli-v*` GitHub Release. Query
+      the releases API and filter by tag prefix rather than trusting
+      `/releases/latest` — this repo now has two independent release
+      tracks (`vsix-v*` and `cli-v*`) sharing one Releases list, so
+      "latest" doesn't mean what it sounds like.
+    - Unsigned-binary handling is built into the scripts, not left as a
+      caveat: `install.ps1` runs `Unblock-File` (strips the
+      mark-of-the-web that triggers SmartScreen) and `install.sh`
+      defensively strips `com.apple.quarantine` on macOS. No code
+      signing/notarization pipeline in this pass — a real follow-up if it
+      becomes a problem, not attempted here.
+    - Real bug caught by actually running the script, not just reading
+      it: `install.ps1`'s first draft used `try { dotnet tool install }
+      catch { dotnet tool update }` to handle "already installed" —
+      PowerShell's `try/catch` doesn't react to a native command's
+      non-zero exit code (only real .NET exceptions), so that fallback
+      would never have fired. Turned out not to matter: `dotnet tool
+      install` already exits 0 and no-ops cleanly when the tool is
+      already present, so the whole fallback was solving a problem that
+      didn't exist — simplified to a plain install call with an explicit
+      `$LASTEXITCODE` check for genuine failures.
+    - `Wikidown.Mcp` self-contained binaries and code signing are
+      explicitly out of scope here — the user asked for "the CLI and the
+      skills" specifically; MCP stays NuGet-tool-only for now.
+
 ## Open questions / parking lot
 - `[[_TOC_]]`, mermaid, `:::` callouts rendering in WASM preview.
 - `/.attachments` upload from browser (REST base64 -> Contents API).

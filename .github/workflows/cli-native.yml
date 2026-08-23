@@ -1,0 +1,91 @@
+name: cli-native
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/Wikidown.Cli/**'
+      - 'src/Wikidown.Core/**'
+      - 'src/Wikidown.Pdf/**'
+      - '.github/workflows/cli-native.yml'
+    tags:
+      - 'cli-v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write   # needed to attach binaries to GitHub Releases
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - rid: win-x64
+            os: windows-latest
+            archive: zip
+          - rid: win-arm64
+            os: windows-latest
+            archive: zip
+          - rid: linux-x64
+            os: ubuntu-latest
+            archive: tar
+          - rid: linux-arm64
+            os: ubuntu-latest
+            archive: tar
+          - rid: osx-x64
+            os: macos-latest
+            archive: tar
+          - rid: osx-arm64
+            os: macos-latest
+            archive: tar
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Publish self-contained single-file binary
+        run: >
+          dotnet publish src/Wikidown.Cli -c Release -r ${{ matrix.rid }}
+          --self-contained true
+          -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          -o publish/${{ matrix.rid }}
+
+      - name: Package (zip)
+        if: matrix.archive == 'zip'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path artifacts | Out-Null
+          Compress-Archive -Path publish/${{ matrix.rid }}/wikidown.exe -DestinationPath artifacts/wikidown-${{ matrix.rid }}.zip
+
+      - name: Package (tar.gz)
+        if: matrix.archive == 'tar'
+        run: |
+          mkdir -p artifacts
+          chmod +x publish/${{ matrix.rid }}/wikidown
+          tar -czf artifacts/wikidown-${{ matrix.rid }}.tar.gz -C publish/${{ matrix.rid }} wikidown
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wikidown-${{ matrix.rid }}
+          path: artifacts/*
+          if-no-files-found: error
+
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/cli-v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: wikidown-*
+          merge-multiple: true
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*
