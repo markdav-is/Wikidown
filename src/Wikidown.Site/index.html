@@ -22,6 +22,7 @@
       <nav>
         <a href="#getting-started">Get started</a>
         <a href="#how">How it works</a>
+        <a href="#publish">Publish</a>
         <a href="#agents">For agents</a>
         <a href="https://github.com/markdav-is/Wikidown" target="_blank" rel="noopener">GitHub</a>
         <a class="btn btn-primary" href="https://wikidown.app/">Open editor</a>
@@ -89,6 +90,27 @@ wikidown init</code></pre>
         <div class="card">
           <h3>3. Commit via REST</h3>
           <p>Save commits directly to your repo through the host's REST API. File-level conflict detection keeps concurrent edits safe.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="publish" class="section">
+      <div class="container">
+        <h2>Publish it with GitHub Pages</h2>
+        <p class="section-lead">One command turns <code>/docs</code> into a Jekyll site GitHub builds for you — no pipeline, no hosting bill.</p>
+        <div class="gs-grid">
+          <div class="gs-lane">
+            <h3>Scaffold, push, flip a switch</h3>
+            <pre><code>wikidown pages
+git add docs &amp;&amp; git commit -m "Publish wiki" &amp;&amp; git push
+# GitHub → Settings → Pages → main, /docs</code></pre>
+            <p class="gs-note">Drops a <code>_config.yml</code> tuned for the Wikidown format — relative <code>.md</code> links rewritten, titles from headings, <code>.attachments</code> served — into the wiki folder.</p>
+          </div>
+          <div class="gs-lane">
+            <h3>Starter theme with a real nav tree</h3>
+            <p>A left navigation that follows your <code>.order</code> files, active page highlighted, sections collapsible, responsive on phones. Styled like this page; it's plain CSS and Liquid in your repo, so restyle it however you like.</p>
+            <p class="gs-note">The tree is data (<code>_data/navigation.yml</code>) the CLI and MCP server regenerate on every change, so it never drifts from the wiki.</p>
+          </div>
         </div>
       </div>
     </section>

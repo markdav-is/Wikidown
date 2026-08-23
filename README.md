@@ -39,6 +39,20 @@ Run from your repo root, `wikidown init`:
 Use `--agents claude|copilot|all|none` to pick, `--force` to overwrite, and
 `--root <folder>` if your wiki isn't in `docs/`.
 
+### Publish with GitHub Pages
+
+```bash
+wikidown pages
+```
+
+Scaffolds a Jekyll site into the wiki folder — `_config.yml` tuned for the
+Wikidown format, a starter theme with a left-nav tree driven by your
+`.order` files, and an `index.html` redirect to Home — then push and set
+**Settings → Pages → Source: main, /docs**. The nav data
+(`_data/navigation.yml`) is regenerated automatically by the CLI and MCP
+server on every change. Details in
+[`/docs/Getting-Started/Publishing-to-GitHub-Pages`](./docs/Getting-Started/Publishing-to-GitHub-Pages.md).
+
 ### Give agents the MCP server
 
 The configs above launch the Wikidown MCP server, so install it once globally:

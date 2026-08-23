@@ -1,0 +1,26 @@
+{% comment %}
+  Recursive left-nav tree. Fed by _data/navigation.yml, which `wikidown pages`
+  generates from the wiki's .order files (and the CLI/MCP server keep fresh).
+  Each item: title, optional url (absent for a folder with no index page),
+  optional prefix + children.
+{% endcomment %}
+<ul class="nav-tree">
+{% for item in include.items %}
+  {% assign is_active = false %}
+  {% if item.url and page.url == item.url %}{% assign is_active = true %}{% endif %}
+  {% assign is_open = false %}
+  {% if item.prefix and page.url contains item.prefix %}{% assign is_open = true %}{% endif %}
+  <li class="nav-item{% if is_active %} is-active{% endif %}">
+  {% if item.children %}
+    <details{% if is_open or is_active %} open{% endif %}>
+      <summary>
+        {% if item.url %}<a href="{{ item.url | relative_url }}">{{ item.title }}</a>{% else %}<span class="nav-folder">{{ item.title }}</span>{% endif %}
+      </summary>
+      {% include nav-tree.html items=item.children %}
+    </details>
+  {% else %}
+    {% if item.url %}<a href="{{ item.url | relative_url }}">{{ item.title }}</a>{% else %}<span class="nav-folder">{{ item.title }}</span>{% endif %}
+  {% endif %}
+  </li>
+{% endfor %}
+</ul>

@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% if page.title %}{{ page.title }} · {% endif %}{{ site.title }}</title>
+  {% if site.description %}<meta name="description" content="{{ site.description | escape }}">{% endif %}
+  <link rel="stylesheet" href="{{ '/assets/wikidown.css' | relative_url }}">
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-row">
+      <button class="nav-toggle" type="button" aria-controls="sidebar" aria-expanded="false" aria-label="Toggle navigation">☰</button>
+      <a class="brand" href="{{ '/' | relative_url }}">{{ site.title }}</a>
+      <nav>
+        {% if site.repository_url %}<a href="{{ site.repository_url }}" target="_blank" rel="noopener">GitHub</a>{% endif %}
+        <a href="https://wikidown.org/" target="_blank" rel="noopener" class="powered">Wikidown</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="shell">
+    <aside class="sidebar" id="sidebar">
+      {% if site.data.navigation %}
+        {% include nav-tree.html items=site.data.navigation %}
+      {% else %}
+        {% comment %}No _data/navigation.yml yet — run `wikidown pages` to generate the .order-aware tree.{% endcomment %}
+        {% assign wiki_pages = site.pages | where_exp: "p", "p.path contains '.md'" | sort: "url" %}
+        <ul class="nav-tree">
+          {% for p in wiki_pages %}
+          <li class="nav-item{% if page.url == p.url %} is-active{% endif %}"><a href="{{ p.url | relative_url }}">{{ p.title | default: p.name }}</a></li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    </aside>
+
+    <main class="content" id="content">
+      {{ content }}
+    </main>
+  </div>
+
+  <footer>
+    <div class="footer-row">
+      <span>{{ site.title }}</span>
+      <span>Published with <a href="https://wikidown.org/" target="_blank" rel="noopener">Wikidown</a> + GitHub Pages</span>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      var toggle = document.querySelector('.nav-toggle');
+      var sidebar = document.getElementById('sidebar');
+      toggle.addEventListener('click', function () {
+        var open = sidebar.classList.toggle('is-open');
+        toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      });
+      var first = document.querySelector('#content > p:first-child');
+      if (first && first.innerHTML.indexOf('wikidown:breadcrumb') !== -1) first.classList.add('breadcrumb');
+      var active = document.querySelector('.sidebar .is-active');
+      if (active) active.scrollIntoView({ block: 'center' });
+    })();
+  </script>
+</body>
+</html>

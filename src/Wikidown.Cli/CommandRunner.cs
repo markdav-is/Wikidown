@@ -32,6 +32,7 @@ public static class CommandRunner
                 "backfill-breadcrumbs" => Commands.BackfillBreadcrumbs(repo, parsed, stdout),
                 "export-pdf" => ExportPdfCommand.Run(repo, parsed, stdout),
                 "init" => InitCommand.Run(repo, parsed, stdout),
+                "pages" => PagesCommand.Run(repo, parsed, stdout),
                 _ => Unknown(parsed.Command, stderr),
             };
         }
@@ -85,6 +86,9 @@ public static class CommandRunner
         w.WriteLine("  init     [--agents claude|copilot|all|none] [--force]");
         w.WriteLine("           seed the wiki and install AI agent configs (Claude Code +");
         w.WriteLine("           GitHub Copilot) in the folder containing the wiki root");
+        w.WriteLine("  pages    [--title T] [--force]");
+        w.WriteLine("           scaffold a Jekyll site + starter theme into the wiki root so");
+        w.WriteLine("           GitHub Pages can publish it; (re)generates _data/navigation.yml");
         w.WriteLine();
         w.WriteLine("Global:");
         w.WriteLine("  --root <path>   path to docs folder (default: ./docs)");

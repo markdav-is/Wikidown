@@ -468,6 +468,44 @@ Blazor WASM PWA editor + marketing site hosted on GitHub Pages.
       for humans and agents" deep-dive section further down, which stays
       as the CLI/MCP/agent-configs reference material it already was.
 
+20. **`wikidown pages` — publish the wiki with GitHub Pages + Jekyll.** *(shipped)*
+    - Goal: a Wikidown user flips **Settings → Pages → main, /docs** and
+      gets a real site with a left-nav tree, using only GitHub's built-in
+      Jekyll builder — no Actions workflow, no custom plugins (the Pages
+      builder only runs its whitelisted set).
+    - `wikidown pages [--title T] [--force]` scaffolds into the wiki
+      root: `_config.yml` (GFM, `jekyll-relative-links` so the format's
+      relative `.md` links and breadcrumbs resolve, `titles-from-headings`
+      so pages need no front matter, `include: [.attachments]` because
+      Jekyll skips dot-folders, default layout), `Gemfile` (local
+      preview), `index.html` (Liquid redirect to `/Home.html` or the
+      first top-level page), and the starter theme —
+      `_layouts/wikidown.html`, `_includes/nav-tree.html` (recursive
+      include), `assets/wikidown.css` (wikidown.org palette; collapsible
+      `<details>` tree, active page highlighted, ancestors auto-expanded,
+      slide-in drawer under 60rem). Theme files are never overwritten
+      without `--force`; embedded as resources in `Wikidown.Cli` from
+      `src/Wikidown.Cli/PagesTheme/`.
+    - `.order` → nav: Jekyll can't read `.order`, so `Core.JekyllNavigation`
+      renders `NavTree` to `_data/navigation.yml` (title/url/prefix/children).
+      `WikiRepository.Write/Delete/Move/WriteOrder` call
+      `RefreshIfEnabled`, so once the file exists every CLI *and* MCP edit
+      regenerates it — the sidebar can't drift from the wiki. Never
+      created for wikis that didn't opt in. The layout falls back to a
+      flat `site.pages` list if the data file is missing.
+    - `IndexChecker` now skips `_`-prefixed folders and folders with no
+      markdown beneath them (`_layouts`, `_data`, `assets`), so the
+      scaffold doesn't trip `check-links`' "no index page" audit.
+    - Verified against a scratch copy of this repo's own `/docs`:
+      `pages` + `check-links` reports exactly the 11 pre-existing
+      example-link issues and nothing new; one page hand-rendered through
+      the layout with the generated nav and checked in a browser (tree
+      order, active/open state, responsive drawer). No Ruby/Jekyll on the
+      dev box, so the Liquid itself hasn't been executed locally — first
+      real Pages deploy by a user is the remaining proof point.
+    - Not dogfooded on this repo's Pages: wikidown.org already occupies the
+      repo's one Pages site. Docs: `/Getting-Started/Publishing-to-GitHub-Pages`.
+
 ## Open questions / parking lot
 - `[[_TOC_]]`, mermaid, `:::` callouts rendering in WASM preview.
 - `/.attachments` upload from browser (REST base64 -> Contents API).

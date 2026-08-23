@@ -133,6 +133,18 @@ wikidown --root ./my-wiki list
   Wikidown.Pdf assembly (Bitstream Vera License, redistribution permitted)
   instead of resolving fonts from the host OS. `export-pdf` works
   identically on Windows, Linux, and macOS.
+- `pages [--title T] [--force]` — scaffold everything GitHub Pages' built-in
+  Jekyll needs to publish the wiki as a static site, straight from the repo
+  with no build pipeline: `_config.yml`, a starter theme (top bar, collapsible
+  left nav that follows `.order`, content column), `assets/wikidown.css`, a
+  root `index.html` redirect, and a `Gemfile` for local preview. The nav
+  tree lives in `_data/navigation.yml`, which the CLI and MCP server
+  regenerate on every write/move/delete/reorder once it exists. `--title`
+  sets the site title (defaults to the repo folder name); `--force`
+  overwrites theme files you've edited. Commit the result, point
+  **Settings → Pages** at the `/docs` folder, and the wiki is live. See
+  [Publishing to GitHub Pages](Getting-Started/Publishing-to-GitHub-Pages.md)
+  for setup steps, what each scaffolded file does, and gotchas.
 
 See [Format](Getting-Started/Format.md) for the on-disk format the CLI
 maintains, including the relative-link convention that `check-links`

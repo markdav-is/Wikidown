@@ -1,0 +1,52 @@
+# Jekyll configuration for publishing this Wikidown wiki with GitHub Pages.
+# Installed by `wikidown pages`. Safe to edit — never overwritten unless
+# you pass --force.
+#
+# Enable in GitHub: Settings → Pages → Source: "Deploy from a branch",
+# branch: main, folder: /docs (or wherever this file lives).
+
+title: "{{TITLE}}"
+description: ""
+# Uncomment to add a GitHub link to the top bar:
+# repository_url: https://github.com/<owner>/<repo>
+
+markdown: kramdown
+kramdown:
+  input: GFM
+  hard_wrap: false
+  syntax_highlighter: rouge
+
+# All three ship with GitHub Pages' builder; listed so `bundle exec jekyll
+# serve` behaves the same locally.
+plugins:
+  - jekyll-relative-links
+  - jekyll-titles-from-headings
+  - jekyll-default-layout
+
+# Rewrites Wikidown's relative `[Page](../Folder/Page.md)` links to the
+# generated .html URLs.
+relative_links:
+  enabled: true
+  collections: false
+
+# Wikidown pages carry no front matter; the title comes from the first
+# `# Heading` and stays in the body.
+titles_from_headings:
+  enabled: true
+  strip_title: false
+
+defaults:
+  - scope:
+      path: ""
+    values:
+      layout: wikidown
+
+# Jekyll skips dot-folders by default; Wikidown keeps images here.
+include:
+  - .attachments
+
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - vendor
+  - node_modules

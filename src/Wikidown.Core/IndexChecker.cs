@@ -59,7 +59,8 @@ public static class IndexChecker
                 new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar },
                 StringSplitOptions.RemoveEmptyEntries);
 
-            if (segments.Any(s => s.StartsWith('.'))) continue; // .attachments, .git, etc.
+            if (segments.Any(s => s.StartsWith('.') || s.StartsWith('_'))) continue; // .attachments, .git, Jekyll _layouts/_data, etc.
+            if (!Directory.EnumerateFiles(dir, "*.md", SearchOption.AllDirectories).Any()) continue; // assets, not a subpage folder
 
             yield return new PagePath(segments.Select(PageName.FromFileBase).ToList());
         }

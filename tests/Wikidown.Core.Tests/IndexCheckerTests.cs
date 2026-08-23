@@ -102,4 +102,16 @@ public class IndexCheckerTests : IDisposable
         var issue = Assert.Single(IndexChecker.Check(_repo));
         Assert.Equal("/Architecture/API-Reference", issue.Child!.ToLinkPath());
     }
+
+    [Fact]
+    public void Check_IgnoresJekyllAndAssetFolders()
+    {
+        _repo.Write(new WikiPage(PagePath.Parse("/Home"), "# Home\n"));
+        Directory.CreateDirectory(Path.Combine(_root, "_layouts"));
+        File.WriteAllText(Path.Combine(_root, "_layouts", "wikidown.html"), "<html></html>");
+        Directory.CreateDirectory(Path.Combine(_root, "assets"));
+        File.WriteAllText(Path.Combine(_root, "assets", "site.css"), "body{}");
+
+        Assert.Empty(IndexChecker.Check(_repo));
+    }
 }

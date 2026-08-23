@@ -37,6 +37,7 @@ public sealed class WikiRepository
         var content = Breadcrumb.Inject(this, page.Path, page.Markdown);
         File.WriteAllText(file, NormalizeNewlines(content));
         EnsureOrderIncludes(page.Path);
+        JekyllNavigation.RefreshIfEnabled(this);
     }
 
     public void Delete(PagePath path, bool deleteSubpages = false)
@@ -55,6 +56,7 @@ public sealed class WikiRepository
         }
 
         RemoveFromOrder(path);
+        JekyllNavigation.RefreshIfEnabled(this);
     }
 
     public void Move(PagePath from, PagePath to)
@@ -84,6 +86,7 @@ public sealed class WikiRepository
 
         RefreshBreadcrumb(to);
         foreach (var descendant in Walk(to)) RefreshBreadcrumb(descendant);
+        JekyllNavigation.RefreshIfEnabled(this);
     }
 
     // The breadcrumb is a structural summary of a page's ancestor chain, not
@@ -154,11 +157,10 @@ public sealed class WikiRepository
         var dir = System.IO.Path.GetDirectoryName(path)!;
         Directory.CreateDirectory(dir);
         if (content.Length == 0 && File.Exists(path))
-        {
             File.Delete(path);
-            return;
-        }
-        File.WriteAllText(path, content);
+        else
+            File.WriteAllText(path, content);
+        JekyllNavigation.RefreshIfEnabled(this);
     }
 
     private void EnsureOrderIncludes(PagePath page)
