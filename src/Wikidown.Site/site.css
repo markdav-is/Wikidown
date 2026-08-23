@@ -206,6 +206,40 @@ pre code {
     margin: 0;
 }
 
+.gs-grid {
+    display: grid;
+    gap: 1.25rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+@media (max-width: 48rem) {
+    .gs-grid { grid-template-columns: 1fr; }
+}
+.gs-lane {
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: 0.65rem;
+    padding: 1.5rem;
+    box-shadow: var(--shadow);
+}
+.gs-lane h3 { margin: 0.1rem 0 0.75rem; font-size: 1.2rem; }
+.gs-lane p { color: var(--c-muted); margin: 0 0 0.85rem; }
+.gs-lane-agent {
+    background: linear-gradient(180deg, rgba(27, 110, 194, 0.06) 0%, var(--c-surface) 55%);
+    border-color: var(--c-accent);
+    border-width: 2px;
+}
+.prompt {
+    margin: 0 0 0.85rem;
+    padding: 0.85rem 1rem;
+    border-left: 3px solid var(--c-accent);
+    background: rgba(27, 110, 194, 0.06);
+    border-radius: 0 0.4rem 0.4rem 0;
+    font-size: 1.05rem;
+    font-style: italic;
+    color: var(--c-ink);
+}
+.gs-note { font-size: 0.9rem; margin-bottom: 0 !important; }
+
 .bullets { padding-left: 1.2rem; }
 .bullets li { margin: 0.4rem 0; }
 

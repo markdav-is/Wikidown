@@ -20,6 +20,7 @@
     <div class="container topbar-row">
       <a class="brand" href="./"><img src="images/wikidown-logo.png" alt="Wikidown" height="28" style="vertical-align:middle;margin-right:8px;">Wikidown</a>
       <nav>
+        <a href="#getting-started">Get started</a>
         <a href="#how">How it works</a>
         <a href="#agents">For agents</a>
         <a href="https://github.com/markdav-is/Wikidown" target="_blank" rel="noopener">GitHub</a>
@@ -46,6 +47,30 @@
         </div>
         <div class="hero-art" aria-hidden="true">
           <img src="images/wikidown-logo-1024.png" alt="" />
+        </div>
+      </div>
+    </section>
+
+    <section id="getting-started" class="container section">
+      <h2>Getting started</h2>
+      <p class="section-lead">Add Wikidown to any repo in two commands — no .NET installation required either way.</p>
+      <div class="gs-grid">
+        <div class="gs-lane gs-lane-agent">
+          <span class="card-kicker">Using an AI coding agent</span>
+          <h3>Just ask it</h3>
+          <p>Paste this into Claude Code, Copilot, or any agent with terminal access:</p>
+          <blockquote class="prompt">Install Wikidown from wikidown.org and run <code>wikidown init</code> in this repo.</blockquote>
+          <p class="gs-note">It picks the right install path itself, drops in a wiki skill/subagent (Claude Code) or agent/chat-mode (Copilot), and seeds <code>docs/Home.md</code> — nothing to configure by hand.</p>
+        </div>
+        <div class="gs-lane">
+          <span class="card-kicker">From a terminal</span>
+          <h3>Two commands</h3>
+          <pre><code>curl -fsSL https://wikidown.org/install.sh | sh
+wikidown init</code></pre>
+          <pre><code># Windows
+irm https://wikidown.org/install.ps1 | iex
+wikidown init</code></pre>
+          <p class="gs-note">The install script uses <code>dotnet tool install</code> if you already have .NET, or downloads a self-contained binary if you don't.</p>
         </div>
       </div>
     </section>

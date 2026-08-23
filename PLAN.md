@@ -456,6 +456,17 @@ Blazor WASM PWA editor + marketing site hosted on GitHub Pages.
     - `Wikidown.Mcp` self-contained binaries and code signing are
       explicitly out of scope here — the user asked for "the CLI and the
       skills" specifically; MCP stays NuGet-tool-only for now.
+    - Follow-up: `wikidown.org`'s "Getting started" now leads with the
+      agent-first flow — a literal copy-pasteable prompt ("Install
+      Wikidown from wikidown.org and run `wikidown init` in this repo.")
+      in a visually distinct lane (accent border, quote-styled prompt
+      block, not a shell `pre`) before the terminal one-liners, since
+      those are two different audiences reading the same section: a human
+      typing commands vs. a human handing an instruction to their agent.
+      New section placed right after the hero — the most prominent
+      position on the page — rather than folded into the existing "Built
+      for humans and agents" deep-dive section further down, which stays
+      as the CLI/MCP/agent-configs reference material it already was.
 
 ## Open questions / parking lot
 - `[[_TOC_]]`, mermaid, `:::` callouts rendering in WASM preview.
