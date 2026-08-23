@@ -50,8 +50,17 @@ Wikidown format, a starter theme with a left-nav tree driven by your
 `.order` files, and an `index.html` redirect to Home — then push and set
 **Settings → Pages → Source: main, /docs**. The nav data
 (`_data/navigation.yml`) is regenerated automatically by the CLI and MCP
-server on every change. The same scaffold publishes on GitLab Pages with a
-short `.gitlab-ci.yml` that runs Jekyll in a container. Details for both in
+server on every change.
+
+For any other host — GitLab Pages, Azure Static Web Apps, Netlify, a file
+share — or to preview locally, render the same theme in .NET instead; no
+Jekyll or Ruby involved:
+
+```bash
+wikidown export-html --output public
+```
+
+Details for both in
 [`/docs/Getting-Started/Publishing-to-GitHub-Pages`](./docs/Getting-Started/Publishing-to-GitHub-Pages.md).
 
 ### Give agents the MCP server
@@ -107,6 +116,7 @@ All commands accept `--root <folder>` (default `docs`).
 | [`src/Wikidown.Mcp`](./src/Wikidown.Mcp/) | `wikidown-mcp` stdio MCP server ([NuGet](https://www.nuget.org/packages/Wikidown.Mcp)) |
 | [`src/Wikidown.Vs`](./src/Wikidown.Vs/) | Visual Studio extension ([Marketplace](https://marketplace.visualstudio.com/items?itemName=MarkDavis.wikidown)) |
 | [`src/Wikidown.Web`](./src/Wikidown.Web/) | Blazor WASM editor PWA ([wikidown.app](https://wikidown.app)) |
+| [`src/Wikidown.Html`](./src/Wikidown.Html/) | Starter theme + static HTML export (`wikidown export-html`, Markdig + Fluid) |
 | [`src/Wikidown.Site`](./src/Wikidown.Site/) | Marketing site ([wikidown.org](https://wikidown.org)) |
 | [`agents/`](./agents/) | Drop-in agent configs (installed by `wikidown init`) |
 | [`samples/mcp/`](./samples/mcp/) | Example MCP configs for various hosts |

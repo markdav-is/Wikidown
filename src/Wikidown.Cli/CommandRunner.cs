@@ -33,6 +33,7 @@ public static class CommandRunner
                 "export-pdf" => ExportPdfCommand.Run(repo, parsed, stdout),
                 "init" => InitCommand.Run(repo, parsed, stdout),
                 "pages" => PagesCommand.Run(repo, parsed, stdout),
+                "export-html" => ExportHtmlCommand.Run(repo, parsed, stdout),
                 _ => Unknown(parsed.Command, stderr),
             };
         }
@@ -89,6 +90,9 @@ public static class CommandRunner
         w.WriteLine("  pages    [--title T] [--force]");
         w.WriteLine("           scaffold a Jekyll site + starter theme into the wiki root so");
         w.WriteLine("           GitHub Pages can publish it; (re)generates _data/navigation.yml");
+        w.WriteLine("  export-html --output <dir> [--base-url /prefix] [--title T] [--clean]");
+        w.WriteLine("           render the wiki to a static HTML site with the same theme, no");
+        w.WriteLine("           Jekyll/Ruby needed — for GitLab Pages, any static host, or local preview");
         w.WriteLine();
         w.WriteLine("Global:");
         w.WriteLine("  --root <path>   path to docs folder (default: ./docs)");

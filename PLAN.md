@@ -23,6 +23,7 @@ Blazor WASM PWA editor + marketing site hosted on GitHub Pages.
   Wikidown.Cli/        dotnet tool: list/read/write/move/reorder/new/search/export-pdf
   Wikidown.Mcp/        MCP stdio server wrapping Core
   Wikidown.Pdf/        renders Wikidown.Core's PDF IR to an actual PDF via PDFsharp/MigraDoc
+  Wikidown.Html/       Jekyll-compatible starter theme + static HTML export (Markdig + Fluid)
   Wikidown.Web/        Blazor WASM PWA editor
   Wikidown.Site/       Blazor static marketing site
 /tests
@@ -506,6 +507,40 @@ Blazor WASM PWA editor + marketing site hosted on GitHub Pages.
       real Pages deploy by a user is the remaining proof point.
     - Not dogfooded on this repo's Pages: wikidown.org already occupies the
       repo's one Pages site. Docs: `/Getting-Started/Publishing-to-GitHub-Pages`.
+
+21. **`wikidown export-html` — the same theme, rendered in .NET.** *(shipped)*
+    - Goal: publish on hosts that don't run Jekyll for you (GitLab Pages,
+      Azure Static Web Apps, Netlify, a file share) and preview locally,
+      with no Ruby anywhere. Chose Markdig + Fluid (Sébastien Ros's
+      Liquid engine) over Pretzel (dormant Jekyll clone) and Statiq
+      (different template language): it renders the *same* theme files
+      GitHub's Jekyll uses, so one theme serves both paths.
+    - New `src/Wikidown.Html/`: owns the embedded theme (moved from
+      `Wikidown.Cli/PagesTheme/`; `ThemeResources` serves both `pages` and
+      the exporter), `HtmlExporter`, `MarkdownPageRenderer` (Markdig with
+      GitHub auto-ids; rewrites relative `.md[#frag]` links to `.html`
+      exactly like `jekyll-relative-links`, title from first `#` heading
+      like `jekyll-titles-from-headings`), `SiteConfig` (reads the handful
+      of top-level scalars from `_config.yml` — deliberately not a YAML
+      parser), and `ThemeFiles` (wiki-root theme files layered over the
+      embedded defaults, so export works on unscaffolded *and* customized
+      wikis; also an `IFileProvider` for Fluid includes).
+    - Jekyll-dialect compatibility: Fluid's `include` is
+      `{% include 'f', a: b %}` / `a`, Jekyll's is `{% include f a=b %}` /
+      `include.a`. `ThemeFiles.ToFluidSyntax` rewrites the former from the
+      latter at load time, so theme authors write plain Jekyll. The
+      layout's no-nav fallback dropped `where_exp` (Jekyll-only filter)
+      for an `if` inside the loop. `relative_url` is a registered filter
+      that prefixes `--base-url` / config `baseurl`.
+    - CLI: `export-html --output <dir> [--base-url /p] [--title T]
+      [--clean]`. Copies `assets/` and `.attachments/`, renders
+      `index.html` (front matter stripped, placeholders filled). `ci.yml`
+      now exports `/docs` on every push and asserts a page exists.
+    - Verified on this repo's `/docs` (15 pages) served statically in a
+      browser: nav order/active/open state, breadcrumb + heading anchors,
+      tables, code blocks, zero leftover Liquid. 16 new tests.
+    - Docs: GitLab section now a one-job pipeline on the .NET SDK image;
+      local preview is `export-html` + any static server.
 
 ## Open questions / parking lot
 - `[[_TOC_]]`, mermaid, `:::` callouts rendering in WASM preview.

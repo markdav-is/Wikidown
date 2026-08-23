@@ -3,6 +3,7 @@
     "path": "Wikidown.slnx",
     "projects": [
       "src\\Wikidown.Core\\Wikidown.Core.csproj",
+      "src\\Wikidown.Html\\Wikidown.Html.csproj",
       "src\\Wikidown.Cli\\Wikidown.Cli.csproj",
       "src\\Wikidown.Mcp\\Wikidown.Mcp.csproj",
       "src\\Wikidown.Pdf\\Wikidown.Pdf.csproj",

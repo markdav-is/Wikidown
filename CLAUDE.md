@@ -22,6 +22,7 @@ pack on every push/PR.
 - `src/Wikidown.Core/` — page model, `.order`, repo, search.
 - `src/Wikidown.Cli/` — `wikidown` command-line tool.
 - `src/Wikidown.Mcp/` — `wikidown-mcp` stdio MCP server.
+- `src/Wikidown.Html/` — Jekyll-compatible starter theme + `export-html` (Markdig + Fluid).
 - `src/Wikidown.Web/` — Blazor WASM editor PWA *(coming in chunk 4)*.
 - `src/Wikidown.Site/` — Blazor marketing site *(coming in chunk 5)*.
 - `tests/Wikidown.Core.Tests/` — xUnit tests.

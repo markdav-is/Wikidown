@@ -8,8 +8,10 @@ install: GitHub's servers run Jekyll, your machine never does. `wikidown pages`
 scaffolds everything Jekyll needs into the wiki root, plus a starter theme
 with a left-navigation tree that follows your `.order` files.
 
-Using GitLab instead? The same scaffold works — see
-[GitLab Pages](#gitlab-pages) below for the one extra step.
+Not on GitHub, or want to preview locally? `wikidown export-html` renders
+the **same theme** in .NET with no Jekyll or Ruby involved — see
+[Any other host: `export-html`](#any-other-host-export-html) and
+[GitLab Pages](#gitlab-pages) below.
 
 ## Quick start
 
@@ -55,7 +57,8 @@ Everything lands inside the wiki root:
 
 - **Liquid in page bodies.** Jekyll processes `{{ }}` and `{% %}`
   everywhere, including code blocks. Wrap such content in
-  `{% raw %} … {% endraw %}`.
+  `{% raw %} … {% endraw %}`. (`export-html` does *not* run Liquid over
+  page bodies, so it's unaffected.)
 - **Project sites live under `/<repo>/`.** The theme uses `relative_url`
   everywhere so this just works; if you serve from a custom domain, set
   `baseurl: ""` in `_config.yml`.
@@ -63,74 +66,77 @@ Everything lands inside the wiki root:
   `.md` files.
 - **Keep `_data/navigation.yml` committed.** If it's missing the layout
   falls back to a flat alphabetical page list.
-- **Previewing locally** means running Jekyll yourself, which needs Ruby —
-  Wikidown deliberately doesn't scaffold that. Push to a branch and let
-  GitHub build it, or check the rendered markdown on github.com.
+
+## Any other host: `export-html`
+
+```sh
+wikidown export-html --output public
+```
+
+Renders every page through the same `_layouts/wikidown.html`,
+`_includes/nav-tree.html`, and `assets/wikidown.css` that GitHub's Jekyll
+would use — but in-process, with [Markdig](https://github.com/xoofx/markdig)
+for markdown and [Fluid](https://github.com/sebastienros/fluid) for Liquid.
+The output folder is a complete static site: one `.html` per page,
+`index.html` redirect, `assets/`, and `.attachments/` copied through.
+Nothing to install beyond the CLI.
+
+- Works **with or without** having run `wikidown pages`. If the wiki root
+  has theme files, they're used (so your customizations apply); anything
+  missing falls back to the built-in copy. `_config.yml`'s `title`,
+  `description`, `repository_url`, and `baseurl` are honored.
+- `--base-url /prefix` — prefix for theme links (stylesheet, nav, redirect)
+  when the site isn't served from the domain root, e.g. GitLab project
+  sites at `https://<group>.gitlab.io/<project>/`. Overrides `baseurl` in
+  `_config.yml`. Links inside page bodies are relative and never need it.
+- `--title T` — overrides the site title.
+- `--clean` — delete the output folder first, so removed pages don't
+  linger.
+
+Links, titles, and the nav tree match the Jekyll output: relative
+`.md`/`.md#anchor` links become `.html`, the title is the first `# Heading`,
+and the sidebar is built from `.order` (live, not from
+`_data/navigation.yml`, so it's always current).
+
+**Local preview** is just the export plus any static file server, e.g.
+`dotnet serve -d public` (`dotnet tool install -g dotnet-serve`) or
+`npx serve public`. Theme authors can iterate on `_layouts`/`assets` this
+way before pushing to GitHub.
+
+Theme files are written in Jekyll's Liquid dialect; `export-html` translates
+the one construct that differs (`{% include file a=b %}` / `include.a`) on
+the fly, so a single theme serves both paths. Stick to standard Liquid
+filters and tags — Jekyll-only extras like `where_exp` aren't available in
+the .NET renderer.
 
 ## GitLab Pages
 
-GitLab Pages serves static sites too, but with one difference that matters:
-**GitLab doesn't run Jekyll for you.** It publishes whatever a CI job leaves
-in a `public/` artifact. So the scaffold from `wikidown pages` is used
-unchanged — layout, CSS, nav include, `_data/navigation.yml` — and you add a
-pipeline that runs Jekyll in a container. Nothing is installed on your
-machine either way.
+GitLab Pages publishes whatever a CI job leaves in a `public/` artifact, and
+doesn't run Jekyll for you — so use `export-html`. Run `wikidown pages` first
+if you want the theme files in the repo to customize (optional), then add
+`.gitlab-ci.yml` at the repo root:
 
-1. Run `wikidown pages` as above and commit the result.
+```yaml
+pages:
+  image: mcr.microsoft.com/dotnet/sdk:10.0
+  stage: deploy
+  script:
+    - dotnet tool install -g Wikidown.Cli
+    - export PATH="$PATH:$HOME/.dotnet/tools"
+    - wikidown export-html --output public --base-url "/$CI_PROJECT_NAME" --clean
+  artifacts:
+    paths:
+      - public
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+```
 
-2. Add a `Gemfile` **in the wiki folder** (`docs/Gemfile`). GitHub
-   preinstalls the three plugins the theme relies on; GitLab's container
-   doesn't, so they have to be declared:
-
-   ```ruby
-   source "https://rubygems.org"
-   gem "jekyll", "~> 4.3"
-   gem "jekyll-relative-links"
-   gem "jekyll-titles-from-headings"
-   gem "jekyll-default-layout"
-   ```
-
-   Add `Gemfile` and `Gemfile.lock` to the `exclude:` list in
-   `docs/_config.yml` so they aren't copied into the site.
-
-3. Set `baseurl` in `docs/_config.yml`. GitHub fills this in automatically;
-   GitLab doesn't. For the default project URL
-   `https://<group>.gitlab.io/<project>/` use `baseurl: "/<project>"`; for a
-   custom domain or a group-level site leave it `""`.
-
-4. Add `.gitlab-ci.yml` at the repo root:
-
-   ```yaml
-   pages:
-     image: ruby:3.3
-     stage: deploy
-     variables:
-       BUNDLE_PATH: vendor/bundle
-     cache:
-       paths:
-         - docs/vendor/bundle
-     script:
-       - cd docs
-       - bundle install
-       - bundle exec jekyll build --destination ../public
-     artifacts:
-       paths:
-         - public
-     rules:
-       - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-   ```
-
-   The job must be named `pages` and the artifact folder must be `public` —
-   both are GitLab conventions. Running Jekyll from inside `docs/` means the
-   `_config.yml`, `_layouts`, and `_data` there are picked up with no extra
-   flags.
-
-5. Push. **Deploy → Pages** in the project shows the URL once the job
-   finishes. Pages must be enabled on the instance (it is on gitlab.com).
-
-Everything in [Gotchas](#gotchas) applies to GitLab as well, plus one more:
-`Gemfile.lock` is generated by the first `bundle install` — commit it after
-the first successful pipeline so later builds are reproducible.
+The job must be named `pages` and the artifact folder must be `public` —
+both are GitLab conventions. Drop `--base-url` if the project uses a custom
+domain or a group-level site served from `/`. Push; **Deploy → Pages**
+shows the URL once the job finishes. The same three-line script works for
+any CI that deploys a static folder (Azure Static Web Apps, Netlify,
+Cloudflare Pages, S3).
 
 See [CLI](../CLI.md) for the full command list, and
 [Format](Format.md) for the on-disk conventions the generated site relies on.

@@ -8,6 +8,7 @@
     <Project Path="src/Wikidown.Api/Wikidown.Api.csproj" />
     <Project Path="src/Wikidown.Cli/Wikidown.Cli.csproj" />
     <Project Path="src/Wikidown.Core/Wikidown.Core.csproj" />
+    <Project Path="src/Wikidown.Html/Wikidown.Html.csproj" />
     <Project Path="src/Wikidown.Mcp/Wikidown.Mcp.csproj" />
     <Project Path="src/Wikidown.Pdf/Wikidown.Pdf.csproj" />
     <Project Path="src/Wikidown.Web/Wikidown.Web.csproj" />

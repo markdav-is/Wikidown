@@ -25,14 +25,8 @@
     <EmbeddedResource Include="..\..\agents\copilot\mcp.json" LogicalName="agents/copilot/mcp.json" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="PagesTheme\_config.yml" LogicalName="pages/_config.yml" />
-    <EmbeddedResource Include="PagesTheme\index.html" LogicalName="pages/index.html" />
-    <EmbeddedResource Include="PagesTheme\_layouts\wikidown.html" LogicalName="pages/_layouts/wikidown.html" />
-    <EmbeddedResource Include="PagesTheme\_includes\nav-tree.html" LogicalName="pages/_includes/nav-tree.html" />
-    <EmbeddedResource Include="PagesTheme\assets\wikidown.css" LogicalName="pages/assets/wikidown.css" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\Wikidown.Core\Wikidown.Core.csproj" />
     <ProjectReference Include="..\Wikidown.Pdf\Wikidown.Pdf.csproj" />
+    <ProjectReference Include="..\Wikidown.Html\Wikidown.Html.csproj" />
   </ItemGroup>
 </Project>

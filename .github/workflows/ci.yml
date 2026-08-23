@@ -37,3 +37,5 @@ jobs:
         run: |
           dotnet run --project src/Wikidown.Cli --no-build --configuration Release -- list
           dotnet run --project src/Wikidown.Cli --no-build --configuration Release -- search --query wikidown
+          dotnet run --project src/Wikidown.Cli --no-build --configuration Release -- export-html --output publish/docs-site --clean
+          test -f publish/docs-site/Getting-Started/Format.html

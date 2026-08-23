@@ -1,4 +1,5 @@
 using Wikidown.Core;
+using Wikidown.Html;
 
 namespace Wikidown.Cli;
 
@@ -7,24 +8,15 @@ namespace Wikidown.Cli;
 // theme whose left nav honors .order via _data/navigation.yml.
 public static class PagesCommand
 {
-    private static readonly string[] ThemeFiles =
-    {
-        "_config.yml",
-        "index.html",
-        "_layouts/wikidown.html",
-        "_includes/nav-tree.html",
-        "assets/wikidown.css",
-    };
-
     public static int Run(WikiRepository repo, ParsedArgs args, TextWriter w)
     {
         var force = args.Flag("force");
         var title = args.Optional("title") ?? DefaultTitle(repo);
-        var home = HomeUrl(repo);
+        var home = ThemeResources.HomeUrl(repo);
 
-        foreach (var file in ThemeFiles)
+        foreach (var file in ThemeResources.Files)
         {
-            var content = ReadResource("pages/" + file)
+            var content = ThemeResources.Read(file)
                 .Replace("{{TITLE}}", title.Replace("\"", "\\\""))
                 .Replace("{{HOME}}", home);
             WriteFile(repo.RootPath, file, content, force, w);
@@ -46,14 +38,6 @@ public static class PagesCommand
         return string.IsNullOrEmpty(name) ? "Wiki" : name;
     }
 
-    private static string HomeUrl(WikiRepository repo)
-    {
-        var home = PagePath.Parse("/Home");
-        if (repo.Exists(home)) return home.ToLinkPath() + ".html";
-        var first = repo.ListChildren(PagePath.Root).FirstOrDefault();
-        return first is null ? "/Home.html" : first.ToLinkPath() + ".html";
-    }
-
     private static void WriteFile(string root, string relPath, string content, bool force, TextWriter w)
     {
         var path = Path.Combine(root, relPath.Replace('/', Path.DirectorySeparatorChar));
@@ -65,13 +49,5 @@ public static class PagesCommand
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         File.WriteAllText(path, content);
         w.WriteLine($"wrote {relPath}");
-    }
-
-    private static string ReadResource(string name)
-    {
-        using var stream = typeof(PagesCommand).Assembly.GetManifestResourceStream(name)
-            ?? throw new InvalidOperationException($"missing embedded resource: {name}");
-        using var reader = new StreamReader(stream);
-        return reader.ReadToEnd();
     }
 }

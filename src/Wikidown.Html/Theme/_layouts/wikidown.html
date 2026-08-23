@@ -25,11 +25,11 @@
         {% include nav-tree.html items=site.data.navigation %}
       {% else %}
         {% comment %}No _data/navigation.yml yet — run `wikidown pages` to generate the .order-aware tree.{% endcomment %}
-        {% assign wiki_pages = site.pages | where_exp: "p", "p.path contains '.md'" | sort: "url" %}
+        {% assign wiki_pages = site.pages | sort: "url" %}
         <ul class="nav-tree">
-          {% for p in wiki_pages %}
+          {% for p in wiki_pages %}{% if p.path contains '.md' %}
           <li class="nav-item{% if page.url == p.url %} is-active{% endif %}"><a href="{{ p.url | relative_url }}">{{ p.title | default: p.name }}</a></li>
-          {% endfor %}
+          {% endif %}{% endfor %}
         </ul>
       {% endif %}
     </aside>

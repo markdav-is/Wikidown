@@ -146,6 +146,18 @@ wikidown --root ./my-wiki list
   **Settings → Pages** at the `/docs` folder, and the wiki is live. See
   [Publishing to GitHub Pages](Getting-Started/Publishing-to-GitHub-Pages.md)
   for setup steps, what each scaffolded file does, and gotchas.
+- `export-html --output <dir> [--base-url /prefix] [--title T] [--clean]` —
+  render the wiki to a complete static site using the same theme `pages`
+  scaffolds, in-process (Markdig + Fluid) with no Jekyll or Ruby. One
+  `.html` per page, `index.html` redirect, `assets/` and `.attachments/`
+  copied through; relative `.md` links rewritten to `.html`, titles from
+  the first heading, nav built live from `.order`. Uses theme files from
+  the wiki root when present (so customizations apply) and the built-in
+  copy otherwise — running `pages` first is optional. `--base-url` prefixes
+  theme links for sites served under a path (GitLab project sites);
+  `--clean` empties the output folder first. This is the path for GitLab
+  Pages, Azure Static Web Apps, any static host, and local preview — see
+  [Publishing to GitHub Pages § Any other host](Getting-Started/Publishing-to-GitHub-Pages.md).
 
 See [Format](Getting-Started/Format.md) for the on-disk format the CLI
 maintains, including the relative-link convention that `check-links`

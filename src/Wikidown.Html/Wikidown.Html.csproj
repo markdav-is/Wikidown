@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>Wikidown.Html</RootNamespace>
+    <Description>Renders a Wikidown wiki to a static HTML site using the Jekyll-compatible starter theme (Markdig + Fluid), and carries that theme for `wikidown pages`.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Wikidown.Core\Wikidown.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Fluid.Core" />
+    <PackageReference Include="Markdig" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Theme\_config.yml" LogicalName="theme/_config.yml" />
+    <EmbeddedResource Include="Theme\index.html" LogicalName="theme/index.html" />
+    <EmbeddedResource Include="Theme\_layouts\wikidown.html" LogicalName="theme/_layouts/wikidown.html" />
+    <EmbeddedResource Include="Theme\_includes\nav-tree.html" LogicalName="theme/_includes/nav-tree.html" />
+    <EmbeddedResource Include="Theme\assets\wikidown.css" LogicalName="theme/assets/wikidown.css" />
+  </ItemGroup>
+</Project>
