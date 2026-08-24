@@ -67,12 +67,13 @@
         <div class="gs-lane">
           <span class="card-kicker">From a terminal</span>
           <h3>Two commands</h3>
-          <pre><code>curl -fsSL https://wikidown.org/install.sh | sh
+          <pre><code># If you have dotnet installed:
+dotnet tool install -g Wikidown.Cli
 wikidown init</code></pre>
-          <pre><code># Windows
-irm https://wikidown.org/install.ps1 | iex
+          <pre><code># If not — installs a self-contained CLI, no .NET required:
+curl -fsSL https://wikidown.org/install.sh | sh      # Windows: irm https://wikidown.org/install.ps1 | iex
 wikidown init</code></pre>
-          <p class="gs-note">The install script uses <code>dotnet tool install</code> if you already have .NET, or downloads a self-contained binary if you don't.</p>
+          <p class="gs-note">Either way the binary is <code>wikidown</code> and <code>init</code> behaves identically.</p>
         </div>
       </div>
     </section>

@@ -9,10 +9,13 @@ through MCP, and browsable in Visual Studio or the web editor.
 
 ## Quick start: add Wikidown to your repo
 
-One command installs the CLI, a second sets your repo up end to end. The
-install script uses `dotnet tool install` if you already have the .NET
-runtime, or downloads a self-contained binary if you don't — no .NET
-installation required either way:
+If you have .NET installed, install the CLI as a global tool:
+
+```bash
+dotnet tool install -g Wikidown.Cli
+```
+
+If not, these scripts install a self-contained binary — no .NET required:
 
 ```bash
 curl -fsSL https://wikidown.org/install.sh | sh
@@ -21,6 +24,8 @@ curl -fsSL https://wikidown.org/install.sh | sh
 ```powershell
 irm https://wikidown.org/install.ps1 | iex
 ```
+
+Then set your repo up end to end:
 
 ```bash
 wikidown init
