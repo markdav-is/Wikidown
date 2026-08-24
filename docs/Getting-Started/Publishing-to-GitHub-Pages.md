@@ -10,10 +10,10 @@ with a left-navigation tree that follows your `.order` files.
 
 Not on GitHub, or want to preview locally? `wikidown export-html` renders
 the **same theme** in .NET with no Jekyll or Ruby involved — see
-[Any other host: `export-html`](#any-other-host-export-html) and
-[GitLab Pages](#gitlab-pages) below. That's how
-[wikidown.org](https://wikidown.org) itself is published: it *is* this wiki,
-exported by CI on every change.
+[Any other host: `export-html`](#any-other-host-export-html) below, and
+[Publishing to GitLab Pages](Publishing-to-GitLab-Pages.md) for the GitLab
+walkthrough. That's how [wikidown.org](https://wikidown.org) itself is
+published: it *is* this wiki, exported by CI on every change.
 
 ## Quick start
 
@@ -145,32 +145,10 @@ the .NET renderer.
 
 ## GitLab Pages
 
-GitLab Pages publishes whatever a CI job leaves in a `public/` artifact, and
-doesn't run Jekyll for you — so use `export-html`. Run `wikidown pages` first
-if you want the theme files in the repo to customize (optional), then add
-`.gitlab-ci.yml` at the repo root:
-
-```yaml
-pages:
-  image: mcr.microsoft.com/dotnet/sdk:10.0
-  stage: deploy
-  script:
-    - dotnet tool install -g Wikidown.Cli
-    - export PATH="$PATH:$HOME/.dotnet/tools"
-    - wikidown export-html --output public --base-url "/$CI_PROJECT_NAME" --clean
-  artifacts:
-    paths:
-      - public
-  rules:
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-```
-
-The job must be named `pages` and the artifact folder must be `public` —
-both are GitLab conventions. Drop `--base-url` if the project uses a custom
-domain or a group-level site served from `/`. Push; **Deploy → Pages**
-shows the URL once the job finishes. The same three-line script works for
-any CI that deploys a static folder (Azure Static Web Apps, Netlify,
-Cloudflare Pages, S3).
+Covered on its own page:
+[Publishing to GitLab Pages](Publishing-to-GitLab-Pages.md) — a one-job
+`.gitlab-ci.yml` that runs `export-html` in a .NET container. The same
+recipe works for any CI that deploys a static folder.
 
 See [CLI](../CLI.md) for the full command list, and
 [Format](Format.md) for the on-disk conventions the generated site relies on.
