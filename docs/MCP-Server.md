@@ -15,6 +15,30 @@ To update an existing install, see
 [Updating](Getting-Started/Updating.md) — a plain push to `main` doesn't
 always mean a new NuGet version is available.
 
+### No .NET?
+
+Unlike the CLI, the MCP server currently ships **only** as a NuGet global
+tool, so it needs the .NET SDK or runtime on `PATH` — there is no
+self-contained `wikidown-mcp` binary yet.
+
+That's less limiting than it sounds: the CLI *does* ship self-contained,
+and the shared agent skill tells agents to fall back to `wikidown` CLI
+commands whenever the `wiki_*` MCP tools aren't available. So on a machine
+without .NET:
+
+```sh
+curl -fsSL https://wikidown.org/install.sh | sh
+```
+
+```powershell
+irm https://wikidown.org/install.ps1 | iex
+```
+
+installs a self-contained `wikidown` binary (see
+[CLI](CLI.md) § Quick install), and agents keep maintaining the wiki
+through the CLI fallback — only the MCP wiring (`.mcp.json`,
+`.vscode/mcp.json`) stays dormant until .NET is installed.
+
 ## Wiki root
 
 Selected in this order:

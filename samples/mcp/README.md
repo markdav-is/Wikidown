@@ -18,6 +18,11 @@ Or run from source without installing:
 dotnet run --project src/Wikidown.Mcp
 ```
 
+Both forms require the .NET SDK/runtime — the MCP server has no
+self-contained binary (unlike the CLI, which the wikidown.org install
+scripts can install without .NET). On a machine without .NET, agents fall
+back to `wikidown` CLI commands per the shared skill instead of these tools.
+
 ## Configuration
 
 The server picks the wiki root in this order:

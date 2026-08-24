@@ -10,6 +10,14 @@ dotnet tool install -g Wikidown.Cli
 wikidown init --agents all
 ```
 
+No .NET on the machine? The wikidown.org install script drops a
+self-contained `wikidown` binary instead — `init` works identically:
+
+```bash
+curl -fsSL https://wikidown.org/install.sh | sh   # Windows: irm https://wikidown.org/install.ps1 | iex
+wikidown init --agents all
+```
+
 `init` writes every file below to its destination (skipping anything that
 already exists; `--force` overwrites, `--agents claude` / `--agents copilot`
 narrows the set). The tables that follow are the manual-copy equivalent.
@@ -61,3 +69,8 @@ dotnet tool install -g Wikidown.Mcp
 ```
 
 Or run from source via the `dotnet run` form shown in the sample MCP configs.
+
+The MCP server is NuGet-only and needs the .NET SDK/runtime — there is no
+self-contained `wikidown-mcp` binary. On machines without .NET, the shared
+skill's CLI fallback keeps agents working through the self-contained
+`wikidown` binary; the MCP configs stay dormant until .NET is installed.

@@ -71,6 +71,10 @@ The configs above launch the Wikidown MCP server, so install it once globally:
 dotnet tool install -g Wikidown.Mcp
 ```
 
+The MCP server needs the .NET SDK/runtime (it has no self-contained binary
+yet). On machines without .NET that used the install-script binary, agents
+fall back to the equivalent `wikidown` CLI commands per the shared skill.
+
 That's it — Claude Code / Copilot in that repo now have `wiki_list`,
 `wiki_read`, `wiki_write`, `wiki_new`, `wiki_move`, `wiki_delete`,
 `wiki_reorder`, `wiki_search`, and `wiki_walk` tools that keep `.order` files

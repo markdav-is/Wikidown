@@ -46,8 +46,9 @@ with the server name — e.g. `wikidown_wiki_write` in VS Code / GitHub Copilot.
 ## CLI fallback
 
 ```sh
-# Install
+# Install (either form; the second needs no .NET)
 dotnet tool install -g Wikidown.Cli
+curl -fsSL https://wikidown.org/install.sh | sh   # Windows: irm https://wikidown.org/install.ps1 | iex
 
 # Commands (default root is ./docs; override with --root <path>)
 wikidown list [--path /P]

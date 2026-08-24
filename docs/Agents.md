@@ -52,6 +52,29 @@ wikidown init --agents all
 skipped unless you pass `--force`; an existing `CLAUDE.md` gets the wiki
 section appended if it doesn't mention the wiki already.
 
+### Without .NET
+
+The install scripts on [wikidown.org](https://wikidown.org) fall back to a
+self-contained `wikidown` binary when `dotnet` isn't on `PATH` — nothing
+else to install:
+
+```sh
+curl -fsSL https://wikidown.org/install.sh | sh
+wikidown init --agents all
+```
+
+```powershell
+irm https://wikidown.org/install.ps1 | iex
+wikidown init --agents all
+```
+
+`init` scaffolds the same configs either way. One difference downstream:
+the MCP server itself is NuGet-only (see [MCP Server](MCP-Server.md)), so
+without .NET the `wiki_*` tools won't start. The shared skill already
+covers this — it tells agents to fall back to the equivalent `wikidown` CLI
+commands, which the self-contained binary provides, so wiki maintenance
+keeps working.
+
 Manual copying still works: the
 [`agents/README.md`](https://github.com/markdav-is/Wikidown/blob/main/agents/README.md)
 maps each source file to its destination. Once installed, the agents call the

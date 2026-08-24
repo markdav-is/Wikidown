@@ -32,6 +32,32 @@ If `dotnet tool update` reports you're already on the latest version but you
 expected a fix, check whether `VersionPrefix` has actually moved since your
 last update — the fix may be merged but not yet released.
 
+## Self-contained CLI binary (no-.NET installs)
+
+If `wikidown` was installed by the wikidown.org install script on a machine
+without .NET, it's a self-contained binary in `~/.wikidown/bin`
+(`%USERPROFILE%\.wikidown\bin` on Windows) — `dotnet tool update` doesn't
+apply to it. Update by re-running the script; it always fetches the newest
+native release:
+
+```sh
+curl -fsSL https://wikidown.org/install.sh | sh
+```
+
+```powershell
+irm https://wikidown.org/install.ps1 | iex
+```
+
+Native binaries are built by
+[`cli-native.yml`](https://github.com/markdav-is/Wikidown/blob/main/.github/workflows/cli-native.yml)
+when a maintainer pushes a `cli-v*` tag — a **separate release track** from
+NuGet, so the newest NuGet version and the newest native binary aren't
+necessarily the same; if the script reinstalls and a fix still isn't there,
+check whether a `cli-v*` tag has been cut since the fix merged. The MCP
+server has no native binary — it's NuGet-only and always needs .NET (see
+[MCP Server](../MCP-Server.md); agents fall back to the CLI when it's
+absent).
+
 ## Agent configs (`.claude/`, `.github/`, `.vscode/mcp.json`, `CLAUDE.md`)
 
 These files are copied into a downstream repo once, by `wikidown init` (see
@@ -63,5 +89,6 @@ beyond letting Visual Studio check for extension updates as usual — see
 | Component | Trigger to publish | How consumers update |
 |---|---|---|
 | `Wikidown.Cli` / `Wikidown.Mcp` (NuGet) | Push to `main` touching Core/CLI/MCP/`Directory.Build.props`, **and** a `VersionPrefix` bump | `dotnet tool update -g Wikidown.Cli` / `Wikidown.Mcp` |
+| Self-contained CLI binary | Push of a `cli-v*` tag | Re-run the wikidown.org install script |
 | Agent configs | N/A — copied at `init` time | `wikidown init --agents all --force` |
 | VS extension (VSIX) | Push of a `vsix-v*` tag | Automatic via VS Marketplace update check |
