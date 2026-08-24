@@ -14,6 +14,12 @@ page commits still go directly to your provider's REST API from the browser.
 
 - **GitHub** — Sign in with GitHub (OAuth) or paste a fine-grained Personal
   Access Token. Commits via the Contents API.
+- **GitLab** — Personal Access Token with the `api` scope (Settings →
+  Access tokens). Works with gitlab.com and self-managed instances (set the
+  instance URL on the connect form). Reads via the Repository Files/Tree
+  APIs, commits via the Commits API; conflict detection uses each file's
+  `last_commit_id`. gitlab.com serves CORS-open API responses, so no proxy
+  is involved.
 - **Azure DevOps** — Personal Access Token. Commits via the Pushes API.
   (OAuth is planned but not yet wired.)
 
@@ -58,9 +64,10 @@ mismatch — use `wikidown.app` for OAuth, or paste a PAT as a fallback.
 
 ## Conflict handling
 
-The editor records the file SHA (or the branch-head commit OID, depending on
-the provider) before you edit. If the remote has moved when you save, the commit fails
-with a "Reload remote" banner so you don't clobber someone else's change.
+The editor records the file SHA (or the branch-head commit OID, or on GitLab
+the file's `last_commit_id`, depending on the provider) before you edit. If
+the remote has moved when you save, the commit fails with a "Reload remote"
+banner so you don't clobber someone else's change.
 
 ## Drafts
 

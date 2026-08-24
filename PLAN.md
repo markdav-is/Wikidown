@@ -585,6 +585,39 @@ Blazor WASM PWA editor + marketing site hosted on GitHub Pages.
       Structural edits should re-run `wikidown pages` (or use current
       tooling) until the MCP tool is updated from NuGet.
 
+23. **Editor: GitLab provider.** *(shipped)*
+    - `WikiProvider.GitLab` + `GitLabBackend` in `Wikidown.Web`: REST API
+      v4, project addressed as URL-encoded `namespace/project`, PAT via
+      `PRIVATE-TOKEN` header (`api` scope). Reads: Repository Tree
+      (header-paginated via `x-next-page`) + Files endpoints; writes: the
+      Commits API with per-action `last_commit_id` as the conflict
+      primitive (the new commit's own id becomes the next expected sha —
+      no re-read needed). gitlab.com serves
+      `Access-Control-Allow-Origin: *` on `/api/v4` (verified), so the
+      no-backend model holds. Empty token sends no auth header, which
+      makes public projects readable anonymously.
+    - `WikiConnection` gains an optional `Host` for self-managed
+      instances (blank = gitlab.com; old stored connections deserialize
+      fine since the param has a default). Connect page gets a GitLab
+      tab (group/namespace, project, branch, docs path, instance URL,
+      PAT) with an inline tanuki SVG — MudBlazor ships no GitLab brand
+      icon.
+    - Verified live against public `gitlab-org/gitlab-docs` from the
+      running editor: anonymous tree walk of `content/` (real folders
+      rendered in `.order`-less nav), page click fetched and
+      base64-decoded `archives/index.md` via the Files API. **Write path
+      is untested** — needs a real GitLab account/PAT; the request shape
+      follows the documented Commits API.
+    - Real pre-existing bug found and fixed while verifying:
+      `ConnectionStore.LoadAsync` set `_loaded = true` *before* awaiting
+      the localStorage read, so when two components raced it on a fresh
+      load (Browse + the drafts menu both initialize on `/browse`), the
+      second caller got a permanently null connection — fresh-loading
+      `/browse` showed "No wiki connected" despite a stored connection.
+      Now caches the in-flight `Task` (`_load ??= LoadCoreAsync()`), so
+      racing callers share one read. This affected GitHub/ADO too, in
+      production, on any deep-link into `/browse`.
+
 ## Open questions / parking lot
 - `[[_TOC_]]`, mermaid, `:::` callouts rendering in WASM preview.
 - `/.attachments` upload from browser (REST base64 -> Contents API).

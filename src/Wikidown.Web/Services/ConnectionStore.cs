@@ -10,17 +10,20 @@ public sealed class ConnectionStore(IJSRuntime js)
     private const string StorageKey = "wikidown.connection.v1";
 
     private WikiConnection? _cached;
-    private bool _loaded;
+    private Task<WikiConnection?>? _load;
 
     public WikiConnection? Current => _cached;
 
     public event Action? Changed;
 
-    public async Task<WikiConnection?> LoadAsync()
-    {
-        if (_loaded) return _cached;
-        _loaded = true;
+    // Concurrent first callers (e.g. the Browse page and the drafts menu
+    // both initializing on a fresh load) must share one read — a bool
+    // "loaded" flag set before the await hands every racing caller a
+    // still-null cache.
+    public Task<WikiConnection?> LoadAsync() => _load ??= LoadCoreAsync();
 
+    private async Task<WikiConnection?> LoadCoreAsync()
+    {
         var json = await js.InvokeAsync<string?>("localStorage.getItem", StorageKey);
         if (string.IsNullOrWhiteSpace(json)) return null;
 
@@ -38,7 +41,7 @@ public sealed class ConnectionStore(IJSRuntime js)
     public async Task SaveAsync(WikiConnection connection)
     {
         _cached = connection;
-        _loaded = true;
+        _load = Task.FromResult<WikiConnection?>(connection);
         var json = JsonSerializer.Serialize(connection);
         await js.InvokeVoidAsync("localStorage.setItem", StorageKey, json);
         Changed?.Invoke();
@@ -47,7 +50,7 @@ public sealed class ConnectionStore(IJSRuntime js)
     public async Task ClearAsync()
     {
         _cached = null;
-        _loaded = true;
+        _load = Task.FromResult<WikiConnection?>(null);
         await js.InvokeVoidAsync("localStorage.removeItem", StorageKey);
         Changed?.Invoke();
     }

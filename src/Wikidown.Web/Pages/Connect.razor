@@ -94,6 +94,56 @@
         </EditForm>
     </MudTabPanel>
 
+    <MudTabPanel Text="GitLab" Icon="@GitLabIcon">
+        <MudText Class="mb-3">
+            Use a personal access token with the <em>api</em> scope on the project that
+            holds your <code>/docs</code> folder. Works with gitlab.com and self-managed
+            instances.
+        </MudText>
+
+        <EditForm Model="_gl" OnValidSubmit="ConnectGitLabAsync">
+            <MudGrid Spacing="3">
+                <MudItem xs="12" sm="6">
+                    <MudTextField @bind-Value="_gl.Group" Label="Group / namespace" Required="true"
+                                  Placeholder="my-group or my-group/sub-group" Variant="Variant.Outlined" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField @bind-Value="_gl.Project" Label="Project" Required="true"
+                                  Placeholder="my-wiki" Variant="Variant.Outlined" />
+                </MudItem>
+                <MudItem xs="12" sm="4">
+                    <MudTextField @bind-Value="_gl.Branch" Label="Branch" Required="true"
+                                  Placeholder="main" Variant="Variant.Outlined" />
+                </MudItem>
+                <MudItem xs="12" sm="4">
+                    <MudTextField @bind-Value="_gl.Docs" Label="Docs path" Required="true"
+                                  Placeholder="docs" Variant="Variant.Outlined" />
+                </MudItem>
+                <MudItem xs="12" sm="4">
+                    <MudTextField @bind-Value="_gl.Host" Label="Instance URL"
+                                  Placeholder="https://gitlab.com" Variant="Variant.Outlined"
+                                  HelperText="Leave empty for gitlab.com" />
+                </MudItem>
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="_gl.Token" Label="Personal access token"
+                                  InputType="InputType.Password" Required="true"
+                                  Variant="Variant.Outlined"
+                                  HelperText="Settings → Access tokens → scope: api" />
+                </MudItem>
+                @if (_glError is { } glerr)
+                {
+                    <MudItem xs="12"><MudAlert Severity="Severity.Error">@glerr</MudAlert></MudItem>
+                }
+                <MudItem xs="12">
+                    <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled"
+                               Color="Color.Primary" Disabled="@_glBusy">
+                        @(_glBusy ? "Connecting…" : "Connect")
+                    </MudButton>
+                </MudItem>
+            </MudGrid>
+        </EditForm>
+    </MudTabPanel>
+
     <MudTabPanel Text="Azure DevOps" Icon="@Icons.Material.Filled.Cloud">
         <MudText Class="mb-3">
             Use a PAT with <em>Code: Read &amp; Write</em> on the repo that holds your
@@ -143,15 +193,22 @@
 </MudTabs>
 
 @code {
+    // MudBlazor ships no GitLab brand icon; this is the tanuki outline.
+    private const string GitLabIcon =
+        "<path d=\"m22.65 14.39-1.2-3.7-2.38-7.33a.41.41 0 0 0-.78 0l-2.38 7.32H8.09L5.71 3.36a.41.41 0 0 0-.78 0l-2.38 7.33-1.2 3.69a.82.82 0 0 0 .3.92L12 23.17l10.35-7.86a.82.82 0 0 0 .3-.92\"/>";
+
     private const string PendingKey = "wikidown.gh_pending";
     private const string StateKey = "wikidown.gh_state";
 
     private readonly GitHubForm _gh = new();
     private readonly AdoForm _ado = new();
+    private readonly GitLabForm _gl = new();
     private string? _ghError;
     private string? _adoError;
+    private string? _glError;
     private bool _ghBusy;
     private bool _adoBusy;
+    private bool _glBusy;
     private bool _ghShowPat;
     private string? _ghClientId;
     private bool _ghOAuthReady;
@@ -342,6 +399,40 @@
         }
     }
 
+    private async Task ConnectGitLabAsync()
+    {
+        _glError = null;
+        _glBusy = true;
+        try
+        {
+            var host = _gl.Host.Trim().TrimEnd('/');
+            if (host.Length > 0 && !host.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                host = "https://" + host;
+            if (host.Equals("https://gitlab.com", StringComparison.OrdinalIgnoreCase))
+                host = "";
+
+            var conn = new WikiConnection(
+                WikiProvider.GitLab,
+                _gl.Token.Trim(),
+                _gl.Group.Trim().Trim('/'),
+                _gl.Project.Trim().Trim('/'),
+                Or(_gl.Branch, WikiConnection.DefaultBranch),
+                Or(_gl.Docs, WikiConnection.DefaultDocsPath).Trim('/'),
+                Host: host);
+            await Store.SaveAsync(conn);
+            Snackbar.Add($"Connected to {conn.Owner}/{conn.Repo}", Severity.Success);
+            Nav.NavigateTo("browse");
+        }
+        catch (Exception ex)
+        {
+            _glError = ex.Message;
+        }
+        finally
+        {
+            _glBusy = false;
+        }
+    }
+
     private async Task DisconnectAsync()
     {
         await Store.ClearAsync();
@@ -367,6 +458,16 @@
         public string Repo { get; set; } = "";
         public string Branch { get; set; } = WikiConnection.DefaultBranch;
         public string Docs { get; set; } = WikiConnection.DefaultDocsPath;
+        public string Token { get; set; } = "";
+    }
+
+    private sealed class GitLabForm
+    {
+        public string Group { get; set; } = "";
+        public string Project { get; set; } = "";
+        public string Branch { get; set; } = WikiConnection.DefaultBranch;
+        public string Docs { get; set; } = WikiConnection.DefaultDocsPath;
+        public string Host { get; set; } = "";
         public string Token { get; set; } = "";
     }
 

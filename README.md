@@ -98,8 +98,8 @@ and the [wiki page](./docs/Getting-Started/Visual-Studio-Extension.md).
 
 ### Edit in the browser
 
-Open [wikidown.app](https://wikidown.app), connect your GitHub or Azure DevOps
-repo, and edit pages directly — commits go through the provider's REST API, no
+Open [wikidown.app](https://wikidown.app), connect your GitHub, GitLab, or
+Azure DevOps repo, and edit pages directly — commits go through the provider's REST API, no
 backend involved.
 
 ## Everyday CLI usage

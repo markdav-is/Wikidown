@@ -4,6 +4,7 @@ public enum WikiProvider
 {
     GitHub,
     AzureDevOps,
+    GitLab,
 }
 
 public sealed record WikiConnection(
@@ -13,7 +14,8 @@ public sealed record WikiConnection(
     string Repo,
     string Branch,
     string DocsPath,
-    string Project = "")
+    string Project = "",
+    string Host = "")
 {
     public const string DefaultDocsPath = "docs";
     public const string DefaultBranch = "main";
@@ -21,6 +23,8 @@ public sealed record WikiConnection(
     public string Display => Provider switch
     {
         WikiProvider.AzureDevOps => $"ADO: {Owner}/{Project}/{Repo}@{Branch}/{DocsPath}",
+        WikiProvider.GitLab when !string.IsNullOrWhiteSpace(Host) =>
+            $"GitLab ({new Uri(Host).Host}): {Owner}/{Repo}@{Branch}/{DocsPath}",
         _ => $"{Provider}: {Owner}/{Repo}@{Branch}/{DocsPath}",
     };
 }
