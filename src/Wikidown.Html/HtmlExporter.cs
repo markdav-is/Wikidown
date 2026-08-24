@@ -26,7 +26,9 @@ public static class HtmlExporter
         var title = options.Title ?? ResolveTitle(config, repo);
         var baseUrl = (options.BaseUrl ?? config.BaseUrl ?? "").TrimEnd('/');
 
-        var pages = repo.Walk().ToList();
+        var pages = repo.Walk()
+            .Where(p => !PublishExclusions.IsExcluded(p, config.ExcludeFromSite))
+            .ToList();
         var rendered = pages.ToDictionary(
             p => p.ToLinkPath(),
             p => MarkdownPageRenderer.Render(repo.Read(p).Markdown, p.Name.Title),
@@ -38,6 +40,7 @@ public static class HtmlExporter
             ["description"] = config.Description ?? "",
             ["repository_url"] = config.RepositoryUrl,
             ["baseurl"] = baseUrl,
+            ["favicon"] = config.Favicon,
             ["data"] = new Dictionary<string, object?>
             {
                 ["navigation"] = NavData(NavTree.Build(pages, repo.ReadOrder)),
@@ -99,9 +102,47 @@ public static class HtmlExporter
             copyTo(dest);
         }
 
-        CopyTree(Path.Combine(repo.RootPath, ".attachments"), Path.Combine(output, ".attachments"));
+        CopyStaticFiles(repo.RootPath, output);
 
         return new HtmlExportResult(pages.Count, output);
+    }
+
+    // Everything else in the wiki root ships verbatim, mirroring Jekyll's
+    // copy-through of unknown files: images, install scripts, favicons,
+    // extra stylesheets, and .attachments. Wiki sources (.md, .order),
+    // Jekyll machinery (_-prefixed), other dot-files, Gemfiles, and the
+    // separately-rendered root index.html stay out.
+    private static void CopyStaticFiles(string wikiRoot, string output)
+    {
+        var pending = new Stack<(string Dir, string RelPrefix)>();
+        pending.Push((wikiRoot, ""));
+        while (pending.Count > 0)
+        {
+            var (dir, relPrefix) = pending.Pop();
+            foreach (var sub in Directory.EnumerateDirectories(dir))
+            {
+                var name = Path.GetFileName(sub);
+                if (name.StartsWith('_')) continue;
+                if (name.StartsWith('.') && !name.Equals(".attachments", StringComparison.OrdinalIgnoreCase)) continue;
+                pending.Push((sub, relPrefix + name + "/"));
+            }
+            foreach (var file in Directory.EnumerateFiles(dir))
+            {
+                var name = Path.GetFileName(file);
+                var inAttachments = relPrefix.StartsWith(".attachments/", StringComparison.OrdinalIgnoreCase)
+                    || relPrefix.Equals(".attachments/", StringComparison.OrdinalIgnoreCase);
+                if (!inAttachments)
+                {
+                    if (name.StartsWith('_') || name.StartsWith('.')) continue;
+                    if (name.EndsWith(".md", StringComparison.OrdinalIgnoreCase)) continue;
+                    if (name is "Gemfile" or "Gemfile.lock") continue;
+                    if (relPrefix.Length == 0 && name.Equals("index.html", StringComparison.OrdinalIgnoreCase)) continue;
+                }
+                var dest = Path.Combine(output, (relPrefix + name).Replace('/', Path.DirectorySeparatorChar));
+                Directory.CreateDirectory(Path.GetDirectoryName(dest)!);
+                File.Copy(file, dest, overwrite: true);
+            }
+        }
     }
 
     private static IFluidTemplate Parse(FluidParser parser, string liquid, string name)
@@ -145,14 +186,4 @@ public static class HtmlExporter
         return afterDelimiter < 0 ? "" : text[(afterDelimiter + 1)..];
     }
 
-    private static void CopyTree(string source, string dest)
-    {
-        if (!Directory.Exists(source)) return;
-        foreach (var file in Directory.EnumerateFiles(source, "*", SearchOption.AllDirectories))
-        {
-            var target = Path.Combine(dest, Path.GetRelativePath(source, file));
-            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
-            File.Copy(file, target, overwrite: true);
-        }
-    }
 }

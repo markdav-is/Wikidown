@@ -117,10 +117,9 @@ All commands accept `--root <folder>` (default `docs`).
 | [`src/Wikidown.Vs`](./src/Wikidown.Vs/) | Visual Studio extension ([Marketplace](https://marketplace.visualstudio.com/items?itemName=MarkDavis.wikidown)) |
 | [`src/Wikidown.Web`](./src/Wikidown.Web/) | Blazor WASM editor PWA ([wikidown.app](https://wikidown.app)) |
 | [`src/Wikidown.Html`](./src/Wikidown.Html/) | Starter theme + static HTML export (`wikidown export-html`, Markdig + Fluid) |
-| [`src/Wikidown.Site`](./src/Wikidown.Site/) | Marketing site ([wikidown.org](https://wikidown.org)) |
 | [`agents/`](./agents/) | Drop-in agent configs (installed by `wikidown init`) |
 | [`samples/mcp/`](./samples/mcp/) | Example MCP configs for various hosts |
-| [`docs/`](./docs/) | This repo's own wiki (dogfood) |
+| [`docs/`](./docs/) | This repo's own wiki — also the source of [wikidown.org](https://wikidown.org), published with `wikidown export-html` (dogfood twice over) |
 
 ## Format in one breath
 

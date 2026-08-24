@@ -7,7 +7,9 @@ public sealed record SiteConfig(
     string? Title,
     string? Description,
     string? RepositoryUrl,
-    string? BaseUrl)
+    string? BaseUrl,
+    string? Favicon,
+    IReadOnlyList<string> ExcludeFromSite)
 {
     public static SiteConfig Parse(string yaml)
     {
@@ -29,7 +31,9 @@ public sealed record SiteConfig(
             Get(values, "title"),
             Get(values, "description"),
             Get(values, "repository_url"),
-            Get(values, "baseurl"));
+            Get(values, "baseurl"),
+            Get(values, "favicon"),
+            Core.PublishExclusions.Parse(yaml));
     }
 
     private static string? Get(Dictionary<string, string> values, string key) =>

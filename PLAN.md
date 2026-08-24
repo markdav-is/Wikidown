@@ -25,7 +25,8 @@ Blazor WASM PWA editor + marketing site hosted on GitHub Pages.
   Wikidown.Pdf/        renders Wikidown.Core's PDF IR to an actual PDF via PDFsharp/MigraDoc
   Wikidown.Html/       Jekyll-compatible starter theme + static HTML export (Markdig + Fluid)
   Wikidown.Web/        Blazor WASM PWA editor
-  Wikidown.Site/       Blazor static marketing site
+  (marketing site)     merged into /docs — wikidown.org is the wiki + a hand-authored
+                        index.html, published by pages.yml via `wikidown export-html`
 /tests
   Wikidown.Core.Tests/
 /agents
@@ -541,6 +542,48 @@ Blazor WASM PWA editor + marketing site hosted on GitHub Pages.
       tables, code blocks, zero leftover Liquid. 16 new tests.
     - Docs: GitLab section now a one-job pipeline on the .NET SDK image;
       local preview is `export-html` + any static server.
+
+22. **Merge the marketing site into `/docs` — dogfood the theme as wikidown.org.** *(shipped)*
+    - `src/Wikidown.Site/` is gone: its `index.html`, `site.css`, `images/`,
+      favicons, and `install.sh`/`install.ps1` moved into `docs/`, and
+      `wikidown pages` scaffolded the theme there (`_config.yml`,
+      `_layouts`, `_includes`, `assets`, `_data/navigation.yml` — which now
+      auto-regenerates on every wiki edit made with current tooling). The
+      marketing page stays hand-authored HTML as the wiki root's
+      `index.html` — the scaffold's no-overwrite rule means `pages` leaves
+      it alone (only `--force` would clobber it; known foot-gun).
+    - `pages.yml` now builds with `wikidown export-html` (setup-dotnet →
+      export → `.nojekyll` + CNAME → deploy-pages), triggered by `docs/**`
+      and the exporter's source. Every wiki edit redeploys wikidown.org;
+      CI's export step gates broken exports before they reach main.
+    - Three product features the merge forced, all shipped here:
+      - **`wikidown: exclude_from_site:` in `_config.yml`** — subtrees
+        omitted from the published site (pages *and* nav) by `export-html`
+        and from `_data/navigation.yml` by `JekyllNavigation`. Parsed by
+        `Core.PublishExclusions` (shared by both). Publishing-only:
+        excluded pages stay first-class for the CLI/MCP/editor/check-links.
+        wikidown.org excludes `/Meta` and `/Testing`; their bullets were
+        also dropped from `/Home` and `/Getting-Started` so the site has
+        no dead links (deliberate trade: they're no longer body-linked on
+        github.com either, just file-browsable).
+      - **Root static passthrough in `export-html`** — everything in the
+        wiki root ships verbatim (images, install scripts, favicons,
+        `site.css`, `.attachments`) except wiki sources (`.md`, `.order`),
+        `_`-prefixed Jekyll machinery, other dot-files, Gemfiles, and the
+        separately-rendered root `index.html`. Mirrors Jekyll's
+        copy-through; keeps `wikidown.org/install.sh` load-bearing URLs
+        working with no extra hosting.
+      - **`favicon:` in `_config.yml`** — rendered into the stock layout's
+        head via `relative_url`.
+    - The docs' own `_layouts/wikidown.html` + `assets/wikidown.css` carry
+      a small local customization (About/GitHub/Open-editor top bar) —
+      deliberate dogfood of the "edit the scaffolded theme freely" story.
+    - Caveat: the *globally installed* MCP server predates
+      `JekyllNavigation`, so wiki edits made through it don't refresh
+      `_data/navigation.yml`; content-only edits don't need it, and
+      `export-html` builds its nav live so wikidown.org can't go stale.
+      Structural edits should re-run `wikidown pages` (or use current
+      tooling) until the MCP tool is updated from NuGet.
 
 ## Open questions / parking lot
 - `[[_TOC_]]`, mermaid, `:::` callouts rendering in WASM preview.

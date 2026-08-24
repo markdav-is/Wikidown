@@ -5,20 +5,17 @@
 # Enable in GitHub: Settings → Pages → Source: "Deploy from a branch",
 # branch: main, folder: /docs (or wherever this file lives).
 
-title: "{{TITLE}}"
-description: ""
-# Uncomment to add a GitHub link to the top bar:
-# repository_url: https://github.com/<owner>/<repo>
-# Uncomment to set a favicon (path relative to the wiki root):
-# favicon: /favicon.ico
+title: "Wikidown"
+description: "An opinionated, tool-supported wiki that lives in /docs of any code repo."
+repository_url: https://github.com/markdav-is/Wikidown
+favicon: /favicon.ico
 
-# Subtrees to leave out of the published site (nav and pages). Publishing
-# only — the pages stay first-class for the CLI, MCP server, and editor.
-# `export-html` honors this fully; GitHub's Jekyll builder only hides them
-# from the nav, so also list them under `exclude:` below when using it.
-# wikidown:
-#   exclude_from_site:
-#     - /Internal-Notes
+# Publishing only — these stay first-class in the repo, the CLI, the MCP
+# server, and the editor; they just don't ship to wikidown.org.
+wikidown:
+  exclude_from_site:
+    - /Meta
+    - /Testing
 
 markdown: kramdown
 kramdown:

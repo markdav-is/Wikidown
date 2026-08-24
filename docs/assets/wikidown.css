@@ -1,0 +1,202 @@
+/* Wikidown starter theme for GitHub Pages / Jekyll.
+   Installed by `wikidown pages`; edit freely — it is never overwritten
+   unless you pass --force. Palette mirrors wikidown.org. */
+
+:root {
+    --c-bg: #f5f7fb;
+    --c-surface: #ffffff;
+    --c-ink: #1f2a40;
+    --c-muted: #4a5a75;
+    --c-accent: #1b6ec2;
+    --c-accent-ink: #ffffff;
+    --c-border: #dbe0ea;
+    --shadow: 0 1px 2px rgba(20, 30, 60, 0.04), 0 4px 16px rgba(20, 30, 60, 0.06);
+    --sidebar-w: 17rem;
+    --topbar-h: 3.4rem;
+}
+
+* { box-sizing: border-box; }
+html, body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Roboto', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    color: var(--c-ink);
+    background: var(--c-bg);
+    line-height: 1.55;
+}
+
+a { color: var(--c-accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+code {
+    background: rgba(27, 110, 194, 0.08);
+    padding: 0.05em 0.35em;
+    border-radius: 0.25rem;
+    font-family: 'JetBrains Mono', 'Menlo', 'Consolas', monospace;
+    font-size: 0.93em;
+    color: #0a3a73;
+}
+pre {
+    background: #0f1729;
+    color: #d3deef;
+    padding: 0.85rem 1rem;
+    border-radius: 0.5rem;
+    overflow-x: auto;
+    font-size: 0.9rem;
+}
+pre code { background: none; color: inherit; padding: 0; font-size: inherit; }
+
+/* ── top bar ─────────────────────────────────────────────────────────── */
+.topbar {
+    background: var(--c-ink);
+    color: #fff;
+    height: var(--topbar-h);
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    box-shadow: var(--shadow);
+}
+.topbar a { color: #fff; }
+.topbar-row {
+    height: 100%;
+    padding: 0 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+.brand { font-weight: 700; font-size: 1.2rem; letter-spacing: 0.01em; flex: 1; }
+.topbar nav { display: flex; gap: 1rem; align-items: center; }
+.topbar nav .powered { opacity: 0.7; font-size: 0.9rem; }
+.nav-toggle {
+    display: none;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    color: #fff;
+    border-radius: 0.4rem;
+    font-size: 1.1rem;
+    line-height: 1;
+    padding: 0.35rem 0.55rem;
+    cursor: pointer;
+}
+
+/* ── shell: sidebar + content ────────────────────────────────────────── */
+.shell {
+    display: grid;
+    grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+    min-height: calc(100vh - var(--topbar-h));
+}
+.sidebar {
+    background: var(--c-surface);
+    border-right: 1px solid var(--c-border);
+    padding: 1.25rem 0.75rem 2rem;
+    position: sticky;
+    top: var(--topbar-h);
+    height: calc(100vh - var(--topbar-h));
+    overflow-y: auto;
+    font-size: 0.95rem;
+}
+.content {
+    padding: 2rem 3rem 4rem;
+    max-width: 52rem;
+}
+
+/* ── navigation tree ─────────────────────────────────────────────────── */
+.nav-tree { list-style: none; margin: 0; padding: 0; }
+.nav-tree .nav-tree { padding-left: 0.9rem; border-left: 1px solid var(--c-border); margin-left: 0.55rem; }
+.nav-item { margin: 0.1rem 0; }
+.nav-item > a,
+.nav-item > details > summary,
+.nav-item > .nav-folder {
+    display: block;
+    padding: 0.3rem 0.6rem;
+    border-radius: 0.4rem;
+    color: var(--c-ink);
+}
+.nav-item > a:hover,
+.nav-item > details > summary:hover { background: rgba(27, 110, 194, 0.08); text-decoration: none; }
+.nav-item.is-active > a,
+.nav-item.is-active > details > summary {
+    background: var(--c-accent);
+    color: var(--c-accent-ink);
+    font-weight: 500;
+}
+.nav-item.is-active > details > summary a { color: inherit; }
+.nav-folder { color: var(--c-muted); }
+.nav-item > details > summary { cursor: pointer; list-style: none; position: relative; padding-left: 1.35rem; }
+.nav-item > details > summary::-webkit-details-marker { display: none; }
+.nav-item > details > summary::before {
+    content: '';
+    position: absolute;
+    left: 0.45rem;
+    top: 0.78rem;
+    border: solid currentColor;
+    border-width: 0 1.5px 1.5px 0;
+    width: 0.4rem;
+    height: 0.4rem;
+    transform: rotate(-45deg);
+    opacity: 0.7;
+    transition: transform 0.15s;
+}
+.nav-item > details[open] > summary::before { transform: rotate(45deg); top: 0.65rem; }
+.nav-item > details > summary a { color: inherit; }
+.nav-item > details > summary a:hover { text-decoration: underline; }
+
+/* ── page content ────────────────────────────────────────────────────── */
+.content .breadcrumb {
+    font-size: 0.88rem;
+    color: var(--c-muted);
+    margin: 0 0 1rem;
+}
+.content .breadcrumb a { color: var(--c-muted); }
+.content h1 { font-size: 2.1rem; line-height: 1.15; margin: 0 0 1rem; }
+.content h2 { font-size: 1.45rem; margin: 2rem 0 0.75rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--c-border); }
+.content h3 { font-size: 1.15rem; margin: 1.5rem 0 0.5rem; }
+.content img { max-width: 100%; height: auto; border-radius: 0.4rem; }
+.content table { border-collapse: collapse; width: 100%; margin: 1rem 0; font-size: 0.95rem; }
+.content th, .content td { border: 1px solid var(--c-border); padding: 0.45rem 0.65rem; text-align: left; }
+.content th { background: var(--c-surface); }
+.content blockquote {
+    margin: 1rem 0;
+    padding: 0.6rem 1rem;
+    border-left: 3px solid var(--c-accent);
+    background: rgba(27, 110, 194, 0.06);
+    border-radius: 0 0.4rem 0.4rem 0;
+    color: var(--c-ink);
+}
+.content blockquote p { margin: 0.25rem 0; }
+.content hr { border: 0; border-top: 1px solid var(--c-border); margin: 2rem 0; }
+
+/* ── footer ──────────────────────────────────────────────────────────── */
+footer {
+    border-top: 1px solid var(--c-border);
+    padding: 1.25rem 1.25rem;
+    color: var(--c-muted);
+    font-size: 0.9rem;
+}
+.footer-row { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; }
+
+/* ── responsive ──────────────────────────────────────────────────────── */
+@media (max-width: 60rem) {
+    .nav-toggle { display: inline-block; }
+    .shell { grid-template-columns: minmax(0, 1fr); }
+    .sidebar {
+        position: fixed;
+        left: 0;
+        width: min(var(--sidebar-w), 85vw);
+        transform: translateX(-100%);
+        transition: transform 0.2s;
+        z-index: 15;
+        box-shadow: var(--shadow);
+    }
+    .sidebar.is-open { transform: none; }
+    .content { padding: 1.5rem 1.25rem 3rem; }
+}
+
+/* ── wikidown.org customization ──────────────────────────────────────── */
+.topbar .btn-editor {
+    background: var(--c-accent);
+    border-radius: 0.4rem;
+    padding: 0.35rem 0.8rem;
+    font-weight: 500;
+}
+.topbar .btn-editor:hover { background: #1057a0; text-decoration: none; }

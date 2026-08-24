@@ -24,7 +24,7 @@ pack on every push/PR.
 - `src/Wikidown.Mcp/` — `wikidown-mcp` stdio MCP server.
 - `src/Wikidown.Html/` — Jekyll-compatible starter theme + `export-html` (Markdig + Fluid).
 - `src/Wikidown.Web/` — Blazor WASM editor PWA *(coming in chunk 4)*.
-- `src/Wikidown.Site/` — Blazor marketing site *(coming in chunk 5)*.
+- *(no separate marketing site)* — wikidown.org is `/docs` + its `index.html`, published by `pages.yml` via `wikidown export-html`.
 - `tests/Wikidown.Core.Tests/` — xUnit tests.
 - `agents/` — drop-in agent configs for downstream repos.
 - `samples/mcp/` — sample MCP configs.

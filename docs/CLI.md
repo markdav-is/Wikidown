@@ -150,8 +150,10 @@ wikidown --root ./my-wiki list
   render the wiki to a complete static site using the same theme `pages`
   scaffolds, in-process (Markdig + Fluid) with no Jekyll or Ruby. One
   `.html` per page, `index.html` redirect, `assets/` and `.attachments/`
-  copied through; relative `.md` links rewritten to `.html`, titles from
-  the first heading, nav built live from `.order`. Uses theme files from
+  copied through, along with every other root static file (images,
+  install scripts, favicons); relative `.md` links rewritten to `.html`,
+  titles from the first heading, nav built live from `.order`, and
+  `_config.yml`'s `favicon` and `wikidown.exclude_from_site` honored. Uses theme files from
   the wiki root when present (so customizations apply) and the built-in
   copy otherwise — running `pages` first is optional. `--base-url` prefixes
   theme links for sites served under a path (GitLab project sites);

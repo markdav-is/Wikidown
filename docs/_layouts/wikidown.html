@@ -14,8 +14,9 @@
       <button class="nav-toggle" type="button" aria-controls="sidebar" aria-expanded="false" aria-label="Toggle navigation">☰</button>
       <a class="brand" href="{{ '/' | relative_url }}">{{ site.title }}</a>
       <nav>
+        <a href="{{ '/' | relative_url }}">About</a>
         {% if site.repository_url %}<a href="{{ site.repository_url }}" target="_blank" rel="noopener">GitHub</a>{% endif %}
-        <a href="https://wikidown.org/" target="_blank" rel="noopener" class="powered">Wikidown</a>
+        <a href="https://wikidown.app/" class="btn-editor">Open editor</a>
       </nav>
     </div>
   </header>

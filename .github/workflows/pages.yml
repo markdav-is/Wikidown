@@ -4,7 +4,10 @@ on:
   push:
     branches: [main]
     paths:
-      - 'src/Wikidown.Site/**'
+      - 'docs/**'
+      - 'src/Wikidown.Html/**'
+      - 'src/Wikidown.Core/**'
+      - 'src/Wikidown.Cli/**'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
 
@@ -25,12 +28,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-dotnet@v4
+
       - uses: actions/configure-pages@v5
 
-      - name: Stage Pages output
+      # Dogfood: wikidown.org is this repo's own /docs wiki rendered
+      # through the starter theme by `wikidown export-html` — no Jekyll.
+      - name: Export the wiki
         run: |
-          mkdir -p publish/site
-          cp -r src/Wikidown.Site/. publish/site/
+          dotnet run --project src/Wikidown.Cli --configuration Release -- export-html --output publish/site --clean
           touch publish/site/.nojekyll
           echo "$CUSTOM_DOMAIN" > publish/site/CNAME
 

@@ -187,6 +187,76 @@ public class HtmlExporterTests : IDisposable
     }
 
     [Fact]
+    public void Export_ExcludeFromSite_SkipsSubtreesInPagesAndNav()
+    {
+        Seed();
+        File.WriteAllText(Path.Combine(_wikiRoot, "_config.yml"),
+            "title: T\nwikidown:\n  exclude_from_site:\n    - /Guides\n");
+        var result = HtmlExporter.Export(_repo, new HtmlExportOptions(_output, Clean: true));
+
+        Assert.Equal(1, result.PageCount);
+        Assert.True(File.Exists(Out("Home.html")));
+        Assert.False(File.Exists(Out("Guides.html")));
+        Assert.False(File.Exists(Out("Guides/Install.html")));
+
+        var home = ReadOut("Home.html");
+        var sidebar = home[home.IndexOf("<aside", StringComparison.Ordinal)..home.IndexOf("</aside>", StringComparison.Ordinal)];
+        Assert.DoesNotContain("Guides", sidebar);
+        Assert.Contains(">Home</a>", sidebar);
+    }
+
+    [Fact]
+    public void JekyllNavigation_HonorsExcludeFromSite()
+    {
+        Seed();
+        File.WriteAllText(Path.Combine(_wikiRoot, "_config.yml"),
+            "wikidown:\n  exclude_from_site:\n    - /Guides\n");
+        var yaml = JekyllNavigation.Render(_repo);
+        Assert.Contains("Home", yaml);
+        Assert.DoesNotContain("Guides", yaml);
+    }
+
+    [Fact]
+    public void Export_CopiesRootStaticFiles_NotSourcesOrJekyllMachinery()
+    {
+        Seed();
+        File.WriteAllText(Path.Combine(_wikiRoot, "install.sh"), "#!/bin/sh");
+        Directory.CreateDirectory(Path.Combine(_wikiRoot, "images"));
+        File.WriteAllBytes(Path.Combine(_wikiRoot, "images", "logo.png"), new byte[] { 9 });
+        File.WriteAllText(Path.Combine(_wikiRoot, "Gemfile"), "gems");
+        File.WriteAllText(Path.Combine(_wikiRoot, "_config.yml"), "title: T\n");
+        HtmlExporter.Export(_repo, new HtmlExportOptions(_output, Clean: true));
+
+        Assert.True(File.Exists(Out("install.sh")));
+        Assert.True(File.Exists(Out("images/logo.png")));
+        Assert.True(File.Exists(Out(".attachments/map.png")));
+        Assert.False(File.Exists(Out("Gemfile")));
+        Assert.False(File.Exists(Out("_config.yml")));
+        Assert.False(File.Exists(Out("Home.md")));
+        Assert.False(File.Exists(Out(".order")));
+    }
+
+    [Fact]
+    public void Export_FaviconFromConfig_RendersLinkTag()
+    {
+        Seed();
+        File.WriteAllText(Path.Combine(_wikiRoot, "_config.yml"), "title: T\nfavicon: /favicon.ico\n");
+        HtmlExporter.Export(_repo, new HtmlExportOptions(_output, Clean: true, BaseUrl: "/p"));
+        Assert.Contains("<link rel=\"icon\" href=\"/p/favicon.ico\">", ReadOut("Home.html"));
+    }
+
+    [Fact]
+    public void PublishExclusions_ParseAndMatch()
+    {
+        var list = PublishExclusions.Parse(
+            "wikidown:\n  exclude_from_site:\n    - /Meta\n    - \"/Testing\"\n  other: x\nexclude:\n  - vendor\n");
+        Assert.Equal(new[] { "/Meta", "/Testing" }, list);
+        Assert.True(PublishExclusions.IsExcluded(PagePath.Parse("/Meta/Notes"), list));
+        Assert.True(PublishExclusions.IsExcluded(PagePath.Parse("/Testing"), list));
+        Assert.False(PublishExclusions.IsExcluded(PagePath.Parse("/Meta-Data"), list));
+    }
+
+    [Fact]
     public void SiteConfig_ParsesScalars_IgnoresNestedAndComments()
     {
         var config = SiteConfig.Parse("title: \"My \\\"Wiki\\\"\"\n# repository_url: nope\nbaseurl: /p # trailing\nkramdown:\n  input: GFM\ndescription: ''\n");
