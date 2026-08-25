@@ -8,7 +8,8 @@ description: Use whenever the user asks to read, write, search, rename, or reorg
 This repo's documentation lives in `/docs` and is a **Wikidown** wiki — a
 structured folder of markdown pages with `.order` navigation files. Edit it
 through the wiki MCP tools, never by writing files directly. If MCP tools are unavailable,
-fall back to the `wikidown` CLI.
+fall back to the `wikidown` CLI; if that can't run either, follow
+"Last resort: no tools, no CLI" below.
 
 Tool names below use the bare form (`wiki_write`). Your host may prefix them
 with the server name — e.g. `wikidown_wiki_write` in VS Code / GitHub Copilot.
@@ -86,10 +87,66 @@ wikidown search --query <text>
    new depth, and reports what it changed. Run `wiki_search` afterwards only
    if you suspect a link the tool couldn't resolve (e.g. one already broken).
 
+## Last resort: no tools, no CLI
+
+If the `wiki_*` MCP tools are unavailable **and** the CLI cannot run (no
+.NET and an execution policy blocks the self-contained binary), wiki edits
+may be made with plain file edits — but only by maintaining every invariant
+the tools normally handle. Work through this checklist for each change:
+
+1. **Breadcrumb line.** Every page's *first line* is a breadcrumb, marked
+   with an HTML comment:
+
+   ```markdown
+   [Home](../Home.md) / [Parent Title](../Parent.md) / Page Title <!-- wikidown:breadcrumb -->
+   ```
+
+   Lead with a link to `/Home` if the wiki has one, then each ancestor as a
+   relative `.md` link (depth-adjusted from the page's own folder), then the
+   page's own title unlinked, then the marker comment. A page at the wiki
+   root with no `/Home` has no breadcrumb line. When you create or move a
+   page, write/regenerate this line; never duplicate it.
+
+2. **`.order` bookkeeping.** Each folder's `.order` lists page base names
+   (no `.md`), one per line, LF endings. On create: append the new page's
+   base name to its folder's `.order` (create the file if missing). On
+   delete: remove the entry. On move: remove from the old folder's file,
+   add to the new one's. Unlisted pages sort last alphabetically, so a
+   missing entry is drift, not breakage — fix it anyway.
+
+3. **Create.** Parent page must exist: a page at `/A/B` needs `A.md` beside
+   the `A/` folder, and `A.md`'s body must link the new child
+   (`[B](A/B.md)`) — otherwise the subtree is invisible to readers and
+   flagged by `check-links`.
+
+4. **Move/rename.** The tools rewrite links automatically; by hand you must:
+   move the `.md` file *and* its same-named subpage folder; search every
+   page for inbound links to the old path and rewrite them; re-adjust the
+   moved page's own relative links/images if its folder depth changed
+   (count the `../` hops); regenerate the breadcrumb of the moved page and
+   every descendant; update both `.order` files (step 2).
+
+5. **Delete.** Remove the page, its subpage folder (if intended), its
+   `.order` entry, and every inbound link to it from other pages.
+
+6. **Published wikis.** If `_data/navigation.yml` exists, it is generated —
+   the CLI/MCP server regenerate it on every structural change, but raw
+   edits leave it stale. Don't hand-edit it; tell the user to re-run
+   `wikidown pages` (any machine that can execute it) so the published
+   site's nav catches up.
+
+7. **Verify later.** Recommend running `wikidown check-links` from an
+   environment that can execute the CLI — it audits exactly the invariants
+   above.
+
+Treat this as a degraded mode: prefer the tools whenever they work, and say
+in your summary that edits were made manually so the user knows to verify.
+
 ## Don'ts
 
-- Don't write `/docs/*.md` with file-edit tools — bypasses `.order`
-  bookkeeping and breaks navigation.
+- Don't write `/docs/*.md` with file-edit tools while the `wiki_*` tools or
+  the CLI are available — they do `.order`, breadcrumb, and link
+  bookkeeping for you. Manual edits are a last resort only (see above).
 - Don't link to GitHub blob URLs from inside the wiki, and don't use
   absolute `/Title/Path` links in page bodies — use relative `.md` links.
 - Don't rename without checking inbound references first.
