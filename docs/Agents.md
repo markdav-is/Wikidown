@@ -9,7 +9,12 @@ through the [MCP Server](MCP-Server.md) without you wiring anything up by hand.
 
 Claude and Copilot share one skill file in the Agent Skills standard format:
 [`agents/skills/wikidown/SKILL.md`](https://github.com/markdav-is/Wikidown/blob/main/agents/skills/wikidown/SKILL.md).
-It carries the format rules, tool cheat sheet, CLI fallback, and workflow.
+It carries the format rules, tool cheat sheet, CLI fallback, workflow, and a
+manual last-resort protocol for locked-down machines where neither the MCP
+tools nor the CLI can run (no .NET plus an execution policy blocking the
+self-contained binary) — breadcrumb format, `.order` bookkeeping, and the
+move/delete invariants, so an agent can still edit correctly and flag the
+edits for later `wikidown check-links` verification.
 
 - Claude Code loads it from `.claude/skills/wikidown/SKILL.md`.
 - GitHub Copilot loads it from `.github/skills/wikidown/SKILL.md`.
@@ -72,8 +77,10 @@ wikidown init --agents all
 the MCP server itself is NuGet-only (see [MCP Server](MCP-Server.md)), so
 without .NET the `wiki_*` tools won't start. The shared skill already
 covers this — it tells agents to fall back to the equivalent `wikidown` CLI
-commands, which the self-contained binary provides, so wiki maintenance
-keeps working.
+commands, which the self-contained binary provides (installed to
+`~/.wikidown/bin`, or `%USERPROFILE%\.wikidown\bin` on Windows). If a local
+execution policy blocks even that binary, the skill's last-resort protocol
+keeps wiki maintenance possible with plain file edits.
 
 Manual copying still works: the
 [`agents/README.md`](https://github.com/markdav-is/Wikidown/blob/main/agents/README.md)
