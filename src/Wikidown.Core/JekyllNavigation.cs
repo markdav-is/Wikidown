@@ -48,7 +48,7 @@ public static class JekyllNavigation
         {
             sb.Append(pad).Append("- title: ").Append(Quote(node.Title)).Append('\n');
             if (node.IsPage)
-                sb.Append(pad).Append("  url: ").Append(Quote(PageUrl(node.Path))).Append('\n');
+                sb.Append(pad).Append("  url: ").Append(Quote(node.Url)).Append('\n');
             if (node.Children.Count > 0)
             {
                 sb.Append(pad).Append("  prefix: ").Append(Quote(node.Path.ToLinkPath() + "/")).Append('\n');
@@ -56,19 +56,6 @@ public static class JekyllNavigation
                 RenderNodes(node.Children, sb, indent + 4);
             }
         }
-    }
-
-    // /Home is conventionally served at the site root (either via the
-    // scaffolded index.html redirect, or a site that points Home's own
-    // permalink at "/" directly, as e.g. a custom marketing homepage would).
-    // "/" resolves correctly either way, whereas "/Home.html" 404s on the
-    // latter — so always link the wiki's home page there instead.
-    private static string PageUrl(PagePath path)
-    {
-        if (path.Segments.Count == 1 &&
-            string.Equals(path.Segments[0].FileBase, "Home", StringComparison.OrdinalIgnoreCase))
-            return "/";
-        return path.ToLinkPath() + ".html";
     }
 
     private static string Quote(string value) =>

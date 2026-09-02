@@ -206,6 +206,22 @@ public class HtmlExporterTests : IDisposable
     }
 
     [Fact]
+    public void Export_NavTreeLinksHomeToSiteRoot_AndMarksItActive()
+    {
+        Seed();
+        HtmlExporter.Export(_repo, new HtmlExportOptions(_output));
+
+        var home = ReadOut("Home.html");
+        var sidebar = home[home.IndexOf("<aside", StringComparison.Ordinal)..home.IndexOf("</aside>", StringComparison.Ordinal)];
+        Assert.Contains("href=\"/\"", sidebar);
+        Assert.DoesNotContain("Home.html", sidebar);
+        Assert.Contains("nav-item is-active", sidebar);
+
+        var guides = ReadOut("Guides.html");
+        Assert.Contains("href=\"/\"", guides[guides.IndexOf("<aside", StringComparison.Ordinal)..guides.IndexOf("</aside>", StringComparison.Ordinal)]);
+    }
+
+    [Fact]
     public void JekyllNavigation_HonorsExcludeFromSite()
     {
         Seed();

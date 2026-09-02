@@ -8,6 +8,12 @@ public sealed record PagePath(IReadOnlyList<PageName> Segments)
 
     public bool IsRoot => Segments.Count == 0;
 
+    // The wiki's home page, by the convention every site generator honors:
+    // a top-level page literally named Home is the one meant to sit at the
+    // site root ("/"), not "/Home.html".
+    public bool IsTopLevelHome =>
+        Segments.Count == 1 && string.Equals(Segments[0].FileBase, "Home", StringComparison.OrdinalIgnoreCase);
+
     public PageName Name =>
         IsRoot ? throw new InvalidOperationException("Root has no name.") : Segments[^1];
 

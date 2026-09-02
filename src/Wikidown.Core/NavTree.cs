@@ -7,7 +7,17 @@ public sealed record NavNode(
     PagePath Path,
     string Title,
     bool IsPage,
-    IReadOnlyList<NavNode> Children);
+    IReadOnlyList<NavNode> Children)
+{
+    // /Home is conventionally served at the site root (either via the
+    // scaffolded index.html redirect, or a site that points Home's own
+    // permalink at "/" directly, as e.g. a custom marketing homepage would).
+    // "/" resolves correctly either way, whereas "/Home.html" 404s on the
+    // latter — so always link the wiki's home page there instead. Shared by
+    // both site generators (Jekyll's _data/navigation.yml and the built-in
+    // `export-html`) so they never drift from each other.
+    public string Url => Path.IsTopLevelHome ? "/" : Path.ToLinkPath() + ".html";
+}
 
 public static class NavTree
 {

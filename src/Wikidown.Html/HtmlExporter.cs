@@ -47,7 +47,7 @@ public static class HtmlExporter
             },
             ["pages"] = pages.Select(p => (object?)new Dictionary<string, object?>
             {
-                ["url"] = p.ToLinkPath() + ".html",
+                ["url"] = p.IsTopLevelHome ? "/" : p.ToLinkPath() + ".html",
                 ["title"] = rendered[p.ToLinkPath()].Title,
                 ["name"] = p.Name.FileName,
                 ["path"] = p.ToFilePath().Replace('\\', '/'),
@@ -72,7 +72,7 @@ public static class HtmlExporter
             context.SetValue("site", site);
             context.SetValue("page", new Dictionary<string, object?>
             {
-                ["url"] = link + ".html",
+                ["url"] = page.IsTopLevelHome ? "/" : link + ".html",
                 ["title"] = rendered[link].Title,
                 ["name"] = page.Name.FileName,
                 ["path"] = page.ToFilePath().Replace('\\', '/'),
@@ -158,7 +158,7 @@ public static class HtmlExporter
         foreach (var node in nodes)
         {
             var item = new Dictionary<string, object?> { ["title"] = node.Title };
-            if (node.IsPage) item["url"] = node.Path.ToLinkPath() + ".html";
+            if (node.IsPage) item["url"] = node.Url;
             if (node.Children.Count > 0)
             {
                 item["prefix"] = node.Path.ToLinkPath() + "/";
