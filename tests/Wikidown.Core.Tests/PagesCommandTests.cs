@@ -90,7 +90,7 @@ public class PagesCommandTests : IDisposable
         var yaml = ReadAt("_data/navigation.yml");
         Assert.Equal(
             "- title: \"Home\"\n" +
-            "  url: \"/Home.html\"\n" +
+            "  url: \"/\"\n" +
             "- title: \"Guides\"\n" +
             "  url: \"/Guides.html\"\n" +
             "  prefix: \"/Guides/\"\n" +
@@ -154,5 +154,32 @@ public class PagesCommandTests : IDisposable
     public void Navigation_EmptyWikiRendersEmptyList()
     {
         Assert.EndsWith("[]\n", JekyllNavigation.Render(_repo));
+    }
+
+    [Fact]
+    public void Navigation_OnlyTopLevelHomeLinksToRoot()
+    {
+        _repo.Write(new WikiPage(PagePath.Parse("/Home"), "# Home\n"));
+        _repo.Write(new WikiPage(PagePath.Parse("/Foo"), "# Foo\n"));
+        _repo.Write(new WikiPage(PagePath.Parse("/Foo/Home"), "# Nested Home\n"));
+
+        var yaml = JekyllNavigation.Render(_repo);
+
+        Assert.Contains("url: \"/\"\n", yaml);
+        Assert.Contains("url: \"/Foo/Home.html\"\n", yaml);
+        Assert.DoesNotContain("\"/Home.html\"", yaml);
+    }
+
+    [Theory]
+    [InlineData("Home")]
+    [InlineData("home")]
+    [InlineData("HOME")]
+    public void Navigation_TopLevelHomeLinksToRoot_RegardlessOfCase(string fileName)
+    {
+        _repo.Write(new WikiPage(PagePath.Parse("/" + fileName), $"# {fileName}\n"));
+
+        var yaml = JekyllNavigation.Render(_repo);
+
+        Assert.Contains("url: \"/\"\n", yaml);
     }
 }
