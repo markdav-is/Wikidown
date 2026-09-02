@@ -19,3 +19,5 @@ it documents — including this site, which is the wiki published with
   straight to your repo
 - [Agents](Agents.md) — drop-in Claude Code and GitHub Copilot configs for
   maintaining a Wikidown wiki with an AI agent
+- [Handy Prompts](Handy-Prompts.md) — example prompts to give your AI agent
+  for everyday wiki upkeep
