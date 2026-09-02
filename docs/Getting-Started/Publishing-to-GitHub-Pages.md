@@ -44,6 +44,10 @@ Everything lands inside the wiki root:
 | `assets/wikidown.css` | Styling, same palette as wikidown.org. Edit freely; `pages` never overwrites it without `--force`. |
 | `index.html` | Redirects the site root to `/Home.html` (or the first top-level page if there is no Home). Replace it with a hand-authored landing page if you want one — wikidown.org does exactly that. |
 
+Customizing any of these — the wiki page layout or the root `index.html` —
+is its own topic: see [Customizing the
+Theme](Customizing-the-Theme.md).
+
 ## Excluding pages from the published site
 
 Internal notes can stay in the wiki without shipping to the site. List
@@ -150,5 +154,7 @@ Covered on its own page:
 `.gitlab-ci.yml` that runs `export-html` in a .NET container. The same
 recipe works for any CI that deploys a static folder.
 
-See [CLI](../CLI.md) for the full command list, and
-[Format](Format.md) for the on-disk conventions the generated site relies on.
+See [CLI](../CLI.md) for the full command list,
+[Format](Format.md) for the on-disk conventions the generated site relies on,
+and [Customizing the Theme](Customizing-the-Theme.md) for swapping the wiki
+layout or the root `index.html`.

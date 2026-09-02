@@ -20,6 +20,7 @@ Welcome to Wikidown. This folder is itself a Wikidown-format wiki.
 - [Updating](Getting-Started/Updating.md) — how downstream repos pick up new CLI/MCP releases, agent config changes, and VS extension updates
 - [Publishing to GitHub Pages](Getting-Started/Publishing-to-GitHub-Pages.md) — publish the wiki as a static site with `wikidown pages` and GitHub's built-in Jekyll, or anywhere via `wikidown export-html`
 - [Publishing to GitLab Pages](Getting-Started/Publishing-to-GitLab-Pages.md) — one CI job running `wikidown export-html`, no Jekyll or Ruby
+- [Customizing the Theme](Getting-Started/Customizing-the-Theme.md) — swap the wiki page layout or replace the root `index.html` with a hand-authored landing page
 - [CLI](CLI.md) — `wikidown` dotnet tool
 - [MCP Server](MCP-Server.md) — `wikidown-mcp` for AI agents
 - [Editor](Editor.md) — Blazor WASM browser editor
