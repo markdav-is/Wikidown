@@ -619,7 +619,7 @@ Blazor WASM PWA editor + marketing site hosted on GitHub Pages.
       production, on any deep-link into `/browse`.
 
 24. **MCP patching tools — stop paying full-page costs for small edits.**
-    *(in progress)* Issues #19–#22. Measured: most of a 19-minute agent
+    *(shipped)* Issues #19–#22. Measured: most of a 19-minute agent
     session on a ~150-page wiki was whole-page `wiki_write` round-trips
     for one-line changes, and agents bypassed the server with `sed` to
     avoid them. Shared constraints: exact matching on raw markdown with
@@ -636,9 +636,31 @@ Blazor WASM PWA editor + marketing site hosted on GitHub Pages.
       `--stdin` for multi-line values. Skill + subagent + Copilot configs
       now say: `wiki_edit` for anything smaller than a rewrite,
       `wiki_write` for new pages or full rewrites only.
-    - 24b: `wiki_read(section)` (#20) — shared heading matcher.
-    - 24c: `wiki_write_section` (#21).
-    - 24d: `wiki_append` (#22).
+    - 24b: `wiki_read(section)` / `wikidown read --section` (#20).
+      *(shipped)* `Core.MarkdownHeadings` is the heading matcher shared
+      with 24c/24d: ATX headings only, fenced code skipped, match is
+      case-insensitive ignoring leading/closing `#`s and whitespace; a
+      section runs to the next heading of the same or higher level, so
+      `##` includes its `###` children. `Core.PageSections.Read` +
+      `WikiRepository.ReadSection`. A miss throws with every heading on
+      the page listed; duplicates return the first with a trailing note.
+    - 24c: `wiki_write_section` / `wikidown write-section` (#21).
+      *(shipped)* `Core.PageSections.Write` + `WikiRepository.WriteSection`.
+      Heading line kept verbatim (renames are `wiki_edit`); body replaced
+      through the next same-or-higher heading, `###` children included;
+      exactly one blank line kept around the new body so repeated writes
+      are idempotent. Duplicate headings refuse (a write must not guess);
+      `createIfMissing` appends a `##` at the end. First real use: the
+      `/MCP-Server` and `/CLI` doc edits for this chunk were made with the
+      freshly built `wikidown edit`/`write-section` instead of whole-page
+      `wiki_write`.
+    - 24d: `wiki_append` / `wikidown append` (#22). *(shipped)*
+      `Core.PageSections.Append` + `WikiRepository.Append`. End of page,
+      or end of one section's body (before the next same-or-higher
+      heading) via `afterSection`; trailing blanks trimmed on both sides
+      and joined with exactly one blank line + a single trailing newline,
+      so repeated appends are stable. Miss lists headings; duplicates
+      refuse; empty block refuses.
 
 ## Open questions / parking lot
 - `[[_TOC_]]`, mermaid, `:::` callouts rendering in WASM preview.

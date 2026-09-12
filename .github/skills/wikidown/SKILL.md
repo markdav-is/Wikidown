@@ -37,8 +37,11 @@ with the server name — e.g. `wikidown_wiki_write` in VS Code / GitHub Copilot.
 | ----------------------- | -------------------------------------------- |
 | What pages exist?       | `wiki_walk` (everything) or `wiki_list`      |
 | Read a page             | `wiki_read` path=/Some/Page                  |
+| Read one section        | `wiki_read` path=/Some/Page section="Heading"|
 | Create a page           | `wiki_new` path=/Some/Page (+ optional body) |
 | Change part of a page   | `wiki_edit` path=/Some/Page old=… new=…      |
+| Rewrite one section     | `wiki_write_section` path=/Some/Page section="Heading" markdown=… |
+| Add to the end          | `wiki_append` path=/Some/Page markdown=… [afterSection="Heading"] |
 | Rewrite a whole page    | `wiki_write` path=/Some/Page markdown=…      |
 | Find a topic            | `wiki_search` query=…                        |
 | Rename or move          | `wiki_move` from=/Old to=/New                |
@@ -54,9 +57,11 @@ curl -fsSL https://wikidown.org/install.sh | sh   # Windows: irm https://wikidow
 
 # Commands (default root is ./docs; override with --root <path>)
 wikidown list [--path /P]
-wikidown read --path /P
+wikidown read --path /P [--section "Heading"]
 wikidown write --path /P [--file F | --stdin]
 wikidown edit --path /P --old <text> --new <text> [--all]   # multi-line: --old-file F --new-file F
+wikidown write-section --path /P --section "Heading" [--file F | --stdin] [--create]
+wikidown append --path /P [--after "Heading"] [--file F | --stdin]
 wikidown new --path /P [--title T] [--file F | --stdin]
 wikidown move --from /A --to /B [--dry-run]
 wikidown delete --path /P [--recursive]
@@ -79,13 +84,21 @@ wikidown search --query <text>
 2. **Search first.** `wiki_search` before creating a page — you may just need
    to update an existing one.
 3. **Read before overwriting.** `wiki_read` first; preserve voice and
-   structure.
+   structure. On a long page, read just the section you need with
+   `section="Heading"` (case-insensitive, `#`s optional; a `##` section
+   includes its `###` children). A miss lists the page's headings.
 4. **Patch, don't rewrite.** Prefer `wiki_edit` for any change smaller than
    a full rewrite — one line, one bullet, one table row, a renamed heading.
    Pass `old` exactly as it appears on the page (it may span lines; line
    endings don't matter) and enough of it to be unique — the tool refuses
-   ambiguous matches and tells you how many times the text matched. Use
-   `wiki_write` only for new pages or deliberate full rewrites.
+   ambiguous matches and tells you how many times the text matched. To
+   rewrite one whole section, `wiki_write_section` — pass the new body
+   without the heading line; the heading stays and everything under it
+   (including `###` children) is replaced. To add a bullet, paragraph,
+   row, or new section at the end of a page or of one section,
+   `wiki_append` (with `afterSection` for the latter) — no need to know
+   the last line. Use `wiki_write` only for new pages or deliberate full
+   rewrites.
 5. **Cross-link.** When you create or rename a page, update inbound links on
    sibling pages (`wiki_edit` on each — no need to rewrite them).
 6. **Order intentionally.** When adding a top-level concept, `wiki_reorder`

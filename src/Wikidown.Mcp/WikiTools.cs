@@ -46,10 +46,24 @@ public sealed class WikiTools(WikiRepository repo)
     });
 
     [McpServerTool(Name = "wiki_read")]
-    [Description("Read a wiki page's markdown content.")]
+    [Description("Read a wiki page's markdown content, or just one section of it. Pass section to get a single " +
+                 "heading plus everything below it up to the next heading of the same or higher level (a ## " +
+                 "section includes its ### children) — prefer this on long pages when you only need one part. " +
+                 "A section miss fails with the page's headings listed so the next call can hit.")]
     public string Read(
         [Description("Wiki link path of the page (e.g. '/Getting-Started/Format').")]
-        string path) => Guarded(() => repo.Read(PagePath.Parse(path)).Markdown);
+        string path,
+        [Description("Optional heading text, matched case-insensitively and ignoring leading #s and whitespace " +
+                     "(e.g. 'Open concerns' or '## Open concerns'). Omit to read the whole page.")]
+        string? section = null) => Guarded(() =>
+    {
+        var p = PagePath.Parse(path);
+        if (string.IsNullOrWhiteSpace(section)) return repo.Read(p).Markdown;
+        var result = repo.ReadSection(p, section);
+        if (result.Note is null) return result.Markdown;
+        var ending = result.Markdown.EndsWith("\r\n", StringComparison.Ordinal) ? "\r\n" : "\n";
+        return result.Markdown + result.Note + ending;
+    });
 
     [McpServerTool(Name = "wiki_write")]
     [Description("Create or overwrite a wiki page with the given markdown content. " +
@@ -78,6 +92,39 @@ public sealed class WikiTools(WikiRepository repo)
         [Description("Replace every occurrence instead of failing when old matches more than once. Defaults to false.")]
         bool replaceAll = false) => Guarded(() =>
         repo.Edit(PagePath.Parse(path), old, @new, replaceAll).Summary);
+
+    [McpServerTool(Name = "wiki_write_section")]
+    [Description("Replace the body under one heading, keeping the rest of the page. Use this when rewriting a " +
+                 "whole section; wiki_edit for smaller changes; wiki_write only for new pages or full rewrites. " +
+                 "The heading line itself is preserved verbatim (rename headings with wiki_edit). The replaced " +
+                 "span runs from the line after the heading to the next heading of the same or higher level, so " +
+                 "### children inside a ## section are replaced along with it. Exactly one blank line is kept " +
+                 "around the new body. Never touches the breadcrumb line or .order; a missing page fails.")]
+    public string WriteSection(
+        [Description("Wiki link path of the page.")] string path,
+        [Description("Heading text, matched case-insensitively and ignoring leading #s and whitespace. " +
+                     "Fails listing the page's headings on a miss, or if more than one heading matches.")]
+        string section,
+        [Description("New body of the section, excluding the heading line.")] string markdown,
+        [Description("When no heading matches, append a new '## <section>' at the end of the page with this body " +
+                     "instead of failing. Defaults to false.")]
+        bool createIfMissing = false) => Guarded(() =>
+        repo.WriteSection(PagePath.Parse(path), section, markdown, createIfMissing).Summary);
+
+    [McpServerTool(Name = "wiki_append")]
+    [Description("Add a block of markdown at the end of a page, or at the end of one section's body (just before " +
+                 "the next heading of the same or higher level). Use this for 'one more bullet / paragraph / " +
+                 "row' instead of wiki_edit anchored on the last line or a whole-page wiki_write. Always " +
+                 "separated from existing content by exactly one blank line; repeated appends never stack " +
+                 "blank lines. Never touches the breadcrumb line or .order; a missing page fails (use wiki_new).")]
+    public string Append(
+        [Description("Wiki link path of the page.")] string path,
+        [Description("Markdown block to add.")] string markdown,
+        [Description("Optional heading text (matched like wiki_read's section) to append inside; fails listing " +
+                     "the page's headings on a miss, or if more than one heading matches. Omit to append at the " +
+                     "end of the page.")]
+        string? afterSection = null) => Guarded(() =>
+        repo.Append(PagePath.Parse(path), markdown, afterSection).Summary);
 
     [McpServerTool(Name = "wiki_new")]
     [Description("Create a new wiki page. Fails if it already exists. " +

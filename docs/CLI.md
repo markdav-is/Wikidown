@@ -59,7 +59,15 @@ wikidown --root ./my-wiki list
   [Agents](Agents.md). Re-run with `--force` to pick up updated agent configs
   in an existing repo — see [Updating](Getting-Started/Updating.md).
 - `list [--path /P]` — list children of a page (or root). `wikidown list`
-- `read --path /P` — print page markdown to stdout. `wikidown read --path /Getting-Started`
+- `read --path /P [--section "<heading>"]` — print page markdown to stdout,
+  or just one section of it. `--section` matches a heading
+  case-insensitively, ignoring leading `#`s and whitespace, and prints that
+  heading plus everything below it up to the next heading of the same or
+  higher level (a `##` section includes its `###` children; headings inside
+  code fences don't count). A miss lists the page's headings; if several
+  headings match, the first is printed with a trailing note.
+  `wikidown read --path /Getting-Started` ·
+  `wikidown read --path /MCP-Server --section "Wiki root"`
 - `write --path /P [--file F | --stdin]` — overwrite a page. Auto-injects or
   refreshes the page's breadcrumb line — see
   [Format § Breadcrumb Navigation](Getting-Started/Format.md).
@@ -75,6 +83,28 @@ wikidown --root ./my-wiki list
   breadcrumb line or `.order`, and never creates a page. Prints the
   changed line numbers with two lines of context.
   `wikidown edit --path /Home --old "coming soon" --new "shipped"`
+- `write-section --path /P --section "<heading>" (--file F | --stdin) [--create]` —
+  replace the body under one heading, keeping the rest of the page; same
+  contract as the `wiki_write_section` MCP tool (see
+  [MCP Server](MCP-Server.md)). The heading line is preserved verbatim
+  and the body from a file or stdin replaces everything after it up to
+  the next heading of the same or higher level — `###` children inside a
+  `##` section included. Exactly one blank line is kept around the new
+  body, so repeated writes don't stack blank lines. A miss lists the
+  page's headings (`--create` appends a new `## <heading>` instead), an
+  ambiguous match is an error, and breadcrumb/`.order`/line endings are
+  untouched.
+  `wikidown write-section --path /CLI --section "Wiki root" --file root.md`
+- `append --path /P [--after "<heading>"] (--file F | --stdin)` — add a block
+  at the end of a page, or with `--after` at the end of that section's
+  body, just before the next heading of the same or higher level; same
+  contract as the `wiki_append` MCP tool (see
+  [MCP Server](MCP-Server.md)). Exactly one blank line separates the
+  block from existing content and the file ends with a single newline, so
+  repeated appends never stack blank lines. A miss lists the page's
+  headings, an ambiguous match is an error, and breadcrumb/`.order`/line
+  endings are untouched.
+  `echo "- Ship 0.7" | wikidown append --path /Home --after "Open concerns" --stdin`
 - `new --path /P [--title T] [--file F | --stdin]` — create a new page.
 - `move --from /A --to /B [--dry-run]` — rename or move a page (subpages
   travel with it). Rewrites inbound links from every other page that pointed

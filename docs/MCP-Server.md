@@ -50,7 +50,17 @@ Selected in this order:
 ## Tools
 
 - `wiki_list` — list children of a page or the root
-- `wiki_read` — read a page
+- `wiki_read` — read a page, or just one section of it. Pass `section`
+  (a heading's text, matched case-insensitively and ignoring leading `#`s
+  and surrounding whitespace, e.g. `"Open concerns"` or
+  `"## Open concerns"`) to get that heading line plus everything below it
+  up to the next heading of the same or higher level — so a `##` section
+  includes its `###` children. Only ATX (`#`) headings count, and
+  headings inside fenced code blocks are ignored. A miss fails with the
+  page's headings listed (`no section 'Progress' in /Path; headings:
+  History · Voice · Notes`) so the next call can hit; if several headings
+  match, the first is returned with a trailing
+  `note: 2 headings matched; returned the first`.
 - `wiki_edit` — replace an exact substring of a page in place, leaving the
   rest of the page untouched. Same contract as Claude Code's built-in
   `Edit` tool: `old` must match the page's raw markdown exactly (line
@@ -61,6 +71,35 @@ Selected in this order:
   missing page is an error, not a create). Returns the changed line
   numbers with two lines of context so the agent can confirm the edit
   without re-reading the page.
+- `wiki_write_section` — replace the body under one heading, keeping the
+  rest of the page. `section` is matched like `wiki_read`'s (shared
+  helper); `markdown` is the new body **excluding the heading line**, which
+  is preserved exactly as it is on the page — so an agent can't
+  accidentally change a heading's level or wording (renaming a heading is
+  a `wiki_edit`). The replaced span runs from the line after the heading
+  to the line before the next heading of the same or higher level (or end
+  of file), so **`###` children inside a `##` section are part of its body
+  and are replaced along with it**. Exactly one blank line is kept between
+  the heading and the new body and between the body and the next heading,
+  so repeated section writes never accumulate blank lines. No matching
+  heading fails listing the page's headings, unless `createIfMissing=true`,
+  which appends a new `## <section>` (always `##`) at the end of the page
+  with the given body. More than one matching heading fails — a write
+  must not guess. Breadcrumb, `.order`, and line endings untouched; a
+  missing page fails. Returns
+  `wrote section 'X' in /Path (replaced lines 41–58 with 12 lines)`.
+- `wiki_append` — add a block at the end of a page, or (with
+  `afterSection`, matched like `wiki_read`'s `section`) at the end of that
+  section's body, just before the next heading of the same or higher
+  level. This is "one more bullet / paragraph / table row" without
+  anchoring a `wiki_edit` on the last line of a list. Trailing blank
+  lines are trimmed from the existing content and from the block before
+  joining, then written with exactly one blank line between and a single
+  trailing newline, so repeated appends never stack blank lines. No
+  matching heading fails listing the page's headings; more than one
+  fails. Breadcrumb, `.order`, and line endings untouched; a missing page
+  fails (use `wiki_new`). Returns
+  `appended 5 lines to /Path after section 'Open concerns' (now lines 88–92)`.
 - `wiki_write` — overwrite a page. Auto-injects or refreshes the page's
   breadcrumb navigation line — see
   [Format § Breadcrumb Navigation](Getting-Started/Format.md).
@@ -82,14 +121,22 @@ page is viewed directly on github.com.
 
 ### Choosing how to change a page
 
-Whole-page rewrites are the dominant cost in a long agent session on a
-large wiki: a one-sentence change to a 10 KB page costs the full 10 KB
-round-trip and risks drifting paragraphs the agent never meant to touch.
-Pick the smallest tool that fits:
+Whole-page reads and rewrites are the dominant cost in a long agent
+session on a large wiki: a one-sentence change to a 10 KB page costs the
+full 10 KB round-trip twice and risks drifting paragraphs the agent never
+meant to touch. Pick the smallest tool that fits:
 
+- `wiki_read` with `section` when a long page has the one `##` you need
+  to decide or to target an edit. Read the whole page only when you
+  really need all of it.
 - `wiki_edit` for anything smaller than a full rewrite — one line, one
   bullet, one table row, a renamed heading. It costs only the changed text
   and cannot alter anything outside the match.
+- `wiki_write_section` when rewriting one section. Pass the new body
+  without the heading line; the heading stays as-is and everything under
+  it (including `###` children) is replaced.
+- `wiki_append` to add a bullet, paragraph, row, or whole new section at
+  the end of a page or of one section — no need to know the last line.
 - `wiki_write` only for new pages (or `wiki_new`) and deliberate full
   rewrites.
 

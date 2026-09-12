@@ -35,6 +35,8 @@ public static class CommandRunner
                 "read" => Commands.Read(repo, parsed, stdout),
                 "write" => Commands.Write(repo, parsed, stdout),
                 "edit" => Commands.Edit(repo, parsed, stdout),
+                "write-section" => Commands.WriteSection(repo, parsed, stdout),
+                "append" => Commands.Append(repo, parsed, stdout),
                 "new" => Commands.New(repo, parsed, stdout),
                 "move" => Commands.Move(repo, parsed, stdout),
                 "delete" => Commands.Delete(repo, parsed, stdout),
@@ -97,10 +99,14 @@ public static class CommandRunner
         w.WriteLine();
         w.WriteLine("Commands:");
         w.WriteLine("  list     [--path /Link/Path]                 list children of a page (or root)");
-        w.WriteLine("  read     --path /Link/Path                   print page markdown to stdout");
+        w.WriteLine("  read     --path /Link/Path [--section H]     print page markdown (or one section) to stdout");
         w.WriteLine("  write    --path /Link/Path [--file F | --stdin]  write/overwrite a page");
         w.WriteLine("  edit     --path /P (--old T | --old-file F) (--new T | --new-file F | --stdin) [--all]");
         w.WriteLine("           replace exact text in a page, leaving the rest untouched");
+        w.WriteLine("  write-section --path /P --section H [--file F | --stdin] [--create]");
+        w.WriteLine("           replace the body under one heading, keeping the rest of the page");
+        w.WriteLine("  append   --path /P [--after H] [--file F | --stdin]");
+        w.WriteLine("           add a block at the end of a page, or at the end of one section");
         w.WriteLine("  new    --path /Link/Path [--title T] [--file F | --stdin]  create a page");
         w.WriteLine("  move     --from /A --to /B [--dry-run]       rename/move a page (and subpages);");
         w.WriteLine("           rewrites inbound links and the moved page's own relative links");
@@ -153,18 +159,26 @@ public static class CommandRunner
         ["read"] =
             """
             Usage:
-              wikidown read --path /Link/Path [--root <path>]
+              wikidown read --path /Link/Path [--section <heading>] [--root <path>]
 
-            Print a page's Markdown to stdout.
+            Print a page's Markdown to stdout, or just one section of it.
+            --section matches a heading case-insensitively, ignoring leading
+            #s and whitespace, and prints that heading plus everything below
+            it up to the next heading of the same or higher level (a ##
+            section includes its ### children). A miss lists the page's
+            headings; if several headings match, the first is printed with a
+            trailing note.
 
             Options:
-              --path    Required title-form wiki path, e.g. /Getting-Started/Format
-              --root    Path to the docs folder (default: ./docs)
+              --path      Required title-form wiki path, e.g. /Getting-Started/Format
+              --section   Heading text of the one section to print
+              --root      Path to the docs folder (default: ./docs)
               -h, --help
 
             Examples:
               wikidown read --path /Getting-Started
               wikidown read --path /Getting-Started/Format --root ./my-wiki
+              wikidown read --path /MCP-Server --section "Wiki root"
 
             """,
 
@@ -218,6 +232,65 @@ public static class CommandRunner
               wikidown edit --path /Home --old "coming soon" --new "shipped in 0.6"
               wikidown edit --path /CLI --old-file before.txt --new-file after.txt
               wikidown edit --path /Home --old colour --new color --all
+
+            """,
+
+        ["write-section"] =
+            """
+            Usage:
+              wikidown write-section --path /Link/Path --section <heading>
+                                     (--file <path> | --stdin) [--create] [--root <path>]
+
+            Replace the body under one heading, keeping the rest of the page.
+            The heading line is preserved verbatim; the replaced span runs
+            from the line after it to the next heading of the same or higher
+            level, so ### children inside a ## section are replaced too.
+            Exactly one blank line is kept around the new body. The heading
+            matches case-insensitively, ignoring leading #s and whitespace; a
+            miss lists the page's headings, and an ambiguous match is an
+            error. The breadcrumb line and .order are never modified.
+
+            Options:
+              --path      Required title-form wiki path
+              --section   Required heading text of the section to replace
+              --file      Read the new section body from a file
+              --stdin     Read the new section body from standard input
+              --create    Append a new "## <section>" at the end when none matches
+              --root      Path to the docs folder (default: ./docs)
+              -h, --help
+
+            Examples:
+              wikidown write-section --path /CLI --section "Wiki root" --file root.md
+              cat notes.md | wikidown write-section --path /Home --section Notes --stdin --create
+
+            """,
+
+        ["append"] =
+            """
+            Usage:
+              wikidown append --path /Link/Path [--after <heading>] (--file <path> | --stdin) [--root <path>]
+
+            Add a block of Markdown at the end of a page, or — with --after —
+            at the end of one section's body, just before the next heading of
+            the same or higher level. The block is separated from existing
+            content by exactly one blank line and the file ends with a single
+            newline, so repeated appends never stack blank lines. The heading
+            matches case-insensitively, ignoring leading #s and whitespace; a
+            miss lists the page's headings, and an ambiguous match is an
+            error. The breadcrumb line and .order are never modified, and a
+            missing page is an error (use `new`).
+
+            Options:
+              --path    Required title-form wiki path
+              --after   Heading text of the section to append inside
+              --file    Read the block from a file
+              --stdin   Read the block from standard input
+              --root    Path to the docs folder (default: ./docs)
+              -h, --help
+
+            Examples:
+              echo "- Ship 0.7" | wikidown append --path /Home --after "Open concerns" --stdin
+              wikidown append --path /Changelog --file entry.md
 
             """,
 
