@@ -97,7 +97,7 @@ public static class CommandRunner
         w.WriteLine();
         w.WriteLine("Commands:");
         w.WriteLine("  list     [--path /Link/Path]                 list children of a page (or root)");
-        w.WriteLine("  read     --path /Link/Path                   print page markdown to stdout");
+        w.WriteLine("  read     --path /Link/Path [--section H]     print page markdown (or one section) to stdout");
         w.WriteLine("  write    --path /Link/Path [--file F | --stdin]  write/overwrite a page");
         w.WriteLine("  edit     --path /P (--old T | --old-file F) (--new T | --new-file F | --stdin) [--all]");
         w.WriteLine("           replace exact text in a page, leaving the rest untouched");
@@ -153,18 +153,26 @@ public static class CommandRunner
         ["read"] =
             """
             Usage:
-              wikidown read --path /Link/Path [--root <path>]
+              wikidown read --path /Link/Path [--section <heading>] [--root <path>]
 
-            Print a page's Markdown to stdout.
+            Print a page's Markdown to stdout, or just one section of it.
+            --section matches a heading case-insensitively, ignoring leading
+            #s and whitespace, and prints that heading plus everything below
+            it up to the next heading of the same or higher level (a ##
+            section includes its ### children). A miss lists the page's
+            headings; if several headings match, the first is printed with a
+            trailing note.
 
             Options:
-              --path    Required title-form wiki path, e.g. /Getting-Started/Format
-              --root    Path to the docs folder (default: ./docs)
+              --path      Required title-form wiki path, e.g. /Getting-Started/Format
+              --section   Heading text of the one section to print
+              --root      Path to the docs folder (default: ./docs)
               -h, --help
 
             Examples:
               wikidown read --path /Getting-Started
               wikidown read --path /Getting-Started/Format --root ./my-wiki
+              wikidown read --path /MCP-Server --section "Wiki root"
 
             """,
 

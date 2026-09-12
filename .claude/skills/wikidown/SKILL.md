@@ -37,6 +37,7 @@ with the server name — e.g. `wikidown_wiki_write` in VS Code / GitHub Copilot.
 | ----------------------- | -------------------------------------------- |
 | What pages exist?       | `wiki_walk` (everything) or `wiki_list`      |
 | Read a page             | `wiki_read` path=/Some/Page                  |
+| Read one section        | `wiki_read` path=/Some/Page section="Heading"|
 | Create a page           | `wiki_new` path=/Some/Page (+ optional body) |
 | Change part of a page   | `wiki_edit` path=/Some/Page old=… new=…      |
 | Rewrite a whole page    | `wiki_write` path=/Some/Page markdown=…      |
@@ -54,7 +55,7 @@ curl -fsSL https://wikidown.org/install.sh | sh   # Windows: irm https://wikidow
 
 # Commands (default root is ./docs; override with --root <path>)
 wikidown list [--path /P]
-wikidown read --path /P
+wikidown read --path /P [--section "Heading"]
 wikidown write --path /P [--file F | --stdin]
 wikidown edit --path /P --old <text> --new <text> [--all]   # multi-line: --old-file F --new-file F
 wikidown new --path /P [--title T] [--file F | --stdin]
@@ -79,7 +80,9 @@ wikidown search --query <text>
 2. **Search first.** `wiki_search` before creating a page — you may just need
    to update an existing one.
 3. **Read before overwriting.** `wiki_read` first; preserve voice and
-   structure.
+   structure. On a long page, read just the section you need with
+   `section="Heading"` (case-insensitive, `#`s optional; a `##` section
+   includes its `###` children). A miss lists the page's headings.
 4. **Patch, don't rewrite.** Prefer `wiki_edit` for any change smaller than
    a full rewrite — one line, one bullet, one table row, a renamed heading.
    Pass `old` exactly as it appears on the page (it may span lines; line

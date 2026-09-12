@@ -28,6 +28,7 @@ and breaks navigation.
 | ----------------------- | ----------------------------------------------------- |
 | What pages exist?       | `wikidown_wiki_walk` (all) or `wikidown_wiki_list`    |
 | Read a page             | `wikidown_wiki_read` path=/Some/Page                  |
+| Read one section        | `wikidown_wiki_read` path=/Some/Page section="Heading"|
 | Create a page           | `wikidown_wiki_new` path=/Some/Page (+ optional body) |
 | Change part of a page   | `wikidown_wiki_edit` path=/Some/Page old=… new=…      |
 | Rewrite a whole page    | `wikidown_wiki_write` path=/Some/Page markdown=…      |
@@ -44,7 +45,7 @@ dotnet tool install -g Wikidown.Cli
 
 # Commands (default root is ./docs; override with --root <path>)
 wikidown list [--path /P]
-wikidown read --path /P
+wikidown read --path /P [--section "Heading"]
 wikidown write --path /P [--file F | --stdin]
 wikidown edit --path /P --old <text> --new <text> [--all]   # multi-line: --old-file F --new-file F
 wikidown new --path /P [--title T] [--file F | --stdin]
@@ -87,6 +88,8 @@ wikidown search --query <text>
 1. Call `wikidown_wiki_walk` first to orient yourself.
 2. `wikidown_wiki_search` before creating — avoid duplicates.
 3. `wikidown_wiki_read` before overwriting — preserve voice and structure.
+   On a long page, pass `section="Heading"` to read just that section (a
+   miss lists the page's headings).
 4. Prefer `wikidown_wiki_edit` for any change smaller than a full rewrite
    (one line, one bullet, one table row, a renamed heading): pass `old`
    exactly as it appears on the page with enough context to be unique —

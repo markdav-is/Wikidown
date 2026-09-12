@@ -25,6 +25,7 @@ files directly.
 1. Call `wikidown_wiki_walk` first to see what already exists.
 2. Use `wikidown_wiki_search` before creating a page — avoid duplicates.
 3. `wikidown_wiki_read` before overwriting. Preserve voice and structure.
+   On a long page, pass `section="Heading"` to read just that section.
 4. Prefer `wikidown_wiki_edit` for any change smaller than a full rewrite
    (one line, one bullet, one table row): pass `old` exactly as it appears
    on the page, with enough context to be unique. `wikidown_wiki_write` is

@@ -59,7 +59,15 @@ wikidown --root ./my-wiki list
   [Agents](Agents.md). Re-run with `--force` to pick up updated agent configs
   in an existing repo — see [Updating](Getting-Started/Updating.md).
 - `list [--path /P]` — list children of a page (or root). `wikidown list`
-- `read --path /P` — print page markdown to stdout. `wikidown read --path /Getting-Started`
+- `read --path /P [--section "<heading>"]` — print page markdown to stdout,
+  or just one section of it. `--section` matches a heading
+  case-insensitively, ignoring leading `#`s and whitespace, and prints that
+  heading plus everything below it up to the next heading of the same or
+  higher level (a `##` section includes its `###` children; headings inside
+  code fences don't count). A miss lists the page's headings; if several
+  headings match, the first is printed with a trailing note.
+  `wikidown read --path /Getting-Started` ·
+  `wikidown read --path /MCP-Server --section "Wiki root"`
 - `write --path /P [--file F | --stdin]` — overwrite a page. Auto-injects or
   refreshes the page's breadcrumb line — see
   [Format § Breadcrumb Navigation](Getting-Started/Format.md).

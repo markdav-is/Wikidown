@@ -53,6 +53,15 @@ public sealed class WikiRepository
         return result;
     }
 
+    public SectionReadResult ReadSection(PagePath path, string section)
+    {
+        var file = RequireExistingFile(path);
+        var raw = File.ReadAllText(file);
+        var ending = LineEndings.Detect(raw);
+        var result = PageSections.Read(path, LineEndings.ToLf(raw), section);
+        return result with { Markdown = LineEndings.Apply(result.Markdown, ending) };
+    }
+
     private string RequireExistingFile(PagePath path)
     {
         if (path.IsRoot)

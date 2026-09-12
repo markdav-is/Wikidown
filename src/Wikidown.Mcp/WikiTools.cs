@@ -46,10 +46,22 @@ public sealed class WikiTools(WikiRepository repo)
     });
 
     [McpServerTool(Name = "wiki_read")]
-    [Description("Read a wiki page's markdown content.")]
+    [Description("Read a wiki page's markdown content, or just one section of it. Pass section to get a single " +
+                 "heading plus everything below it up to the next heading of the same or higher level (a ## " +
+                 "section includes its ### children) — prefer this on long pages when you only need one part. " +
+                 "A section miss fails with the page's headings listed so the next call can hit.")]
     public string Read(
         [Description("Wiki link path of the page (e.g. '/Getting-Started/Format').")]
-        string path) => Guarded(() => repo.Read(PagePath.Parse(path)).Markdown);
+        string path,
+        [Description("Optional heading text, matched case-insensitively and ignoring leading #s and whitespace " +
+                     "(e.g. 'Open concerns' or '## Open concerns'). Omit to read the whole page.")]
+        string? section = null) => Guarded(() =>
+    {
+        var p = PagePath.Parse(path);
+        if (string.IsNullOrWhiteSpace(section)) return repo.Read(p).Markdown;
+        var result = repo.ReadSection(p, section);
+        return result.Note is null ? result.Markdown : result.Markdown + result.Note + "\n";
+    });
 
     [McpServerTool(Name = "wiki_write")]
     [Description("Create or overwrite a wiki page with the given markdown content. " +
