@@ -83,6 +83,18 @@ wikidown --root ./my-wiki list
   breadcrumb line or `.order`, and never creates a page. Prints the
   changed line numbers with two lines of context.
   `wikidown edit --path /Home --old "coming soon" --new "shipped"`
+- `write-section --path /P --section "<heading>" (--file F | --stdin) [--create]` —
+  replace the body under one heading, keeping the rest of the page; same
+  contract as the `wiki_write_section` MCP tool (see
+  [MCP Server](MCP-Server.md)). The heading line is preserved verbatim
+  and the body from a file or stdin replaces everything after it up to
+  the next heading of the same or higher level — `###` children inside a
+  `##` section included. Exactly one blank line is kept around the new
+  body, so repeated writes don't stack blank lines. A miss lists the
+  page's headings (`--create` appends a new `## <heading>` instead), an
+  ambiguous match is an error, and breadcrumb/`.order`/line endings are
+  untouched.
+  `wikidown write-section --path /CLI --section "Wiki root" --file root.md`
 - `new --path /P [--title T] [--file F | --stdin]` — create a new page.
 - `move --from /A --to /B [--dry-run]` — rename or move a page (subpages
   travel with it). Rewrites inbound links from every other page that pointed

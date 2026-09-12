@@ -35,6 +35,7 @@ public static class CommandRunner
                 "read" => Commands.Read(repo, parsed, stdout),
                 "write" => Commands.Write(repo, parsed, stdout),
                 "edit" => Commands.Edit(repo, parsed, stdout),
+                "write-section" => Commands.WriteSection(repo, parsed, stdout),
                 "new" => Commands.New(repo, parsed, stdout),
                 "move" => Commands.Move(repo, parsed, stdout),
                 "delete" => Commands.Delete(repo, parsed, stdout),
@@ -101,6 +102,8 @@ public static class CommandRunner
         w.WriteLine("  write    --path /Link/Path [--file F | --stdin]  write/overwrite a page");
         w.WriteLine("  edit     --path /P (--old T | --old-file F) (--new T | --new-file F | --stdin) [--all]");
         w.WriteLine("           replace exact text in a page, leaving the rest untouched");
+        w.WriteLine("  write-section --path /P --section H [--file F | --stdin] [--create]");
+        w.WriteLine("           replace the body under one heading, keeping the rest of the page");
         w.WriteLine("  new    --path /Link/Path [--title T] [--file F | --stdin]  create a page");
         w.WriteLine("  move     --from /A --to /B [--dry-run]       rename/move a page (and subpages);");
         w.WriteLine("           rewrites inbound links and the moved page's own relative links");
@@ -226,6 +229,36 @@ public static class CommandRunner
               wikidown edit --path /Home --old "coming soon" --new "shipped in 0.6"
               wikidown edit --path /CLI --old-file before.txt --new-file after.txt
               wikidown edit --path /Home --old colour --new color --all
+
+            """,
+
+        ["write-section"] =
+            """
+            Usage:
+              wikidown write-section --path /Link/Path --section <heading>
+                                     (--file <path> | --stdin) [--create] [--root <path>]
+
+            Replace the body under one heading, keeping the rest of the page.
+            The heading line is preserved verbatim; the replaced span runs
+            from the line after it to the next heading of the same or higher
+            level, so ### children inside a ## section are replaced too.
+            Exactly one blank line is kept around the new body. The heading
+            matches case-insensitively, ignoring leading #s and whitespace; a
+            miss lists the page's headings, and an ambiguous match is an
+            error. The breadcrumb line and .order are never modified.
+
+            Options:
+              --path      Required title-form wiki path
+              --section   Required heading text of the section to replace
+              --file      Read the new section body from a file
+              --stdin     Read the new section body from standard input
+              --create    Append a new "## <section>" at the end when none matches
+              --root      Path to the docs folder (default: ./docs)
+              -h, --help
+
+            Examples:
+              wikidown write-section --path /CLI --section "Wiki root" --file root.md
+              cat notes.md | wikidown write-section --path /Home --section Notes --stdin --create
 
             """,
 

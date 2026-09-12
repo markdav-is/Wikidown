@@ -62,6 +62,17 @@ public sealed class WikiRepository
         return result with { Markdown = LineEndings.Apply(result.Markdown, ending) };
     }
 
+    public SectionWriteResult WriteSection(PagePath path, string section, string markdown, bool createIfMissing = false)
+    {
+        var file = RequireExistingFile(path);
+        var raw = File.ReadAllText(file);
+        var ending = LineEndings.Detect(raw);
+        var result = PageSections.Write(path, LineEndings.ToLf(raw), section, LineEndings.ToLf(markdown),
+            createIfMissing, out var patched);
+        File.WriteAllText(file, LineEndings.Apply(patched, ending));
+        return result;
+    }
+
     private string RequireExistingFile(PagePath path)
     {
         if (path.IsRoot)

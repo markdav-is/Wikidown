@@ -40,6 +40,7 @@ with the server name — e.g. `wikidown_wiki_write` in VS Code / GitHub Copilot.
 | Read one section        | `wiki_read` path=/Some/Page section="Heading"|
 | Create a page           | `wiki_new` path=/Some/Page (+ optional body) |
 | Change part of a page   | `wiki_edit` path=/Some/Page old=… new=…      |
+| Rewrite one section     | `wiki_write_section` path=/Some/Page section="Heading" markdown=… |
 | Rewrite a whole page    | `wiki_write` path=/Some/Page markdown=…      |
 | Find a topic            | `wiki_search` query=…                        |
 | Rename or move          | `wiki_move` from=/Old to=/New                |
@@ -58,6 +59,7 @@ wikidown list [--path /P]
 wikidown read --path /P [--section "Heading"]
 wikidown write --path /P [--file F | --stdin]
 wikidown edit --path /P --old <text> --new <text> [--all]   # multi-line: --old-file F --new-file F
+wikidown write-section --path /P --section "Heading" [--file F | --stdin] [--create]
 wikidown new --path /P [--title T] [--file F | --stdin]
 wikidown move --from /A --to /B [--dry-run]
 wikidown delete --path /P [--recursive]
@@ -87,8 +89,11 @@ wikidown search --query <text>
    a full rewrite — one line, one bullet, one table row, a renamed heading.
    Pass `old` exactly as it appears on the page (it may span lines; line
    endings don't matter) and enough of it to be unique — the tool refuses
-   ambiguous matches and tells you how many times the text matched. Use
-   `wiki_write` only for new pages or deliberate full rewrites.
+   ambiguous matches and tells you how many times the text matched. To
+   rewrite one whole section, `wiki_write_section` — pass the new body
+   without the heading line; the heading stays and everything under it
+   (including `###` children) is replaced. Use `wiki_write` only for new
+   pages or deliberate full rewrites.
 5. **Cross-link.** When you create or rename a page, update inbound links on
    sibling pages (`wiki_edit` on each — no need to rewrite them).
 6. **Order intentionally.** When adding a top-level concept, `wiki_reorder`
