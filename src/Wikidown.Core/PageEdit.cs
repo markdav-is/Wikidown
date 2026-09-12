@@ -88,7 +88,7 @@ public static class PageEdit
     {
         var lines = lfResult.Split('\n');
         if (lines.Length > 1 && lines[^1].Length == 0) lines = lines[..^1];
-        var lineCount = Math.Max(lines.Length, 1);
+        var lineCount = Math.Max(Math.Max(lines.Length, 1), ranges.Max(r => r.End));
 
         var where = string.Join(", ", ranges.Select(r => r.Start == r.End ? $"{r.Start}" : $"{r.Start}–{r.End}"));
         var noun = ranges.Count == 1 ? "replacement" : "replacements";
