@@ -73,6 +73,17 @@ public sealed class WikiRepository
         return result;
     }
 
+    public AppendResult Append(PagePath path, string markdown, string? afterSection = null)
+    {
+        var file = RequireExistingFile(path);
+        var raw = File.ReadAllText(file);
+        var ending = LineEndings.Detect(raw);
+        var result = PageSections.Append(path, LineEndings.ToLf(raw), LineEndings.ToLf(markdown), afterSection,
+            out var patched);
+        File.WriteAllText(file, LineEndings.Apply(patched, ending));
+        return result;
+    }
+
     private string RequireExistingFile(PagePath path)
     {
         if (path.IsRoot)

@@ -88,6 +88,18 @@ Selected in this order:
   must not guess. Breadcrumb, `.order`, and line endings untouched; a
   missing page fails. Returns
   `wrote section 'X' in /Path (replaced lines 41–58 with 12 lines)`.
+- `wiki_append` — add a block at the end of a page, or (with
+  `afterSection`, matched like `wiki_read`'s `section`) at the end of that
+  section's body, just before the next heading of the same or higher
+  level. This is "one more bullet / paragraph / table row" without
+  anchoring a `wiki_edit` on the last line of a list. Trailing blank
+  lines are trimmed from the existing content and from the block before
+  joining, then written with exactly one blank line between and a single
+  trailing newline, so repeated appends never stack blank lines. No
+  matching heading fails listing the page's headings; more than one
+  fails. Breadcrumb, `.order`, and line endings untouched; a missing page
+  fails (use `wiki_new`). Returns
+  `appended 5 lines to /Path after section 'Open concerns' (now lines 88–92)`.
 - `wiki_write` — overwrite a page. Auto-injects or refreshes the page's
   breadcrumb navigation line — see
   [Format § Breadcrumb Navigation](Getting-Started/Format.md).
@@ -123,6 +135,8 @@ meant to touch. Pick the smallest tool that fits:
 - `wiki_write_section` when rewriting one section. Pass the new body
   without the heading line; the heading stays as-is and everything under
   it (including `###` children) is replaced.
+- `wiki_append` to add a bullet, paragraph, row, or whole new section at
+  the end of a page or of one section — no need to know the last line.
 - `wiki_write` only for new pages (or `wiki_new`) and deliberate full
   rewrites.
 

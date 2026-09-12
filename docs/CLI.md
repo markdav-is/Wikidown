@@ -95,6 +95,16 @@ wikidown --root ./my-wiki list
   ambiguous match is an error, and breadcrumb/`.order`/line endings are
   untouched.
   `wikidown write-section --path /CLI --section "Wiki root" --file root.md`
+- `append --path /P [--after "<heading>"] (--file F | --stdin)` — add a block
+  at the end of a page, or with `--after` at the end of that section's
+  body, just before the next heading of the same or higher level; same
+  contract as the `wiki_append` MCP tool (see
+  [MCP Server](MCP-Server.md)). Exactly one blank line separates the
+  block from existing content and the file ends with a single newline, so
+  repeated appends never stack blank lines. A miss lists the page's
+  headings, an ambiguous match is an error, and breadcrumb/`.order`/line
+  endings are untouched.
+  `echo "- Ship 0.7" | wikidown append --path /Home --after "Open concerns" --stdin`
 - `new --path /P [--title T] [--file F | --stdin]` — create a new page.
 - `move --from /A --to /B [--dry-run]` — rename or move a page (subpages
   travel with it). Rewrites inbound links from every other page that pointed

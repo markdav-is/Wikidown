@@ -59,6 +59,15 @@ public static class Commands
         return 0;
     }
 
+    public static int Append(WikiRepository repo, ParsedArgs args, TextWriter w)
+    {
+        var path = PagePath.Parse(args.Require("path"));
+        var body = LoadContent(args);
+        var result = repo.Append(path, body, args.Optional("after"));
+        w.WriteLine(result.Summary);
+        return 0;
+    }
+
     private static string LoadValue(ParsedArgs args, string inline, string fromFile, bool allowStdin)
     {
         var literal = args.Optional(inline);

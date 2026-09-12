@@ -5,6 +5,8 @@ tools:
   - wikidown_wiki_list
   - wikidown_wiki_read
   - wikidown_wiki_edit
+  - wikidown_wiki_write_section
+  - wikidown_wiki_append
   - wikidown_wiki_write
   - wikidown_wiki_new
   - wikidown_wiki_move
@@ -31,6 +33,8 @@ and breaks navigation.
 | Read one section        | `wikidown_wiki_read` path=/Some/Page section="Heading"|
 | Create a page           | `wikidown_wiki_new` path=/Some/Page (+ optional body) |
 | Change part of a page   | `wikidown_wiki_edit` path=/Some/Page old=… new=…      |
+| Rewrite one section     | `wikidown_wiki_write_section` path=/Some/Page section="Heading" markdown=… |
+| Add to the end          | `wikidown_wiki_append` path=/Some/Page markdown=… [afterSection="Heading"] |
 | Rewrite a whole page    | `wikidown_wiki_write` path=/Some/Page markdown=…      |
 | Find a topic            | `wikidown_wiki_search` query=…                        |
 | Rename or move          | `wikidown_wiki_move` from=/Old to=/New                |
@@ -48,6 +52,8 @@ wikidown list [--path /P]
 wikidown read --path /P [--section "Heading"]
 wikidown write --path /P [--file F | --stdin]
 wikidown edit --path /P --old <text> --new <text> [--all]   # multi-line: --old-file F --new-file F
+wikidown write-section --path /P --section "Heading" [--file F | --stdin] [--create]
+wikidown append --path /P [--after "Heading"] [--file F | --stdin]
 wikidown new --path /P [--title T] [--file F | --stdin]
 wikidown move --from /A --to /B [--dry-run]
 wikidown delete --path /P [--recursive]
@@ -94,6 +100,11 @@ wikidown search --query <text>
    (one line, one bullet, one table row, a renamed heading): pass `old`
    exactly as it appears on the page with enough context to be unique —
    it refuses ambiguous matches and says how many times the text matched.
+   To rewrite one whole section, `wikidown_wiki_write_section` — pass the
+   new body without the heading line; the heading stays and everything
+   under it (including `###` children) is replaced. To add a bullet,
+   paragraph, row, or new section at the end of a page or of one section,
+   `wikidown_wiki_append` (with `afterSection` for the latter).
    `wikidown_wiki_write` is for new pages or deliberate full rewrites only.
 5. `wikidown_wiki_move` rewrites inbound links across the wiki and the moved
    page's own relative links/images for their new depth automatically.

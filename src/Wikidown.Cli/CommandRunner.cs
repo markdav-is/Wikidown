@@ -36,6 +36,7 @@ public static class CommandRunner
                 "write" => Commands.Write(repo, parsed, stdout),
                 "edit" => Commands.Edit(repo, parsed, stdout),
                 "write-section" => Commands.WriteSection(repo, parsed, stdout),
+                "append" => Commands.Append(repo, parsed, stdout),
                 "new" => Commands.New(repo, parsed, stdout),
                 "move" => Commands.Move(repo, parsed, stdout),
                 "delete" => Commands.Delete(repo, parsed, stdout),
@@ -104,6 +105,8 @@ public static class CommandRunner
         w.WriteLine("           replace exact text in a page, leaving the rest untouched");
         w.WriteLine("  write-section --path /P --section H [--file F | --stdin] [--create]");
         w.WriteLine("           replace the body under one heading, keeping the rest of the page");
+        w.WriteLine("  append   --path /P [--after H] [--file F | --stdin]");
+        w.WriteLine("           add a block at the end of a page, or at the end of one section");
         w.WriteLine("  new    --path /Link/Path [--title T] [--file F | --stdin]  create a page");
         w.WriteLine("  move     --from /A --to /B [--dry-run]       rename/move a page (and subpages);");
         w.WriteLine("           rewrites inbound links and the moved page's own relative links");
@@ -259,6 +262,35 @@ public static class CommandRunner
             Examples:
               wikidown write-section --path /CLI --section "Wiki root" --file root.md
               cat notes.md | wikidown write-section --path /Home --section Notes --stdin --create
+
+            """,
+
+        ["append"] =
+            """
+            Usage:
+              wikidown append --path /Link/Path [--after <heading>] (--file <path> | --stdin) [--root <path>]
+
+            Add a block of Markdown at the end of a page, or — with --after —
+            at the end of one section's body, just before the next heading of
+            the same or higher level. The block is separated from existing
+            content by exactly one blank line and the file ends with a single
+            newline, so repeated appends never stack blank lines. The heading
+            matches case-insensitively, ignoring leading #s and whitespace; a
+            miss lists the page's headings, and an ambiguous match is an
+            error. The breadcrumb line and .order are never modified, and a
+            missing page is an error (use `new`).
+
+            Options:
+              --path    Required title-form wiki path
+              --after   Heading text of the section to append inside
+              --file    Read the block from a file
+              --stdin   Read the block from standard input
+              --root    Path to the docs folder (default: ./docs)
+              -h, --help
+
+            Examples:
+              echo "- Ship 0.7" | wikidown append --path /Home --after "Open concerns" --stdin
+              wikidown append --path /Changelog --file entry.md
 
             """,
 
