@@ -60,7 +60,9 @@ public sealed class WikiTools(WikiRepository repo)
         var p = PagePath.Parse(path);
         if (string.IsNullOrWhiteSpace(section)) return repo.Read(p).Markdown;
         var result = repo.ReadSection(p, section);
-        return result.Note is null ? result.Markdown : result.Markdown + result.Note + "\n";
+        if (result.Note is null) return result.Markdown;
+        var ending = result.Markdown.EndsWith("\r\n", StringComparison.Ordinal) ? "\r\n" : "\n";
+        return result.Markdown + result.Note + ending;
     });
 
     [McpServerTool(Name = "wiki_write")]
