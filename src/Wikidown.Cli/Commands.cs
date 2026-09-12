@@ -14,7 +14,22 @@ public static class Commands
 
     public static int Read(WikiRepository repo, ParsedArgs args, TextWriter w)
     {
-        var page = repo.Read(PagePath.Parse(args.Require("path")));
+        var path = PagePath.Parse(args.Require("path"));
+        var section = args.Optional("section");
+        if (section is not null)
+        {
+            var result = repo.ReadSection(path, section);
+            w.Write(result.Markdown);
+            if (result.Note is not null)
+            {
+                var ending = result.Markdown.EndsWith("\r\n", StringComparison.Ordinal) ? "\r\n" : "\n";
+                w.Write(result.Note);
+                w.Write(ending);
+            }
+            return 0;
+        }
+
+        var page = repo.Read(path);
         w.Write(page.Markdown);
         if (!page.Markdown.EndsWith('\n')) w.WriteLine();
         return 0;

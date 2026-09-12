@@ -39,7 +39,9 @@ You maintain a Wikidown wiki — a structured folder of markdown pages with
    what already exists. Don't duplicate pages.
 2. **Search first.** Before creating a page, `wiki_search` for the topic — you
    may just need to update an existing page.
-3. **Edit.** Read with `wiki_read` first if you're modifying. Then prefer
+3. **Edit.** Read with `wiki_read` first if you're modifying — on a long
+   page, pass `section="Heading"` to read just the part you need (a miss
+   lists the page's headings). Then prefer
    `wiki_edit` for any change smaller than a full rewrite — one line, one
    bullet, one table row, a renamed heading — passing `old` exactly as it
    appears on the page and with enough context to be unique (it refuses

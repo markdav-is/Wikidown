@@ -50,7 +50,17 @@ Selected in this order:
 ## Tools
 
 - `wiki_list` — list children of a page or the root
-- `wiki_read` — read a page
+- `wiki_read` — read a page, or just one section of it. Pass `section`
+  (a heading's text, matched case-insensitively and ignoring leading `#`s
+  and surrounding whitespace, e.g. `"Open concerns"` or
+  `"## Open concerns"`) to get that heading line plus everything below it
+  up to the next heading of the same or higher level — so a `##` section
+  includes its `###` children. Only ATX (`#`) headings count, and
+  headings inside fenced code blocks are ignored. A miss fails with the
+  page's headings listed (`no section 'Progress' in /Path; headings:
+  History · Voice · Notes`) so the next call can hit; if several headings
+  match, the first is returned with a trailing
+  `note: 2 headings matched; returned the first`.
 - `wiki_edit` — replace an exact substring of a page in place, leaving the
   rest of the page untouched. Same contract as Claude Code's built-in
   `Edit` tool: `old` must match the page's raw markdown exactly (line
@@ -82,11 +92,14 @@ page is viewed directly on github.com.
 
 ### Choosing how to change a page
 
-Whole-page rewrites are the dominant cost in a long agent session on a
-large wiki: a one-sentence change to a 10 KB page costs the full 10 KB
-round-trip and risks drifting paragraphs the agent never meant to touch.
-Pick the smallest tool that fits:
+Whole-page reads and rewrites are the dominant cost in a long agent
+session on a large wiki: a one-sentence change to a 10 KB page costs the
+full 10 KB round-trip twice and risks drifting paragraphs the agent never
+meant to touch. Pick the smallest tool that fits:
 
+- `wiki_read` with `section` when a long page has the one `##` you need
+  to decide or to target an edit. Read the whole page only when you
+  really need all of it.
 - `wiki_edit` for anything smaller than a full rewrite — one line, one
   bullet, one table row, a renamed heading. It costs only the changed text
   and cannot alter anything outside the match.

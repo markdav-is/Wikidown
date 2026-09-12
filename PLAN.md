@@ -636,7 +636,14 @@ Blazor WASM PWA editor + marketing site hosted on GitHub Pages.
       `--stdin` for multi-line values. Skill + subagent + Copilot configs
       now say: `wiki_edit` for anything smaller than a rewrite,
       `wiki_write` for new pages or full rewrites only.
-    - 24b: `wiki_read(section)` (#20) — shared heading matcher.
+    - 24b: `wiki_read(section)` / `wikidown read --section` (#20).
+      *(shipped)* `Core.MarkdownHeadings` is the heading matcher shared
+      with 24c/24d: ATX headings only, fenced code skipped, match is
+      case-insensitive ignoring leading/closing `#`s and whitespace; a
+      section runs to the next heading of the same or higher level, so
+      `##` includes its `###` children. `Core.PageSections.Read` +
+      `WikiRepository.ReadSection`. A miss throws with every heading on
+      the page listed; duplicates return the first with a trailing note.
     - 24c: `wiki_write_section` (#21).
     - 24d: `wiki_append` (#22).
 
