@@ -20,7 +20,12 @@ public static class Commands
         {
             var result = repo.ReadSection(path, section);
             w.Write(result.Markdown);
-            if (result.Note is not null) w.WriteLine(result.Note);
+            if (result.Note is not null)
+            {
+                var ending = result.Markdown.EndsWith("\r\n", StringComparison.Ordinal) ? "\r\n" : "\n";
+                w.Write(result.Note);
+                w.Write(ending);
+            }
             return 0;
         }
 
