@@ -8,6 +8,11 @@ namespace Wikidown.Mcp;
 [McpServerToolType]
 public sealed class WikiTools(WikiRepository repo)
 {
+    // Hosts dispatch tool calls concurrently, and two patches of the same
+    // page at once collide on the file. Every tool is fast and synchronous,
+    // so serializing them costs nothing noticeable.
+    private static readonly object Gate = new();
+
     // The SDK reports every exception except McpException as a bare
     // "An error occurred invoking '<tool>'", which hides the message that
     // tells the agent what to do next (list of headings, match count, ...).
@@ -15,7 +20,7 @@ public sealed class WikiTools(WikiRepository repo)
     {
         try
         {
-            return tool();
+            lock (Gate) return tool();
         }
         catch (McpException)
         {
