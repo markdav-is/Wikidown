@@ -618,6 +618,28 @@ Blazor WASM PWA editor + marketing site hosted on GitHub Pages.
       racing callers share one read. This affected GitHub/ADO too, in
       production, on any deep-link into `/browse`.
 
+24. **MCP patching tools — stop paying full-page costs for small edits.**
+    *(in progress)* Issues #19–#22. Measured: most of a 19-minute agent
+    session on a ~150-page wiki was whole-page `wiki_write` round-trips
+    for one-line changes, and agents bypassed the server with `sed` to
+    avoid them. Shared constraints: exact matching on raw markdown with
+    the file's line ending detected and preserved (`Core.LineEndings`);
+    breadcrumb and `.order` never touched; a missing page throws rather
+    than creates; every failure message says what to do next; results
+    carry line numbers so the agent needn't re-read.
+    - 24a: `wiki_edit` / `wikidown edit` (#19). *(shipped)* Exact-substring
+      replace with the `Edit`-tool contract (`Core.PageEdit` +
+      `WikiRepository.Edit`): no match / ambiguous match (count reported,
+      `replaceAll` opt-in) / `old == new` / breadcrumb overlap all refuse
+      before writing. Returns the changed lines with two lines of context.
+      CLI takes `--old`/`--new` inline or `--old-file`/`--new-file`/
+      `--stdin` for multi-line values. Skill + subagent + Copilot configs
+      now say: `wiki_edit` for anything smaller than a rewrite,
+      `wiki_write` for new pages or full rewrites only.
+    - 24b: `wiki_read(section)` (#20) — shared heading matcher.
+    - 24c: `wiki_write_section` (#21).
+    - 24d: `wiki_append` (#22).
+
 ## Open questions / parking lot
 - `[[_TOC_]]`, mermaid, `:::` callouts rendering in WASM preview.
 - `/.attachments` upload from browser (REST base64 -> Contents API).

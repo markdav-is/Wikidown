@@ -34,6 +34,7 @@ public static class CommandRunner
                 "list" => Commands.List(repo, parsed, stdout),
                 "read" => Commands.Read(repo, parsed, stdout),
                 "write" => Commands.Write(repo, parsed, stdout),
+                "edit" => Commands.Edit(repo, parsed, stdout),
                 "new" => Commands.New(repo, parsed, stdout),
                 "move" => Commands.Move(repo, parsed, stdout),
                 "delete" => Commands.Delete(repo, parsed, stdout),
@@ -98,7 +99,9 @@ public static class CommandRunner
         w.WriteLine("  list     [--path /Link/Path]                 list children of a page (or root)");
         w.WriteLine("  read     --path /Link/Path                   print page markdown to stdout");
         w.WriteLine("  write    --path /Link/Path [--file F | --stdin]  write/overwrite a page");
-        w.WriteLine("  new      --path /Link/Path [--title T] [--file F | --stdin]  create a page");
+        w.WriteLine("  edit     --path /P (--old T | --old-file F) (--new T | --new-file F | --stdin) [--all]");
+        w.WriteLine("           replace exact text in a page, leaving the rest untouched");
+        w.WriteLine("  new    --path /Link/Path [--title T] [--file F | --stdin]  create a page");
         w.WriteLine("  move     --from /A --to /B [--dry-run]       rename/move a page (and subpages);");
         w.WriteLine("           rewrites inbound links and the moved page's own relative links");
         w.WriteLine("  delete   --path /P [--recursive]             delete a page (and optionally subpages)");
@@ -183,6 +186,38 @@ public static class CommandRunner
             Examples:
               wikidown write --path /Getting-Started --file getting-started.md
               cat page.md | wikidown write --path /Getting-Started --stdin
+
+            """,
+
+        ["edit"] =
+            """
+            Usage:
+              wikidown edit --path /Link/Path (--old <text> | --old-file <path>)
+                            (--new <text> | --new-file <path> | --stdin) [--all] [--root <path>]
+
+            Replace an exact substring of a page in place, leaving the rest of
+            the page untouched — the small-change alternative to `write`. The
+            old text must match the page's raw Markdown exactly (line endings
+            are normalized, so CRLF vs LF never matters) and, without --all,
+            exactly once. The breadcrumb line and .order are never modified,
+            and a missing page is an error, not a create. Prints the changed
+            line numbers with two lines of context.
+
+            Options:
+              --path       Required title-form wiki path
+              --old        Text to replace (use --old-file for multi-line text)
+              --old-file   Read the text to replace from a file
+              --new        Replacement text (an empty string deletes)
+              --new-file   Read the replacement text from a file
+              --stdin      Read the replacement text from standard input
+              --all        Replace every occurrence instead of failing on ambiguity
+              --root       Path to the docs folder (default: ./docs)
+              -h, --help
+
+            Examples:
+              wikidown edit --path /Home --old "coming soon" --new "shipped in 0.6"
+              wikidown edit --path /CLI --old-file before.txt --new-file after.txt
+              wikidown edit --path /Home --old colour --new color --all
 
             """,
 

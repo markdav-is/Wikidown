@@ -63,6 +63,18 @@ wikidown --root ./my-wiki list
 - `write --path /P [--file F | --stdin]` — overwrite a page. Auto-injects or
   refreshes the page's breadcrumb line — see
   [Format § Breadcrumb Navigation](Getting-Started/Format.md).
+- `edit --path /P (--old T | --old-file F) (--new T | --new-file F | --stdin) [--all]` —
+  replace an exact substring of a page in place, leaving the rest of the
+  page untouched; the small-change alternative to `write`, with the same
+  contract as the `wiki_edit` MCP tool (see [MCP Server](MCP-Server.md)).
+  The old text must match the page's raw markdown exactly (line endings
+  are normalized to the file's, so CRLF vs LF never matters) and, without
+  `--all`, exactly once — a miss or an ambiguous match is an error that
+  says how many times the text matched. Use `--old-file`/`--new-file` (or
+  `--stdin` for the replacement) for multi-line text. Never touches the
+  breadcrumb line or `.order`, and never creates a page. Prints the
+  changed line numbers with two lines of context.
+  `wikidown edit --path /Home --old "coming soon" --new "shipped"`
 - `new --path /P [--title T] [--file F | --stdin]` — create a new page.
 - `move --from /A --to /B [--dry-run]` — rename or move a page (subpages
   travel with it). Rewrites inbound links from every other page that pointed

@@ -38,7 +38,8 @@ with the server name — e.g. `wikidown_wiki_write` in VS Code / GitHub Copilot.
 | What pages exist?       | `wiki_walk` (everything) or `wiki_list`      |
 | Read a page             | `wiki_read` path=/Some/Page                  |
 | Create a page           | `wiki_new` path=/Some/Page (+ optional body) |
-| Update a page           | `wiki_write` path=/Some/Page markdown=…      |
+| Change part of a page   | `wiki_edit` path=/Some/Page old=… new=…      |
+| Rewrite a whole page    | `wiki_write` path=/Some/Page markdown=…      |
 | Find a topic            | `wiki_search` query=…                        |
 | Rename or move          | `wiki_move` from=/Old to=/New                |
 | Delete (with subpages)  | `wiki_delete` path=/X recursive=true         |
@@ -55,6 +56,7 @@ curl -fsSL https://wikidown.org/install.sh | sh   # Windows: irm https://wikidow
 wikidown list [--path /P]
 wikidown read --path /P
 wikidown write --path /P [--file F | --stdin]
+wikidown edit --path /P --old <text> --new <text> [--all]   # multi-line: --old-file F --new-file F
 wikidown new --path /P [--title T] [--file F | --stdin]
 wikidown move --from /A --to /B [--dry-run]
 wikidown delete --path /P [--recursive]
@@ -78,11 +80,17 @@ wikidown search --query <text>
    to update an existing one.
 3. **Read before overwriting.** `wiki_read` first; preserve voice and
    structure.
-4. **Cross-link.** When you create or rename a page, update inbound links on
-   sibling pages.
-5. **Order intentionally.** When adding a top-level concept, `wiki_reorder`
+4. **Patch, don't rewrite.** Prefer `wiki_edit` for any change smaller than
+   a full rewrite — one line, one bullet, one table row, a renamed heading.
+   Pass `old` exactly as it appears on the page (it may span lines; line
+   endings don't matter) and enough of it to be unique — the tool refuses
+   ambiguous matches and tells you how many times the text matched. Use
+   `wiki_write` only for new pages or deliberate full rewrites.
+5. **Cross-link.** When you create or rename a page, update inbound links on
+   sibling pages (`wiki_edit` on each — no need to rewrite them).
+6. **Order intentionally.** When adding a top-level concept, `wiki_reorder`
    so the new page lands where it makes sense in navigation.
-6. **Moves rewrite links automatically.** `wiki_move` rewrites inbound links
+7. **Moves rewrite links automatically.** `wiki_move` rewrites inbound links
    across the wiki and the moved page's own relative links/images for their
    new depth, and reports what it changed. Run `wiki_search` afterwards only
    if you suspect a link the tool couldn't resolve (e.g. one already broken).
@@ -147,6 +155,7 @@ in your summary that edits were made manually so the user knows to verify.
 - Don't write `/docs/*.md` with file-edit tools while the `wiki_*` tools or
   the CLI are available — they do `.order`, breadcrumb, and link
   bookkeeping for you. Manual edits are a last resort only (see above).
+- Don't `wiki_write` a whole page to change one line — that's `wiki_edit`.
 - Don't link to GitHub blob URLs from inside the wiki, and don't use
   absolute `/Title/Path` links in page bodies — use relative `.md` links.
 - Don't rename without checking inbound references first.

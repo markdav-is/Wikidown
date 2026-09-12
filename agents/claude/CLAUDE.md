@@ -9,5 +9,7 @@
   repo. Use them for ANY read/write of `/docs/*.md`.
 - Never edit `/docs/*.md` directly with `Write`/`Edit`. Use the `wiki_*` MCP
   tools so `.order` files stay consistent.
+- Prefer `wiki_edit` for small changes; `wiki_write` is for new pages or
+  full rewrites only.
 - When you ship a feature that changes user-visible behavior, ask whether the
   wiki should be updated, and (if yes) delegate to `wikidown-editor`.

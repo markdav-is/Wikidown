@@ -40,6 +40,30 @@ public sealed class WikiRepository
         JekyllNavigation.RefreshIfEnabled(this);
     }
 
+    // Patch operations never create pages, never touch .order, and keep the
+    // file's own line endings — unlike Write, which normalizes to LF and
+    // registers the page in its folder.
+    public EditResult Edit(PagePath path, string oldText, string newText, bool replaceAll = false)
+    {
+        var file = RequireExistingFile(path);
+        var raw = File.ReadAllText(file);
+        var ending = LineEndings.Detect(raw);
+        var result = PageEdit.Apply(path, LineEndings.ToLf(raw), oldText, newText, replaceAll, out var patched);
+        File.WriteAllText(file, LineEndings.Apply(patched, ending));
+        return result;
+    }
+
+    private string RequireExistingFile(PagePath path)
+    {
+        if (path.IsRoot)
+            throw new InvalidOperationException("Cannot patch the root as a page.");
+        var file = ResolveFile(path);
+        if (!File.Exists(file))
+            throw new FileNotFoundException(
+                $"Page not found: {path.ToLinkPath()} (patch tools never create pages; use wiki_new / 'wikidown new' first)", file);
+        return file;
+    }
+
     public void Delete(PagePath path, bool deleteSubpages = false)
     {
         if (path.IsRoot) throw new InvalidOperationException("Cannot delete root.");
