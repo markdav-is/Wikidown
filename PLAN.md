@@ -644,7 +644,16 @@ Blazor WASM PWA editor + marketing site hosted on GitHub Pages.
       `##` includes its `###` children. `Core.PageSections.Read` +
       `WikiRepository.ReadSection`. A miss throws with every heading on
       the page listed; duplicates return the first with a trailing note.
-    - 24c: `wiki_write_section` (#21).
+    - 24c: `wiki_write_section` / `wikidown write-section` (#21).
+      *(shipped)* `Core.PageSections.Write` + `WikiRepository.WriteSection`.
+      Heading line kept verbatim (renames are `wiki_edit`); body replaced
+      through the next same-or-higher heading, `###` children included;
+      exactly one blank line kept around the new body so repeated writes
+      are idempotent. Duplicate headings refuse (a write must not guess);
+      `createIfMissing` appends a `##` at the end. First real use: the
+      `/MCP-Server` and `/CLI` doc edits for this chunk were made with the
+      freshly built `wikidown edit`/`write-section` instead of whole-page
+      `wiki_write`.
     - 24d: `wiki_append` (#22).
 
 ## Open questions / parking lot

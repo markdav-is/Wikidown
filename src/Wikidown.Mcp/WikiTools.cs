@@ -93,6 +93,24 @@ public sealed class WikiTools(WikiRepository repo)
         bool replaceAll = false) => Guarded(() =>
         repo.Edit(PagePath.Parse(path), old, @new, replaceAll).Summary);
 
+    [McpServerTool(Name = "wiki_write_section")]
+    [Description("Replace the body under one heading, keeping the rest of the page. Use this when rewriting a " +
+                 "whole section; wiki_edit for smaller changes; wiki_write only for new pages or full rewrites. " +
+                 "The heading line itself is preserved verbatim (rename headings with wiki_edit). The replaced " +
+                 "span runs from the line after the heading to the next heading of the same or higher level, so " +
+                 "### children inside a ## section are replaced along with it. Exactly one blank line is kept " +
+                 "around the new body. Never touches the breadcrumb line or .order; a missing page fails.")]
+    public string WriteSection(
+        [Description("Wiki link path of the page.")] string path,
+        [Description("Heading text, matched case-insensitively and ignoring leading #s and whitespace. " +
+                     "Fails listing the page's headings on a miss, or if more than one heading matches.")]
+        string section,
+        [Description("New body of the section, excluding the heading line.")] string markdown,
+        [Description("When no heading matches, append a new '## <section>' at the end of the page with this body " +
+                     "instead of failing. Defaults to false.")]
+        bool createIfMissing = false) => Guarded(() =>
+        repo.WriteSection(PagePath.Parse(path), section, markdown, createIfMissing).Summary);
+
     [McpServerTool(Name = "wiki_new")]
     [Description("Create a new wiki page. Fails if it already exists. " +
                  "If markdown is empty, seeds the file with an H1 of the title.")]

@@ -54,6 +54,16 @@ public static class Commands
         return 0;
     }
 
+    public static int WriteSection(WikiRepository repo, ParsedArgs args, TextWriter w)
+    {
+        var path = PagePath.Parse(args.Require("path"));
+        var section = args.Require("section");
+        var body = LoadContent(args);
+        var result = repo.WriteSection(path, section, body, createIfMissing: args.Flag("create"));
+        w.WriteLine(result.Summary);
+        return 0;
+    }
+
     private static string LoadValue(ParsedArgs args, string inline, string fromFile, bool allowStdin)
     {
         var literal = args.Optional(inline);

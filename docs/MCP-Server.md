@@ -71,6 +71,23 @@ Selected in this order:
   missing page is an error, not a create). Returns the changed line
   numbers with two lines of context so the agent can confirm the edit
   without re-reading the page.
+- `wiki_write_section` — replace the body under one heading, keeping the
+  rest of the page. `section` is matched like `wiki_read`'s (shared
+  helper); `markdown` is the new body **excluding the heading line**, which
+  is preserved exactly as it is on the page — so an agent can't
+  accidentally change a heading's level or wording (renaming a heading is
+  a `wiki_edit`). The replaced span runs from the line after the heading
+  to the line before the next heading of the same or higher level (or end
+  of file), so **`###` children inside a `##` section are part of its body
+  and are replaced along with it**. Exactly one blank line is kept between
+  the heading and the new body and between the body and the next heading,
+  so repeated section writes never accumulate blank lines. No matching
+  heading fails listing the page's headings, unless `createIfMissing=true`,
+  which appends a new `## <section>` (always `##`) at the end of the page
+  with the given body. More than one matching heading fails — a write
+  must not guess. Breadcrumb, `.order`, and line endings untouched; a
+  missing page fails. Returns
+  `wrote section 'X' in /Path (replaced lines 41–58 with 12 lines)`.
 - `wiki_write` — overwrite a page. Auto-injects or refreshes the page's
   breadcrumb navigation line — see
   [Format § Breadcrumb Navigation](Getting-Started/Format.md).
@@ -103,6 +120,9 @@ meant to touch. Pick the smallest tool that fits:
 - `wiki_edit` for anything smaller than a full rewrite — one line, one
   bullet, one table row, a renamed heading. It costs only the changed text
   and cannot alter anything outside the match.
+- `wiki_write_section` when rewriting one section. Pass the new body
+  without the heading line; the heading stays as-is and everything under
+  it (including `###` children) is replaced.
 - `wiki_write` only for new pages (or `wiki_new`) and deliberate full
   rewrites.
 
