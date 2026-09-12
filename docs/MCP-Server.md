@@ -51,6 +51,16 @@ Selected in this order:
 
 - `wiki_list` — list children of a page or the root
 - `wiki_read` — read a page
+- `wiki_edit` — replace an exact substring of a page in place, leaving the
+  rest of the page untouched. Same contract as Claude Code's built-in
+  `Edit` tool: `old` must match the page's raw markdown exactly (line
+  endings are normalized to the file's, so CRLF vs LF never matters) and,
+  unless `replaceAll=true`, exactly once — a miss or an ambiguous match
+  fails with a message saying how many times the text matched. Never
+  touches the breadcrumb line or `.order`, and never creates a page (a
+  missing page is an error, not a create). Returns the changed line
+  numbers with two lines of context so the agent can confirm the edit
+  without re-reading the page.
 - `wiki_write` — overwrite a page. Auto-injects or refreshes the page's
   breadcrumb navigation line — see
   [Format § Breadcrumb Navigation](Getting-Started/Format.md).
@@ -69,6 +79,19 @@ There's no `wiki_check_links` tool yet — run `wikidown check-links` from the
 CLI (see [CLI](CLI.md)) to validate that relative links/images resolve and
 that page bodies don't contain absolute title-path links, which 404 when a
 page is viewed directly on github.com.
+
+### Choosing how to change a page
+
+Whole-page rewrites are the dominant cost in a long agent session on a
+large wiki: a one-sentence change to a 10 KB page costs the full 10 KB
+round-trip and risks drifting paragraphs the agent never meant to touch.
+Pick the smallest tool that fits:
+
+- `wiki_edit` for anything smaller than a full rewrite — one line, one
+  bullet, one table row, a renamed heading. It costs only the changed text
+  and cannot alter anything outside the match.
+- `wiki_write` only for new pages (or `wiki_new`) and deliberate full
+  rewrites.
 
 ## Wiring it in
 

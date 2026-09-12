@@ -25,3 +25,4 @@ Welcome to Wikidown. This folder is itself a Wikidown-format wiki.
 - [MCP Server](MCP-Server.md) — `wikidown-mcp` for AI agents
 - [Editor](Editor.md) — Blazor WASM browser editor
 - [Agents](Agents.md) — drop-in Claude + Copilot configs
+- [Handy Prompts](Handy-Prompts.md) — example prompts for everyday wiki work: adding pages, editing content, reordering, and committing changes

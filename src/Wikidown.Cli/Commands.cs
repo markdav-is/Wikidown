@@ -29,6 +29,30 @@ public static class Commands
         return 0;
     }
 
+    public static int Edit(WikiRepository repo, ParsedArgs args, TextWriter w)
+    {
+        var path = PagePath.Parse(args.Require("path"));
+        var oldText = LoadValue(args, "old", "old-file", allowStdin: false);
+        var newText = LoadValue(args, "new", "new-file", allowStdin: true);
+        var result = repo.Edit(path, oldText, newText, replaceAll: args.Flag("all"));
+        w.WriteLine(result.Summary);
+        return 0;
+    }
+
+    private static string LoadValue(ParsedArgs args, string inline, string fromFile, bool allowStdin)
+    {
+        var literal = args.Optional(inline);
+        var file = args.Optional(fromFile);
+        if (literal is not null && file is not null)
+            throw new CliUsageException($"pass either --{inline} or --{fromFile}, not both");
+        if (literal is not null) return literal;
+        if (file is not null) return File.ReadAllText(file);
+        if (allowStdin && args.Flag("stdin")) return Console.In.ReadToEnd();
+        throw new CliUsageException(allowStdin
+            ? $"provide --{inline} <text>, --{fromFile} <path>, or --stdin"
+            : $"provide --{inline} <text> or --{fromFile} <path>");
+    }
+
     public static int New(WikiRepository repo, ParsedArgs args, TextWriter w)
     {
         var path = PagePath.Parse(args.Require("path"));
