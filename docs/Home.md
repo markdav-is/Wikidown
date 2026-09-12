@@ -21,3 +21,5 @@ it documents — including this site, which is the wiki published with
   maintaining a Wikidown wiki with an AI agent
 - [Handy Prompts](Handy-Prompts.md) — example prompts to give your AI agent
   for everyday wiki upkeep
+- [Release Notes](Release-Notes.md) — what changed in each release and
+  where to get it
