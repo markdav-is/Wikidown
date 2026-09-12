@@ -21,7 +21,7 @@ public static class PageSections
 
         var heading = matches[0];
         var end = MarkdownHeadings.SectionEnd(headings, heading, lines.Length) - 1;
-        while (end > heading.Line && lines[end - 1].Length == 0) end--;
+        while (end > heading.Line && string.IsNullOrWhiteSpace(lines[end - 1])) end--;
 
         var body = string.Join("\n", lines[(heading.Line - 1)..end]) + "\n";
         return new SectionReadResult(body, heading, heading.Line, end, matches.Count);
