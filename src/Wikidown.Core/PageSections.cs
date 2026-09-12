@@ -68,7 +68,10 @@ public static class PageSections
         if (body.Count == 0)
             throw new ArgumentException("markdown must not be empty; pass the block to append", nameof(lfMarkdown));
 
-        var lines = TrimTrailingBlank(SplitLines(lfText)).ToArray();
+        var lines = SplitLines(lfText);
+        if (string.IsNullOrWhiteSpace(afterSection))
+        {
+            var result = TrimTrailingBlank(lines);
             if (result.Count > 0) result.Add("");
             var start = result.Count + 1;
             result.AddRange(body);
