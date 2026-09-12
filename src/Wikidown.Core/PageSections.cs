@@ -10,6 +10,9 @@ public sealed record SectionReadResult(string Markdown, HeadingInfo Heading, int
 // span (empty when EndLine < StartLine); for a create, the new section.
 public sealed record SectionWriteResult(string Summary, int StartLine, int EndLine, int NewLineCount, bool Created);
 
+// StartLine..EndLine (1-based, inclusive) is where the appended block now sits.
+public sealed record AppendResult(string Summary, int StartLine, int EndLine, int LineCount);
+
 public static class PageSections
 {
     // Replaces the body under a heading — everything after the heading line
@@ -54,6 +57,56 @@ public static class PageSections
             : $"wrote section '{heading.Text}' in {page.ToLinkPath()} (inserted {body.Count} lines after line {heading.Line})";
         return new SectionWriteResult(summary, oldStart, oldEnd, body.Count, Created: false);
     }
+
+    // Adds `lfMarkdown` at the end of the page, or at the end of one
+    // section's body (just before the next heading of the same or higher
+    // level). Trailing blank lines on both sides are trimmed first, so
+    // repeated appends never stack blanks.
+    public static AppendResult Append(PagePath page, string lfText, string lfMarkdown, string? afterSection, out string lfResult)
+    {
+        var body = TrimBlankEdges(SplitLines(lfMarkdown));
+        if (body.Count == 0)
+            throw new ArgumentException("markdown must not be empty; pass the block to append", nameof(lfMarkdown));
+
+        var lines = SplitLines(lfText);
+        if (string.IsNullOrWhiteSpace(afterSection))
+        {
+            var result = TrimTrailingBlank(lines);
+            if (result.Count > 0) result.Add("");
+            var start = result.Count + 1;
+            result.AddRange(body);
+            lfResult = Join(result);
+            return new AppendResult(
+                $"appended {Count(body.Count)} to {page.ToLinkPath()} ({Range(start, result.Count)})",
+                start, result.Count, body.Count);
+        }
+
+        var headings = MarkdownHeadings.Parse(lines);
+        var matches = MarkdownHeadings.Find(headings, afterSection);
+        if (matches.Count == 0) throw MarkdownHeadings.NoSection(page, afterSection, headings);
+        if (matches.Count > 1) throw MarkdownHeadings.Ambiguous(page, afterSection, matches.Count);
+
+        var heading = matches[0];
+        var end = MarkdownHeadings.SectionEnd(headings, heading, lines.Length);
+        var hasNext = end <= lines.Length;
+        var keep = end - 1;
+        while (keep > heading.Line && string.IsNullOrWhiteSpace(lines[keep - 1])) keep--;
+
+        var merged = new List<string>(lines[..keep]) { "" };
+        var first = merged.Count + 1;
+        merged.AddRange(body);
+        var last = merged.Count;
+        if (hasNext) merged.Add("");
+        merged.AddRange(lines[(end - 1)..]);
+        lfResult = Join(merged);
+
+        return new AppendResult(
+            $"appended {Count(body.Count)} to {page.ToLinkPath()} after section '{heading.Text}' ({Range(first, last)})",
+            first, last, body.Count);
+    }
+
+    private static string Count(int n) => n == 1 ? "1 line" : $"{n} lines";
+    private static string Range(int a, int b) => a == b ? $"now line {a}" : $"now lines {a}–{b}";
 
     private static SectionWriteResult Create(PagePath page, string[] lines, string title, List<string> body, out string lfResult)
     {

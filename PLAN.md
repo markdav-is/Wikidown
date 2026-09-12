@@ -619,7 +619,7 @@ Blazor WASM PWA editor + marketing site hosted on GitHub Pages.
       production, on any deep-link into `/browse`.
 
 24. **MCP patching tools — stop paying full-page costs for small edits.**
-    *(in progress)* Issues #19–#22. Measured: most of a 19-minute agent
+    *(shipped)* Issues #19–#22. Measured: most of a 19-minute agent
     session on a ~150-page wiki was whole-page `wiki_write` round-trips
     for one-line changes, and agents bypassed the server with `sed` to
     avoid them. Shared constraints: exact matching on raw markdown with
@@ -654,7 +654,13 @@ Blazor WASM PWA editor + marketing site hosted on GitHub Pages.
       `/MCP-Server` and `/CLI` doc edits for this chunk were made with the
       freshly built `wikidown edit`/`write-section` instead of whole-page
       `wiki_write`.
-    - 24d: `wiki_append` (#22).
+    - 24d: `wiki_append` / `wikidown append` (#22). *(shipped)*
+      `Core.PageSections.Append` + `WikiRepository.Append`. End of page,
+      or end of one section's body (before the next same-or-higher
+      heading) via `afterSection`; trailing blanks trimmed on both sides
+      and joined with exactly one blank line + a single trailing newline,
+      so repeated appends are stable. Miss lists headings; duplicates
+      refuse; empty block refuses.
 
 ## Open questions / parking lot
 - `[[_TOC_]]`, mermaid, `:::` callouts rendering in WASM preview.
