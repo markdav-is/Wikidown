@@ -26,14 +26,13 @@ public static class PageEdit
         if (matches.Count == 0)
             throw new InvalidOperationException(
                 $"no match for old text in {page.ToLinkPath()}; read the page (or section) and pass the exact current text, including punctuation and spacing");
+        var breadcrumbEnd = BreadcrumbLineEnd(lfText);
+        if (breadcrumbEnd >= 0 && matches.Any(m => m < breadcrumbEnd))
+            throw new InvalidOperationException(
+                "breadcrumb is managed by Wikidown; edit the body only (start old below the first line)");
         if (matches.Count > 1 && !replaceAll)
             throw new InvalidOperationException(
                 $"old text matches {matches.Count} times in {page.ToLinkPath()}; pass more surrounding context to make it unique, or replaceAll=true to change every occurrence");
-
-        var breadcrumbEnd = BreadcrumbLineEnd(lfText);
-        if (breadcrumbEnd >= 0 && matches[0] < breadcrumbEnd)
-            throw new InvalidOperationException(
-                "breadcrumb is managed by Wikidown; edit the body only (start old below the first line)");
 
         var sb = new StringBuilder(lfText.Length - matches.Count * old.Length + matches.Count * @new.Length);
         var ranges = new List<(int Start, int End)>();
