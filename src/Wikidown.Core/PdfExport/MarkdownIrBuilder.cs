@@ -14,26 +14,36 @@ public static class MarkdownIrBuilder
 
     public static IReadOnlyList<IrBlock> Build(
         string markdown, PagePath page, WikiRepository repo, bool allowHtmlSkip = false) =>
-        Build(markdown, page, repo, allowHtmlSkip, out _);
+        Build(markdown, page, new RepositoryPdfPageSource(repo), allowHtmlSkip, out _);
 
     public static IReadOnlyList<IrBlock> Build(
         string markdown, PagePath page, WikiRepository repo, bool allowHtmlSkip,
+        out IReadOnlyList<PdfExportWarning> warnings) =>
+        Build(markdown, page, new RepositoryPdfPageSource(repo), allowHtmlSkip, out warnings);
+
+    public static IReadOnlyList<IrBlock> Build(
+        string markdown, PagePath page, IPdfPageSource source, bool allowHtmlSkip,
         out IReadOnlyList<PdfExportWarning> warnings)
     {
         var document = Markdown.Parse(markdown, Pipeline);
-        var ctx = new BuildContext(page, repo, allowHtmlSkip, new List<PdfExportWarning>());
+        var ctx = new BuildContext(page, source, allowHtmlSkip, new List<PdfExportWarning>());
         var blocks = BuildBlocks(document, ctx);
         warnings = ctx.Warnings;
         return blocks;
     }
 
-    private sealed record BuildContext(PagePath Page, WikiRepository Repo, bool AllowHtmlSkip, List<PdfExportWarning> Warnings);
+    private sealed record BuildContext(PagePath Page, IPdfPageSource Source, bool AllowHtmlSkip, List<PdfExportWarning> Warnings);
 
     private static IReadOnlyList<IrBlock> BuildBlocks(ContainerBlock container, BuildContext ctx)
     {
         var result = new List<IrBlock>();
         foreach (var block in container)
+        {
+            // Reference-style link definitions ([id]: url) are metadata Markdig
+            // already applied to the links that use them; nothing to render.
+            if (block is LinkReferenceDefinitionGroup or LinkReferenceDefinition) continue;
             result.Add(BuildBlock(block, ctx));
+        }
         return result;
     }
 
@@ -89,8 +99,8 @@ public static class MarkdownIrBuilder
         if (LinkChecker.IsExternal(target)) return null;
         var withoutFragment = target.Split('#')[0];
         if (withoutFragment.Length == 0) return null;
-        var full = LinkChecker.ResolveFullPath(ctx.Repo, ctx.Page, withoutFragment);
-        if (File.Exists(full)) return full;
+        var resolved = ctx.Source.ResolveImage(ctx.Page, withoutFragment);
+        if (resolved is not null) return resolved;
         ctx.Warnings.Add(new PdfExportWarning(ctx.Page, target));
         return null;
     }
@@ -192,7 +202,7 @@ public static class MarkdownIrBuilder
                     }
                     else
                     {
-                        var anchor = ResolveInternalAnchor(ctx.Repo, ctx.Page, target);
+                        var anchor = ResolveInternalAnchor(ctx.Source, ctx.Page, target);
                         if (anchor is not null) result.Add(new IrLink(content, anchor));
                         else result.AddRange(content); // broken link: keep the text, drop the jump
                     }
@@ -245,7 +255,7 @@ public static class MarkdownIrBuilder
     // Resolves a link target (relative .md link, legacy absolute /Title/Path
     // link, or same-page #fragment) to a PdfAnchors id, or null if it's
     // broken — mirrors LinkChecker.Classify's target handling.
-    private static string? ResolveInternalAnchor(WikiRepository repo, PagePath page, string target)
+    private static string? ResolveInternalAnchor(IPdfPageSource source, PagePath page, string target)
     {
         var parts = target.Split('#', 2);
         var withoutFragment = parts[0];
@@ -259,30 +269,16 @@ public static class MarkdownIrBuilder
         else if (withoutFragment.StartsWith('/'))
         {
             var parsed = PagePath.Parse(withoutFragment);
-            targetPage = repo.Exists(parsed) ? parsed : null;
+            targetPage = source.Exists(parsed) ? parsed : null;
         }
         else
         {
-            var full = LinkChecker.ResolveFullPath(repo, page, withoutFragment);
-            targetPage = File.Exists(full) ? FilePathToPagePath(repo, full) : null;
+            targetPage = source.ResolveRelativePage(page, withoutFragment);
         }
 
         if (targetPage is null) return null;
         return fragment is null
             ? PdfAnchors.PageAnchor(targetPage)
             : PdfAnchors.HeadingAnchor(targetPage, fragment);
-    }
-
-    private static PagePath? FilePathToPagePath(WikiRepository repo, string fullPath)
-    {
-        if (!fullPath.EndsWith(".md", StringComparison.OrdinalIgnoreCase)) return null;
-        var relative = Path.GetRelativePath(repo.RootPath, fullPath);
-        if (relative.StartsWith("..")) return null;
-
-        var segments = relative[..^3]
-            .Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries)
-            .Select(PageName.FromFileBase)
-            .ToList();
-        return segments.Count == 0 ? null : new PagePath(segments);
     }
 }

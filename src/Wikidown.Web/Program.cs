@@ -21,5 +21,7 @@ builder.Services.AddScoped<IWikiBackend, GitHubBackend>();
 builder.Services.AddScoped<IWikiBackend, AzureDevOpsBackend>();
 builder.Services.AddScoped<IWikiBackend, GitLabBackend>();
 builder.Services.AddScoped<BackendResolver>();
+builder.Services.AddScoped<PageImageResolver>();
+builder.Services.AddScoped<WikiPdfDownloader>();
 
 await builder.Build().RunAsync();

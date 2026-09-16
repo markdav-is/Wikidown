@@ -30,6 +30,35 @@ html, body {
     line-height: 1.6;
 }
 
+.wd-page-md .mud-typography-h1,
+.wd-page-md .mud-typography-h2,
+.wd-page-md .mud-typography-h3,
+.wd-page-md .mud-typography-h4,
+.wd-page-md .mud-typography-h5,
+.wd-page-md .mud-typography-h6 {
+    font-weight: 500;
+    line-height: 1.3;
+    letter-spacing: normal;
+    margin: 1.5em 0 0.5em;
+}
+
+.wd-page-md .mud-typography-h1 { font-size: 1.75rem; }
+.wd-page-md .mud-typography-h2 { font-size: 1.45rem; }
+.wd-page-md .mud-typography-h3 { font-size: 1.25rem; }
+.wd-page-md .mud-typography-h4 { font-size: 1.1rem; }
+.wd-page-md .mud-typography-h5 { font-size: 1rem; }
+.wd-page-md .mud-typography-h6 { font-size: 0.95rem; color: rgba(0, 0, 0, 0.6); }
+
+.wd-page-md > .mud-typography-h1:first-child,
+.wd-page-md > .mud-typography-h2:first-child {
+    margin-top: 0;
+}
+
+.wd-page-md img {
+    max-width: 50%;
+    height: auto;
+}
+
 .wd-page-md pre {
     background: #f4f6fb;
     padding: 0.75rem 1rem;

@@ -4,8 +4,26 @@
     {
       "name": "wikidown-web",
       "runtimeExecutable": "dotnet",
-      "runtimeArgs": ["run", "--project", "src/Wikidown.Web", "-c", "Release"],
+      "runtimeArgs": [
+        "run",
+        "--project",
+        "src/Wikidown.Web",
+        "-c",
+        "Release"
+      ],
       "port": 5241
+    },
+    {
+      "name": "wikidown-web-published",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "5242",
+        "--directory",
+        "publish/web/wwwroot"
+      ],
+      "port": 5242
     }
   ]
 }

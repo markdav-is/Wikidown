@@ -6,6 +6,7 @@
 @inject ISnackbar Snackbar
 @inject IDialogService Dialogs
 @inject DraftStore Drafts
+@inject PageImageResolver Images
 @using Wikidown.Core
 @using Wikidown.Web.Services
 
@@ -21,6 +22,8 @@
 else
 {
     <MudGrid Spacing="3">
+        @if (TreeVisible)
+        {
         <MudItem xs="12" md="4" lg="3">
             <MudPaper Class="pa-3" Outlined="true">
                 <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mb-2">
@@ -55,8 +58,9 @@ else
                 }
             </MudPaper>
         </MudItem>
+        }
 
-        <MudItem xs="12" md="8" lg="9">
+        <MudItem xs="12" md="@(TreeVisible ? 8 : 12)" lg="@(TreeVisible ? 9 : 12)">
             @if (_currentPath is null)
             {
                 <MudPaper Class="pa-6" Outlined="true">
@@ -79,6 +83,12 @@ else
             else if (_currentPage is { } loaded)
             {
                 <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-2">
+                    @if (_editMode)
+                    {
+                        <MudIconButton Icon="@(_treePinned ? Icons.Material.Filled.MenuOpen : Icons.Material.Filled.AccountTree)"
+                                       Size="Size.Small" title="@(_treePinned ? "Hide page tree" : "Show page tree")"
+                                       OnClick="@(() => _treePinned = !_treePinned)" />
+                    }
                     <MudStack Spacing="0">
                         <MudText Typo="Typo.h4">@loaded.Path.Name.Title</MudText>
                         <MudText Typo="Typo.caption" Color="Color.Default">@loaded.Path.ToLinkPath()</MudText>
@@ -147,7 +157,7 @@ else
                         </MudItem>
                         <MudItem xs="12" md="6">
                             <MudPaper Outlined="true" Class="pa-3 wd-preview-pane wd-page-md">
-                                <MudMarkdown Value="@_draft" />
+                                <MudMarkdown Value="@_draft" Pipeline="@_pipeline" />
                             </MudPaper>
                         </MudItem>
                         @if (_conflictMessage is { } conflict)
@@ -171,7 +181,7 @@ else
                 else
                 {
                     <MudPaper Outlined="true" Class="pa-4 wd-page-md">
-                        <MudMarkdown Value="@loaded.Markdown" />
+                        <MudMarkdown Value="@loaded.Markdown" Pipeline="@_pipeline" />
                     </MudPaper>
                 }
             }
@@ -194,11 +204,16 @@ else
     private string? _pageError;
 
     private bool _editMode;
+    private bool _treePinned;
+    private Markdig.MarkdownPipeline? _pipeline;
     private string _draft = string.Empty;
     private string _commitMessage = string.Empty;
     private bool _saving;
     private string? _conflictMessage;
     private bool _draftRestored;
+
+    // The tree yields to the side-by-side editor unless the user pins it back open.
+    private bool TreeVisible => !_editMode || _treePinned;
 
     private bool HasChanges =>
         _currentPage is { } p && !string.Equals(_draft, p.Markdown, StringComparison.Ordinal);
@@ -277,6 +292,8 @@ else
                 _draft = _currentPage.Markdown;
             }
             _commitMessage = $"Update {_currentPath.Name.Title}";
+            await Images.PrefetchAsync(_conn, _currentPath, _draft);
+            _pipeline = Images.BuildPipeline(_conn, _currentPath);
         }
         catch (Exception ex)
         {
@@ -292,6 +309,8 @@ else
     {
         _draft = value;
         if (_conn is null || _currentPath is null || _currentPage is null) return;
+        if (await Images.PrefetchAsync(_conn, _currentPath, _draft))
+            _pipeline = Images.BuildPipeline(_conn, _currentPath);
         if (string.Equals(_draft, _currentPage.Markdown, StringComparison.Ordinal))
         {
             await Drafts.ClearAsync(_conn, _currentPath);

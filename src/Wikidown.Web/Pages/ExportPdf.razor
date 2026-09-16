@@ -1,95 +1,147 @@
 @page "/export"
 @inject ConnectionStore Store
 @inject BackendResolver Backends
-@inject IJSRuntime JS
+@inject WikiPdfDownloader Pdf
 @using Wikidown.Core
+@using Wikidown.Core.PdfExport
 @using Wikidown.Web.Services
 
 <PageTitle>Export PDF — Wikidown</PageTitle>
 
+<MudText Typo="Typo.h4" GutterBottom="true">Export PDF</MudText>
+
 @if (_conn is null)
 {
-    <MudText Typo="Typo.h4" GutterBottom="true">Export PDF</MudText>
     <MudAlert Severity="Severity.Info">
         No wiki connected. <MudLink Href="connect">Connect one</MudLink>.
     </MudAlert>
 }
 else if (_error is { } err)
 {
-    <MudText Typo="Typo.h4" GutterBottom="true">Export PDF</MudText>
     <MudAlert Severity="Severity.Error">@err</MudAlert>
 }
-else if (_html is null)
+else if (_busy)
 {
-    <MudText Typo="Typo.h4" GutterBottom="true">Export PDF</MudText>
     <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mb-2">
         <MudProgressCircular Indeterminate="true" Size="Size.Small" />
-        <MudText>Loading page @_loaded of @_total@(_currentTitle is null ? "" : $": {_currentTitle}")…</MudText>
+        <MudText>@_stage @(_total == 0 ? "" : $"{_done} of {_total}")@(_currentTitle is null ? "" : $": {_currentTitle}")…</MudText>
     </MudStack>
     <MudProgressLinear Value="@ProgressPercent" Color="Color.Primary" Class="my-2" />
 }
 else
 {
-    <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-4 wd-pdf-toolbar">
+    <MudText Class="mb-3">
+        <strong>@FileName</strong> was rendered with the same layout as <code>wikidown export-pdf</code>
+        (cover, table of contents, bookmarks) and sent to your downloads.
+    </MudText>
+    <MudStack Row="true" Spacing="2" Class="mb-4">
         <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                   StartIcon="@Icons.Material.Filled.Print"
-                   OnClick="PrintAsync">
-            Print / Save as PDF
+                   StartIcon="@Icons.Material.Filled.Download" OnClick="ExportAsync">
+            Download again
         </MudButton>
+        <MudButton Variant="Variant.Outlined" Href="browse">Back to Browse</MudButton>
     </MudStack>
-    @((MarkupString)_html)
+
+    @if (_warnings.Count > 0)
+    {
+        <MudAlert Severity="Severity.Warning" Class="mb-2">
+            @_warnings.Count image reference@(_warnings.Count == 1 ? "" : "s") could not be found and rendered as placeholders:
+        </MudAlert>
+        <MudList T="string" Dense="true">
+            @foreach (var w in _warnings)
+            {
+                <MudListItem T="string">
+                    <MudLink Href="@("browse" + w.Page.ToLinkPath())">@w.Page.ToLinkPath()</MudLink>
+                    <MudText Typo="Typo.body2" Inline="true" Class="ml-2"><code>@w.Target</code></MudText>
+                </MudListItem>
+            }
+        </MudList>
+    }
 }
 
 @code {
     private WikiConnection? _conn;
     private string? _error;
-    private string? _html;
-    private bool _printed;
-    private int _loaded;
+    private bool _busy;
+    private string _stage = "Loading pages";
+    private int _done;
     private int _total;
     private string? _currentTitle;
+    private IReadOnlyList<PdfExportWarning> _warnings = Array.Empty<PdfExportWarning>();
 
-    private double ProgressPercent => _total == 0 ? 0 : 100.0 * _loaded / _total;
+    private List<(PagePath Path, string Markdown)>? _pages;
+    private WikiSnapshot? _snapshot;
+
+    private string FileName => $"{_conn?.Repo ?? "wiki"}.pdf";
+    private double ProgressPercent => _total == 0 ? 0 : 100.0 * _done / _total;
 
     protected override async Task OnInitializedAsync()
     {
         _conn = await Store.LoadAsync();
         if (_conn is null) return;
+        await ExportAsync();
+    }
 
+    private async Task ExportAsync()
+    {
+        if (_conn is null) return;
+        _busy = true;
+        _error = null;
         try
         {
-            var backend = Backends.For(_conn.Provider);
-            var snapshot = await backend.WalkAsync(_conn);
-            var tree = NavTree.Build(snapshot.Pages, snapshot.OrderFor);
-            var paths = PdfExportHtmlBuilder.FlattenInNavOrder(tree).ToList();
-            _total = paths.Count;
+            if (_pages is null || _snapshot is null)
+                await LoadPagesAsync();
 
-            var pages = new List<(PagePath Path, string Markdown)>(paths.Count);
-            foreach (var path in paths)
+            _currentTitle = null;
+            _warnings = await Pdf.DownloadAsync(_conn, _pages!, _snapshot!.OrderFor, FileName, p =>
             {
-                _currentTitle = path.Name.Title;
+                _stage = p.Stage;
+                _done = p.Done;
+                _total = p.Total;
                 StateHasChanged();
-                var page = await backend.ReadPageAsync(_conn, path);
-                pages.Add((path, page.Markdown));
-                _loaded++;
-            }
-
-            _html = PdfExportHtmlBuilder.BuildDocument(_conn.Repo, tree, pages);
+                return Task.CompletedTask;
+            });
         }
         catch (Exception ex)
         {
             _error = $"Export failed: {ex.Message}";
         }
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (_html is not null && !_printed)
+        finally
         {
-            _printed = true;
-            await PrintAsync();
+            _busy = false;
         }
     }
 
-    private async Task PrintAsync() => await JS.InvokeVoidAsync("print");
+    private async Task LoadPagesAsync()
+    {
+        var backend = Backends.For(_conn!.Provider);
+        _snapshot = await backend.WalkAsync(_conn);
+        var tree = NavTree.Build(_snapshot.Pages, _snapshot.OrderFor);
+        var paths = FlattenInNavOrder(tree).ToList();
+
+        _stage = "Loading pages";
+        _total = paths.Count;
+        _done = 0;
+        var pages = new List<(PagePath Path, string Markdown)>(paths.Count);
+        foreach (var path in paths)
+        {
+            _currentTitle = path.Name.Title;
+            StateHasChanged();
+            var page = await backend.ReadPageAsync(_conn, path);
+            pages.Add((path, page.Markdown));
+            _done++;
+        }
+        _pages = pages;
+    }
+
+    // Same order the sidebar tree shows, so the PDF reads top to bottom like the wiki.
+    private static IEnumerable<PagePath> FlattenInNavOrder(IReadOnlyList<NavNode> tree)
+    {
+        foreach (var node in tree)
+        {
+            if (node.IsPage) yield return node.Path;
+            foreach (var descendant in FlattenInNavOrder(node.Children))
+                yield return descendant;
+        }
+    }
 }

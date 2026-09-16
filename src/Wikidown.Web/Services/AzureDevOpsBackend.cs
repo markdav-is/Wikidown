@@ -183,6 +183,23 @@ public sealed class AzureDevOpsBackend(HttpClient http) : IWikiBackend
         return new CommitResult(updated.ObjectId ?? string.Empty);
     }
 
+    public async Task<byte[]?> ReadBytesAsync(
+        WikiConnection conn, string docsRelPath, CancellationToken ct = default)
+    {
+        var path = "/" + Combine(conn.DocsPath, docsRelPath);
+        var url = $"{ItemsBase(conn)}?path={Uri.EscapeDataString(path)}" +
+                  $"&versionDescriptor.version={Uri.EscapeDataString(conn.Branch)}" +
+                  $"&versionDescriptor.versionType=branch" +
+                  $"&$format=octetStream&api-version={ApiVersion}";
+        using var req = Authenticated(HttpMethod.Get, url, conn.Token);
+        req.Headers.Accept.Clear();
+        req.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/octet-stream"));
+        using var res = await http.SendAsync(req, ct);
+        if (res.StatusCode == HttpStatusCode.NotFound) return null;
+        res.EnsureSuccessStatusCode();
+        return await res.Content.ReadAsByteArrayAsync(ct);
+    }
+
     private async Task<AdoItem?> GetItemAsync(
         WikiConnection conn, string path, bool includeContent, CancellationToken ct)
     {

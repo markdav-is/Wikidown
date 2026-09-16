@@ -200,4 +200,15 @@ public class MarkdownIrBuilderTests : IDisposable
 
         Assert.IsType<IrHtmlPlaceholder>(Assert.Single(blocks));
     }
+
+    [Fact]
+    public void Reference_link_definitions_are_skipped_but_still_resolve()
+    {
+        var blocks = MarkdownIrBuilder.Build(
+            "See [the site][home].\n\n[home]: https://example.com\n", PagePath.Parse("/A"), _repo);
+
+        var paragraph = Assert.IsType<IrParagraph>(Assert.Single(blocks));
+        var link = Assert.Single(paragraph.Runs.OfType<IrExternalLink>());
+        Assert.Equal("https://example.com", link.Url);
+    }
 }

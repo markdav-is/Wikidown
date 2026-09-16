@@ -43,4 +43,8 @@ public interface IWikiBackend
 
     Task<CommitResult> WritePageAsync(
         WikiConnection conn, CommitRequest request, CancellationToken ct = default);
+
+    /// <summary>Raw bytes of a non-page file under the docs folder (images in .attachments); null if missing.</summary>
+    Task<byte[]?> ReadBytesAsync(
+        WikiConnection conn, string docsRelPath, CancellationToken ct = default);
 }

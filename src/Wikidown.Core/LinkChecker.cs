@@ -71,6 +71,41 @@ public static partial class LinkChecker
         return Path.GetFullPath(combined);
     }
 
+    /// <summary>
+    /// Resolves a relative link/image target as written on <paramref name="page"/> to a
+    /// forward-slash path relative to the docs root, with no filesystem access.
+    /// A leading "/" is the docs root (the Azure DevOps wiki convention for
+    /// <c>/.attachments/x.png</c>); otherwise the target is relative to the page's folder.
+    /// Returns null for external targets, fragments, or paths that climb above the root.
+    /// </summary>
+    public static string? ResolveDocsRelativePath(PagePath page, string target)
+    {
+        var withoutFragment = target.Split('#')[0].Trim();
+        if (withoutFragment.Length == 0 || IsExternal(withoutFragment)) return null;
+        if (withoutFragment.StartsWith("data:", StringComparison.OrdinalIgnoreCase)) return null;
+
+        var stack = new List<string>();
+        if (!withoutFragment.StartsWith('/'))
+        {
+            var pageDir = Path.GetDirectoryName(page.ToFilePath()) ?? string.Empty;
+            stack.AddRange(pageDir.Split(['/', '\\'], StringSplitOptions.RemoveEmptyEntries));
+        }
+
+        foreach (var seg in withoutFragment.Split('/', StringSplitOptions.RemoveEmptyEntries))
+        {
+            if (seg == ".") continue;
+            if (seg == "..")
+            {
+                if (stack.Count == 0) return null;
+                stack.RemoveAt(stack.Count - 1);
+                continue;
+            }
+            stack.Add(Uri.UnescapeDataString(seg));
+        }
+
+        return stack.Count == 0 ? null : string.Join('/', stack);
+    }
+
     [GeneratedRegex(@"!?\[[^\]]*\]\(([^)\s]+)(?:\s+""[^""]*"")?\)")]
     internal static partial Regex LinkTarget();
 }

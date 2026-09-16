@@ -349,31 +349,35 @@ Blazor WASM PWA editor + marketing site hosted on GitHub Pages.
       level of `>>` nesting. Verified by reading back a rendered PDF with
       nested quotes containing bold/link runs, not just the test suite.
 
-17. **Web editor: export the wiki to PDF via browser print.** *(shipped)*
-    - `Wikidown.Web`'s `/export` page (linked from a new toolbar button on
-      `/browse`) assembles the whole connected wiki into one print-friendly
-      HTML document — `PdfExportHtmlBuilder` walks the `.order`-respecting
-      `NavTree`, strips each page's breadcrumb, rewrites internal wiki
-      links to in-page `#page-...` anchors, and renders with the same
-      Markdig pipeline (`UsePipeTables`/`UseAutoIdentifiers`) the CLI's IR
-      builder uses — then hands off to `window.print()` for the browser's
-      own Save-as-PDF.
-    - Deliberately not CLI parity: MigraDoc can't run in Blazor WASM, and
-      routing through `Wikidown.Api` to render server-side would mean
-      sending repo contents to the server for the first time — a real
-      change to `docs/Editor.md`'s "the Functions app never sees your repo
-      contents" privacy claim, not something to do silently. This path
-      never leaves the browser, so nothing about that claim changes. No
-      real embedded PDF outline/bookmarks or MigraDoc typography — "good
-      enough browser print," not a second renderer to keep in sync with
-      the CLI's.
-    - Verified via the browser preview against this repo's own `/docs`
-      wiki: nav-ordered TOC, breadcrumb stripped, and internal links
-      (absolute, same-level, and multi-level `../`) all resolve to the
-      right in-page anchor — checked with a standalone harness exercising
-      `PdfExportHtmlBuilder` directly, since GitHub's Contents API doesn't
-      allow a truly anonymous (empty-token) read against a public repo
-      from this backend.
+17. **Web editor: export the wiki to a downloaded PDF, CLI parity.** *(shipped)*
+    - `Wikidown.Web`'s `/export` page (linked from a toolbar button on
+      `/browse`) loads every page of the connected wiki in `.order` order,
+      fetches the images each page references through the provider API,
+      and runs the *same* `Wikidown.Pdf` MigraDoc renderer the CLI's
+      `export-pdf` uses — cover, in-doc TOC, bookmarks, embedded DejaVu —
+      entirely in the browser, then hands the bytes to a Blob download
+      (`wwwroot/js/wikidown.js`). No print dialog, no server round-trip,
+      so `docs/Editor.md`'s "the Functions app never sees your repo
+      contents" claim still holds.
+    - The IR builder's only filesystem dependency was link/image lookup,
+      now behind `IPdfPageSource` (`Core/PdfExport/PdfPageSource.cs`):
+      `RepositoryPdfPageSource` wraps the on-disk `WikiRepository` for
+      the CLI and VSIX; `InMemoryPdfPageSource` takes known page paths
+      plus an image callback, and `WikiPdfContent.Build(...)` accepts
+      pages already in memory. Images arrive as `base64:` names, which
+      MigraDoc loads directly; PDFsharp only decodes PNG/JPEG, so the
+      web path re-encodes anything else (webp, svg, gif) to PNG through a
+      canvas before rendering.
+    - The earlier browser-print path (`PdfExportHtmlBuilder`) is gone.
+      Its premise — that MigraDoc can't run in Blazor WASM — turned out
+      to be wrong: PDFsharp-MigraDoc 6.2 publishes and runs under the
+      trimmed WASM build with no IL warnings.
+    - Found along the way: pages with reference-style link definitions
+      (`[id]: url`) made the IR builder throw, which also broke the CLI's
+      `export-pdf` on such wikis; those blocks are now skipped.
+    - Verified on the published (trimmed) build against this repo's own
+      `/docs`: 43-page PDF, valid `%PDF-1.7`, DejaVu subsets embedded, same
+      object layout as the CLI's committed `Wikidown-Docs.pdf`.
 
 18. **VS extension: "Export to PDF..." context menu, on any node.** *(shipped)*
     - Right-clicking the project root, a folder, or a page in Solution

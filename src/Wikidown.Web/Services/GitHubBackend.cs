@@ -157,10 +157,26 @@ public sealed class GitHubBackend(HttpClient http) : IWikiBackend
         return new CommitResult(payload.Content.Sha ?? string.Empty);
     }
 
+    public async Task<byte[]?> ReadBytesAsync(
+        WikiConnection conn, string docsRelPath, CancellationToken ct = default)
+    {
+        var path = Combine(conn.DocsPath, docsRelPath);
+        var url = $"{ApiBase}/repos/{conn.Owner}/{conn.Repo}/contents/{EscapePath(path)}?ref={Uri.EscapeDataString(conn.Branch)}";
+        using var req = Authenticated(HttpMethod.Get, url, conn.Token);
+        req.Headers.Accept.Clear();
+        req.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github.raw+json"));
+        using var res = await http.SendAsync(req, ct);
+        if (res.StatusCode == HttpStatusCode.NotFound) return null;
+        res.EnsureSuccessStatusCode();
+        return await res.Content.ReadAsByteArrayAsync(ct);
+    }
+
     private static HttpRequestMessage Authenticated(HttpMethod method, string url, string token)
     {
         var req = new HttpRequestMessage(method, url);
-        req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        // Empty token -> anonymous (public repos are readable without auth).
+        if (!string.IsNullOrWhiteSpace(token))
+            req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         req.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github+json"));
         req.Headers.Add("X-GitHub-Api-Version", "2022-11-28");
         return req;

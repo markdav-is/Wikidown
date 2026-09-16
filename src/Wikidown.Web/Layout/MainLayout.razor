@@ -1,4 +1,6 @@
 @inherits LayoutComponentBase
+@inject NavigationManager Nav
+@implements IDisposable
 
 <MudThemeProvider Theme="_theme" IsDarkMode="false" />
 <MudPopoverProvider />
@@ -35,7 +37,7 @@
     </MudDrawer>
 
     <MudMainContent>
-        <MudContainer MaxWidth="MaxWidth.Large" Class="py-4">
+        <MudContainer MaxWidth="@(IsBrowse ? MaxWidth.ExtraLarge : MaxWidth.Large)" Class="py-4">
             @Body
         </MudContainer>
     </MudMainContent>
@@ -54,5 +56,30 @@
         }
     };
 
+    private bool _wasBrowse;
+
+    private bool IsBrowse =>
+        Nav.ToBaseRelativePath(Nav.Uri).StartsWith("browse", StringComparison.OrdinalIgnoreCase);
+
+    protected override void OnInitialized()
+    {
+        _wasBrowse = IsBrowse;
+        _drawerOpen = !_wasBrowse;
+        Nav.LocationChanged += OnLocationChanged;
+    }
+
+    // Browse has its own tree, so the app drawer collapses on entry and comes back on exit.
+    // Only react to crossing the browse boundary so a manual toggle survives page-to-page navigation.
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        var isBrowse = IsBrowse;
+        if (isBrowse == _wasBrowse) return;
+        _wasBrowse = isBrowse;
+        _drawerOpen = !isBrowse;
+        StateHasChanged();
+    }
+
     private void ToggleDrawer() => _drawerOpen = !_drawerOpen;
+
+    public void Dispose() => Nav.LocationChanged -= OnLocationChanged;
 }

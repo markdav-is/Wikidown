@@ -28,3 +28,6 @@ Thumbs.db
 ## VSIX build outputs
 src/Wikidown.Vs/extension.vsixmanifest
 *.vsix
+
+# Local dotnet publish output (CI publishes here too, but never commits it)
+publish/

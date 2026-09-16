@@ -162,6 +162,19 @@ public sealed class GitLabBackend(HttpClient http) : IWikiBackend
         }
     }
 
+    public async Task<byte[]?> ReadBytesAsync(
+        WikiConnection conn, string docsRelPath, CancellationToken ct = default)
+    {
+        var path = Combine(conn.DocsPath, docsRelPath);
+        var url = $"{ApiBase(conn)}/projects/{ProjectId(conn)}/repository/files/" +
+                  $"{Uri.EscapeDataString(path)}/raw?ref={Uri.EscapeDataString(conn.Branch)}";
+        using var req = Authenticated(HttpMethod.Get, url, conn.Token);
+        using var res = await http.SendAsync(req, ct);
+        if (res.StatusCode == HttpStatusCode.NotFound) return null;
+        res.EnsureSuccessStatusCode();
+        return await res.Content.ReadAsByteArrayAsync(ct);
+    }
+
     private async Task<GlFile?> GetFileAsync(WikiConnection conn, string path, CancellationToken ct)
     {
         var url = $"{ApiBase(conn)}/projects/{ProjectId(conn)}/repository/files/" +
