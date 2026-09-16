@@ -348,6 +348,21 @@ Blazor WASM PWA editor + marketing site hosted on GitHub Pages.
       MigraDoc rendering — left border, italic, indented, deeper for each
       level of `>>` nesting. Verified by reading back a rendered PDF with
       nested quotes containing bold/link runs, not just the test suite.
+    - Follow-up (2026-09-15): pipe tables split the page width equally
+      across columns, so a `DC | Tidbit | Check` table gave a two-digit
+      column a third of the page and wrapped the prose column hard. New
+      `TableColumnLayout` (in `Wikidown.Pdf`) sizes columns to content the
+      way HTML auto-layout does: per column, min = widest unbreakable token,
+      pref = widest unwrapped line, both estimated from character counts
+      (DejaVu Sans, ~6pt/char at 10pt, bold +10%) so it's deterministic
+      and WASM-identical without PdfSharp measuring. Narrow columns get
+      their full preferred width first (smallest preference up, as long as
+      the rest can still hit their minimums); the remainder is shared by
+      the wide columns in proportion to what they wanted beyond their
+      minimum; if even the minimums overflow, they scale down. A table
+      whose content fits is narrower than the page rather than stretched.
+      Covered by `TableColumnLayoutTests`; verified by rendering the two
+      motivating tables plus a tiny table and a three-prose-column table.
 
 17. **Web editor: export the wiki to a downloaded PDF, CLI parity.** *(shipped)*
     - `Wikidown.Web`'s `/export` page (linked from a toolbar button on

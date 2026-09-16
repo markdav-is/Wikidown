@@ -339,8 +339,8 @@ public static class MigraDocRenderer
         var mdTable = section.AddTable();
         mdTable.Borders.Width = Unit.FromPoint(0.5);
         var columnCount = Math.Max(table.HeaderCells.Count, 1);
-        for (var i = 0; i < columnCount; i++)
-            mdTable.AddColumn(PageContentWidth / columnCount);
+        foreach (var width in TableColumnLayout.ComputeWidths(table, PageContentWidth.Point))
+            mdTable.AddColumn(Unit.FromPoint(width));
 
         var headerRow = mdTable.AddRow();
         headerRow.Format.Font.Bold = true;
