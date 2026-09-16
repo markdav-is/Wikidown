@@ -4,10 +4,10 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Wikidown — an opinionated, tool-supported wiki for your /docs folder</title>
-  <meta name="description" content="An opinionated, tool-supported wiki that lives in /docs of any code repo. Edit in the browser, commit straight to your repo. CLI and MCP server keep docs consistent for humans and AI agents alike." />
+  <meta name="description" content="An opinionated, tool-supported wiki that lives in /docs of any code repo. Edit in the browser, commit straight to your repo. The CLI keeps docs consistent for humans and AI agents alike." />
   <meta name="theme-color" content="#1f2a40" />
   <meta property="og:title" content="Wikidown" />
-  <meta property="og:description" content="A wiki that lives in /docs. Browser editor + CLI + MCP server for AI agents." />
+  <meta property="og:description" content="A wiki that lives in /docs. Browser editor + CLI + drop-in agent configs." />
   <meta property="og:type" content="website" />
   <link rel="icon" type="image/x-icon" href="favicon.ico" />
   <link rel="icon" type="image/png" sizes="32x32" href="favicon.png" />
@@ -111,7 +111,7 @@ git add docs &amp;&amp; git commit -m "Publish wiki" &amp;&amp; git push
           <div class="gs-lane">
             <h3>Starter theme with a real nav tree</h3>
             <p>A left navigation that follows your <code>.order</code> files, active page highlighted, sections collapsible, responsive on phones. Styled like this page; it's plain CSS and Liquid in your repo, so restyle it however you like.</p>
-            <p class="gs-note">The tree is data (<code>_data/navigation.yml</code>) the CLI and MCP server regenerate on every change, so it never drifts from the wiki. Not on GitHub? <code>wikidown export-html --output public</code> renders the same theme in .NET — no Jekyll, no Ruby — for GitLab Pages, Azure Static Web Apps, or any static host.</p>
+            <p class="gs-note">The tree is data (<code>_data/navigation.yml</code>) the CLI regenerates on every change, so it never drifts from the wiki. Not on GitHub? <code>wikidown export-html --output public</code> renders the same theme in .NET — no Jekyll, no Ruby — for GitLab Pages, Azure Static Web Apps, or any static host.</p>
           </div>
         </div>
       </div>
@@ -120,7 +120,7 @@ git add docs &amp;&amp; git commit -m "Publish wiki" &amp;&amp; git push
     <section id="agents" class="section section-alt">
       <div class="container">
         <h2>Built for humans <em>and</em> agents</h2>
-        <p class="section-lead">Ship the same <code>/docs</code> wiki from a terminal, an MCP host, or a prebuilt agent config.</p>
+        <p class="section-lead">Ship the same <code>/docs</code> wiki from a terminal, an AI coding agent, or a prebuilt agent config.</p>
         <div class="features features-3">
           <div class="card card-agent">
             <div class="card-head">
@@ -134,12 +134,12 @@ wikidown new "/Getting Started/Format"</code></pre>
           </div>
           <div class="card card-agent">
             <div class="card-head">
-              <span class="card-kicker">MCP server</span>
-              <h3>wikidown-mcp</h3>
+              <span class="card-kicker">Export</span>
+              <h3>PDF and HTML</h3>
             </div>
-            <p>Stdio MCP server for Claude Code, Claude Desktop, or VS Code (Copilot). Nine tools cover the full read/write surface.</p>
-            <pre><code>dotnet tool install -g Wikidown.Mcp
-# wire into .mcp.json or .vscode/mcp.json</code></pre>
+            <p>One linked PDF with cover, contents, and bookmarks, or the starter theme rendered as static HTML for any host. Same renderer in the CLI, Visual Studio, and the browser editor.</p>
+            <pre><code>wikidown export-pdf --output wiki.pdf
+wikidown export-html --output public</code></pre>
           </div>
           <div class="card card-agent">
             <div class="card-head">

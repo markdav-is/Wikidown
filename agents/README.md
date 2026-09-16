@@ -1,7 +1,7 @@
 # Wikidown agent configs
 
 Drop-in configs that teach AI coding assistants how to maintain a Wikidown
-wiki via the MCP server (or, where MCP is unavailable, via the `wikidown` CLI).
+wiki through the `wikidown` CLI.
 
 The fastest install is the CLI scaffolder — from your repo root:
 
@@ -32,19 +32,20 @@ they just load it from different folders:
 | ----------------------------- | ---------------------------------- | ---------------------------------- |
 | `skills/wikidown/SKILL.md`    | `.claude/skills/wikidown/SKILL.md` | `.github/skills/wikidown/SKILL.md` |
 
-The skill carries the format rules, tool cheat sheet, CLI fallback, and
-workflow. The per-agent files below are thin wiring on top of it.
+The skill carries the format rules, the command cheat sheet, the workflow,
+and two fallbacks: what a chat-only host with no shell should do (suggest
+the commands), and how to edit by hand if the CLI cannot run at all. The
+per-agent files below are thin wiring on top of it.
 
 ## Claude Code
 
-| File                                  | Where to put it in your repo        |
-| ------------------------------------- | ----------------------------------- |
-| `claude/wikidown.subagent.md`         | `.claude/agents/wikidown-editor.md` |
-| `claude/CLAUDE.md`                    | append to your `CLAUDE.md`          |
-| `../samples/mcp/claude-code.mcp.json` | `.mcp.json`                         |
+| File                          | Where to put it in your repo        |
+| ----------------------------- | ----------------------------------- |
+| `claude/wikidown.subagent.md` | `.claude/agents/wikidown-editor.md` |
+| `claude/CLAUDE.md`            | append to your `CLAUDE.md`          |
 
-The `.mcp.json` registers `wikidown-mcp` as an MCP server. The subagent owns
-`/docs` edits; the CLAUDE.md snippet tells the main agent to delegate to it.
+The subagent owns `/docs` edits and has Bash for the CLI; the CLAUDE.md
+snippet tells the main agent to delegate to it.
 
 ## GitHub Copilot
 
@@ -53,24 +54,14 @@ The `.mcp.json` registers `wikidown-mcp` as an MCP server. The subagent owns
 | `copilot/copilot-instructions.md` | `.github/copilot-instructions.md`        |
 | `copilot/wikidown.agent.md`       | `.github/agents/wikidown.agent.md`       |
 | `copilot/wikidown.chatmode.md`    | `.github/chatmodes/wikidown.chatmode.md` |
-| `copilot/mcp.json`                | `.vscode/mcp.json`                       |
 
 The instructions file is loaded automatically into every Copilot chat in the
 repo. The custom agent handles delegated wiki work (including the Copilot
 coding agent on github.com); the chat mode adds a `wikidown` mode in VS Code.
-The MCP config exposes the same tools to Copilot as `wikidown_wiki_*`.
+Both run the CLI through the terminal tool.
 
 ## Both
 
-Both agents need the `wikidown-mcp` binary on `PATH`:
-
-```bash
-dotnet tool install -g Wikidown.Mcp
-```
-
-Or run from source via the `dotnet run` form shown in the sample MCP configs.
-
-The MCP server is NuGet-only and needs the .NET SDK/runtime — there is no
-self-contained `wikidown-mcp` binary. On machines without .NET, the shared
-skill's CLI fallback keeps agents working through the self-contained
-`wikidown` binary; the MCP configs stay dormant until .NET is installed.
+Both agents need `wikidown` on `PATH`: the NuGet global tool when .NET is
+present, or the self-contained binary from the install script when it is
+not. There is no separate server to install or wire up.

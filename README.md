@@ -3,7 +3,7 @@
 A structured markdown wiki that lives in `/docs` of any code repo — plain
 pages, folder-based hierarchy, and `.order` navigation files. The same format
 Azure DevOps wikis use, readable by humans on disk, editable by AI agents
-through MCP, and browsable in Visual Studio or the web editor.
+through the CLI, and browsable in Visual Studio or the web editor.
 
 **Site:** [wikidown.org](https://wikidown.org) · **Editor:** [wikidown.app](https://wikidown.app) · **Docs:** [`/docs`](./docs) (a Wikidown wiki, naturally)
 
@@ -34,12 +34,12 @@ wikidown init
 Run from your repo root, `wikidown init`:
 
 - seeds `docs/Home.md` if the wiki is empty;
-- drops in **agent configs** so AI assistants edit the wiki through proper
-  tools instead of raw file writes:
-  - Claude Code: `.mcp.json`, a `wikidown` skill, and a `wikidown-editor`
-    subagent, plus a `CLAUDE.md` section;
-  - GitHub Copilot: `.vscode/mcp.json`, `.github/copilot-instructions.md`,
-    an agent, a chat mode, and a skill.
+- drops in **agent configs** so AI assistants edit the wiki through the
+  CLI instead of raw file writes:
+  - Claude Code: a `wikidown` skill and a `wikidown-editor` subagent, plus
+    a `CLAUDE.md` section;
+  - GitHub Copilot: `.github/copilot-instructions.md`, an agent, a chat
+    mode, and a skill.
 
 Use `--agents claude|copilot|all|none` to pick, `--force` to overwrite, and
 `--root <folder>` if your wiki isn't in `docs/`.
@@ -54,8 +54,8 @@ Scaffolds a Jekyll site into the wiki folder — `_config.yml` tuned for the
 Wikidown format, a starter theme with a left-nav tree driven by your
 `.order` files, and an `index.html` redirect to Home — then push and set
 **Settings → Pages → Source: main, /docs**. The nav data
-(`_data/navigation.yml`) is regenerated automatically by the CLI and MCP
-server on every change.
+(`_data/navigation.yml`) is regenerated automatically by the CLI on every
+change.
 
 For any other host — GitLab Pages, Azure Static Web Apps, Netlify, a file
 share — or to preview locally, render the same theme in .NET instead; no
@@ -68,22 +68,15 @@ wikidown export-html --output public
 Details for both in
 [`/docs/Getting-Started/Publishing-to-GitHub-Pages`](./docs/Getting-Started/Publishing-to-GitHub-Pages.md).
 
-### Give agents the MCP server
+### Give agents the CLI
 
-The configs above launch the Wikidown MCP server, so install it once globally:
-
-```bash
-dotnet tool install -g Wikidown.Mcp
-```
-
-The MCP server needs the .NET SDK/runtime (it has no self-contained binary
-yet). On machines without .NET that used the install-script binary, agents
-fall back to the equivalent `wikidown` CLI commands per the shared skill.
-
-That's it — Claude Code / Copilot in that repo now have `wiki_list`,
-`wiki_read`, `wiki_write`, `wiki_new`, `wiki_move`, `wiki_delete`,
-`wiki_reorder`, `wiki_search`, and `wiki_walk` tools that keep `.order` files
-consistent. Manual configs for other hosts are in [`samples/mcp/`](./samples/mcp/).
+The configs above teach Claude Code and Copilot to run `wikidown` from the
+terminal — `list`, `read`, `edit`, `write-section`, `append`, `new`,
+`move`, `delete`, `reorder`, `search`, `walk`, and the exports — so
+`.order` files, breadcrumbs, and links stay consistent. The only
+prerequisite is the same `wikidown` binary you installed above. Hosts that
+cannot run a shell get the command list from the skill and suggest the
+commands to you instead. Details in [`agents/`](./agents/).
 
 ### See the wiki in Visual Studio
 
@@ -122,12 +115,10 @@ All commands accept `--root <folder>` (default `docs`).
 | --- | --- |
 | [`src/Wikidown.Core`](./src/Wikidown.Core/) | Library: page model, `.order` handling, repo, search ([NuGet](https://www.nuget.org/packages/Wikidown.Core)) |
 | [`src/Wikidown.Cli`](./src/Wikidown.Cli/) | `wikidown` dotnet tool ([NuGet](https://www.nuget.org/packages/Wikidown.Cli)) |
-| [`src/Wikidown.Mcp`](./src/Wikidown.Mcp/) | `wikidown-mcp` stdio MCP server ([NuGet](https://www.nuget.org/packages/Wikidown.Mcp)) |
 | [`src/Wikidown.Vs`](./src/Wikidown.Vs/) | Visual Studio extension ([Marketplace](https://marketplace.visualstudio.com/items?itemName=MarkDavis.wikidown)) |
 | [`src/Wikidown.Web`](./src/Wikidown.Web/) | Blazor WASM editor PWA ([wikidown.app](https://wikidown.app)) |
 | [`src/Wikidown.Html`](./src/Wikidown.Html/) | Starter theme + static HTML export (`wikidown export-html`, Markdig + Fluid) |
 | [`agents/`](./agents/) | Drop-in agent configs (installed by `wikidown init`) |
-| [`samples/mcp/`](./samples/mcp/) | Example MCP configs for various hosts |
 | [`docs/`](./docs/) | This repo's own wiki — also the source of [wikidown.org](https://wikidown.org), published with `wikidown export-html` (dogfood twice over) |
 
 ## Format in one breath

@@ -15,8 +15,8 @@
     <RepositoryType>git</RepositoryType>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageIcon>icon.png</PackageIcon>
-    <PackageTags>wiki;markdown;docs;mcp;cli</PackageTags>
-    <VersionPrefix>0.7.0</VersionPrefix>
+    <PackageTags>wiki;markdown;docs;cli;agents</PackageTags>
+    <VersionPrefix>0.8.0</VersionPrefix>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
   </PropertyGroup>

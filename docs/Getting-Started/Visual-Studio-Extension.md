@@ -71,9 +71,9 @@ file. Edit the file to point to a different location:
     current); otherwise the extension falls back to a copy bundled inside
     the VSIX, so no separate install step is required. Offers to open the
     finished PDF when done.
-- Everything stays consistent with the `wikidown` CLI and the `wiki_*` MCP
-  tools, which remain fully usable side by side — the tree refreshes live when
-  they change files or reorder `.order`.
+- Everything stays consistent with the `wikidown` CLI, which remains fully
+  usable side by side — the tree refreshes live when it changes files or
+  reorders `.order`.
 - The project node is **display-only** — it never appears in Build, Rebuild, or
   Clean, and adds no compile items to the solution.
 
@@ -88,6 +88,6 @@ EndProject
 
 ## Related
 
-- [CLI](../CLI.md) — `wikidown` dotnet tool for editing from the terminal or a CI pipeline.
-- [MCP Server](../MCP-Server.md) — stdio MCP server for AI agents (Claude, Copilot).
+- [CLI](../CLI.md) — `wikidown` dotnet tool for editing from the terminal, a CI pipeline, or an AI agent.
+- [Agents](../Agents.md) — drop-in Claude Code and GitHub Copilot configs that drive the CLI.
 - [Editor](../Editor.md) — browser-based Blazor editor that commits directly to your repo.

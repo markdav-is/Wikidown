@@ -39,7 +39,7 @@ Everything lands inside the wiki root:
 | File | Purpose |
 |---|---|
 | `_config.yml` | Jekyll config: GFM markdown, the three GitHub-bundled plugins (`jekyll-relative-links`, `jekyll-titles-from-headings`, `jekyll-default-layout`), `include: [.attachments]` so images work (Jekyll skips dot-folders by default), default layout `wikidown`. Also the home of Wikidown's own site settings: `repository_url` (GitHub link in the top bar), `favicon`, and `wikidown.exclude_from_site` (below). |
-| `_data/navigation.yml` | The nav tree, generated from `.order`. **Regenerated automatically** by the CLI and MCP server on every write/move/delete/reorder once it exists — never edit by hand. |
+| `_data/navigation.yml` | The nav tree, generated from `.order`. **Regenerated automatically** by the CLI on every write/move/delete/reorder once it exists — never edit by hand. |
 | `_layouts/wikidown.html`, `_includes/nav-tree.html` | The starter theme: top bar, collapsible left nav (active page highlighted, ancestors expanded), content column, footer. Responsive — the nav becomes a slide-in drawer on narrow screens. |
 | `assets/wikidown.css` | Styling, same palette as wikidown.org. Edit freely; `pages` never overwrites it without `--force`. |
 | `index.html` | Redirects the site root to `/Home.html` (or the first top-level page if there is no Home). Replace it with a hand-authored landing page if you want one — wikidown.org does exactly that. |
@@ -61,7 +61,7 @@ wikidown:
 ```
 
 This is a **publishing** concern only: excluded pages remain first-class
-for the CLI, MCP server, editor, and `check-links` — they just produce no
+for the CLI, editor, and `check-links` — they just produce no
 `.html` and no nav entry. `export-html` honors it fully;
 `_data/navigation.yml` is generated without them too, so the Jekyll path
 hides them from the nav — but GitHub's builder still *emits* their pages,

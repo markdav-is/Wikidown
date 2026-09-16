@@ -8,7 +8,7 @@ namespace Wikidown.Core;
 //       - /Testing
 //
 // This is a publishing concern only: excluded pages stay first-class for
-// the CLI, MCP server, editor, and check-links. Parsed here (not in
+// the CLI, editor, and check-links. Parsed here (not in
 // Wikidown.Html) because JekyllNavigation needs it too.
 public static class PublishExclusions
 {

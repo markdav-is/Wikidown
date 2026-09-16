@@ -10,8 +10,8 @@ description: "An opinionated, tool-supported wiki that lives in /docs of any cod
 repository_url: https://github.com/markdav-is/Wikidown
 favicon: /favicon.ico
 
-# Publishing only — these stay first-class in the repo, the CLI, the MCP
-# server, and the editor; they just don't ship to wikidown.org.
+# Publishing only — these stay first-class in the repo, the CLI, and the
+# editor; they just don't ship to wikidown.org.
 wikidown:
   exclude_from_site:
     - /Meta

@@ -39,5 +39,5 @@ EndProject
 ## Links
 
 - [GitHub repository](https://github.com/markdav-is/Wikidown)
-- [CLI & MCP server](https://www.nuget.org/packages/Wikidown.Cli)
+- [CLI](https://www.nuget.org/packages/Wikidown.Cli)
 - [WASM editor](https://markdav-is.github.io/Wikidown/app/)

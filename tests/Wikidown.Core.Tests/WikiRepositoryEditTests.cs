@@ -172,7 +172,7 @@ public class WikiRepositoryEditTests : IDisposable
         var missing = PagePath.Parse("/Parent/Missing");
         var ex = Assert.Throws<FileNotFoundException>(() => _repo.Edit(missing, "a", "b"));
         Assert.Contains("Page not found: /Parent/Missing", ex.Message);
-        Assert.Contains("wiki_new", ex.Message);
+        Assert.Contains("wikidown new", ex.Message);
         Assert.False(File.Exists(Path.Combine(_root, "Parent", "Missing.md")));
         Assert.DoesNotContain("Missing", File.ReadAllText(Path.Combine(_root, "Parent", ".order")));
     }

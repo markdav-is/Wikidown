@@ -3,7 +3,7 @@
 # Handy Prompts
 
 Once your AI agent is wired up (see [Agents](Agents.md)), you don't need to
-remember `wikidown` CLI flags or MCP tool names — just describe what you
+remember `wikidown` CLI verbs or flags — just describe what you
 want in plain language. These are example prompts for the everyday wiki
 work that comes up after initial setup.
 

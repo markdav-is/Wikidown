@@ -2,23 +2,21 @@
 
 # Updating
 
-How a downstream repo picks up new Wikidown releases — CLI/MCP tool
-versions, agent config files, and the VS extension each update differently.
+How a downstream repo picks up new Wikidown releases — the CLI tool
+version, agent config files, and the VS extension each update differently.
 
-## CLI and MCP server (NuGet global tools)
+## CLI (NuGet global tool)
 
-`Wikidown.Cli` and `Wikidown.Mcp` are published to NuGet as global .NET
-tools. Update them with:
+`Wikidown.Cli` is published to NuGet as a global .NET tool. Update it with:
 
 ```sh
 dotnet tool update -g Wikidown.Cli
-dotnet tool update -g Wikidown.Mcp
 ```
 
 **A push to `main` doesn't always mean a new version is available.** The
 [`release.yml`](https://github.com/markdav-is/Wikidown/blob/main/.github/workflows/release.yml)
 workflow runs on every push to `main` that touches `Directory.Build.props`,
-`src/Wikidown.Cli/**`, `src/Wikidown.Mcp/**`, `src/Wikidown.Core/**`,
+`src/Wikidown.Cli/**`, `src/Wikidown.Core/**`,
 `assets/**`, or the workflow file itself, and it packs + pushes to NuGet with
 `--skip-duplicate`. The package version comes from `<VersionPrefix>` in
 `Directory.Build.props` — and that value is **not** auto-incremented per
@@ -53,12 +51,9 @@ Native binaries are built by
 when a maintainer pushes a `cli-v*` tag — a **separate release track** from
 NuGet, so the newest NuGet version and the newest native binary aren't
 necessarily the same; if the script reinstalls and a fix still isn't there,
-check whether a `cli-v*` tag has been cut since the fix merged. The MCP
-server has no native binary — it's NuGet-only and always needs .NET (see
-[MCP Server](../MCP-Server.md); agents fall back to the CLI when it's
-absent).
+check whether a `cli-v*` tag has been cut since the fix merged.
 
-## Agent configs (`.claude/`, `.github/`, `.vscode/mcp.json`, `CLAUDE.md`)
+## Agent configs (`.claude/`, `.github/`, `CLAUDE.md`)
 
 These files are copied into a downstream repo once, by `wikidown init` (see
 [CLI](../CLI.md) and [Agents](../Agents.md)) — they don't auto-update. To
@@ -88,7 +83,7 @@ beyond letting Visual Studio check for extension updates as usual — see
 
 | Component | Trigger to publish | How consumers update |
 |---|---|---|
-| `Wikidown.Cli` / `Wikidown.Mcp` (NuGet) | Push to `main` touching Core/CLI/MCP/`Directory.Build.props`, **and** a `VersionPrefix` bump | `dotnet tool update -g Wikidown.Cli` / `Wikidown.Mcp` |
+| `Wikidown.Cli` (NuGet) | Push to `main` touching Core/CLI/`Directory.Build.props`, **and** a `VersionPrefix` bump | `dotnet tool update -g Wikidown.Cli` |
 | Self-contained CLI binary | Push of a `cli-v*` tag | Re-run the wikidown.org install script |
 | Agent configs | N/A — copied at `init` time | `wikidown init --agents all --force` |
 | VS extension (VSIX) | Push of a `vsix-v*` tag | Automatic via VS Marketplace update check |

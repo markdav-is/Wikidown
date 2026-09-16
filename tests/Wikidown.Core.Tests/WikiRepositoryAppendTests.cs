@@ -179,7 +179,7 @@ public class WikiRepositoryAppendTests : IDisposable
     {
         var ex = Assert.Throws<FileNotFoundException>(() => _repo.Append(PagePath.Parse("/Nope"), "x"));
         Assert.Contains("Page not found: /Nope", ex.Message);
-        Assert.Contains("wiki_new", ex.Message);
+        Assert.Contains("wikidown new", ex.Message);
         Assert.False(File.Exists(Path.Combine(_root, "Nope.md")));
     }
 

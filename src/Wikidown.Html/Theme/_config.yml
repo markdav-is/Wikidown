@@ -13,7 +13,7 @@ description: ""
 # favicon: /favicon.ico
 
 # Subtrees to leave out of the published site (nav and pages). Publishing
-# only — the pages stay first-class for the CLI, MCP server, and editor.
+# only — the pages stay first-class for the CLI and editor.
 # `export-html` honors this fully; GitHub's Jekyll builder only hides them
 # from the nav, so also list them under `exclude:` below when using it.
 # wikidown:

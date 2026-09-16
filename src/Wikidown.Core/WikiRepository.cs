@@ -91,7 +91,7 @@ public sealed class WikiRepository
         var file = ResolveFile(path);
         if (!File.Exists(file))
             throw new FileNotFoundException(
-                $"Page not found: {path.ToLinkPath()} (patch tools never create pages; use wiki_new / 'wikidown new' first)", file);
+                $"Page not found: {path.ToLinkPath()} (patch commands never create pages; use 'wikidown new' first)", file);
         return file;
     }
 

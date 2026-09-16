@@ -32,6 +32,7 @@ public static class CommandRunner
             return parsed.Command switch
             {
                 "list" => Commands.List(repo, parsed, stdout),
+                "walk" => Commands.Walk(repo, parsed, stdout),
                 "read" => Commands.Read(repo, parsed, stdout),
                 "write" => Commands.Write(repo, parsed, stdout),
                 "edit" => Commands.Edit(repo, parsed, stdout),
@@ -99,6 +100,7 @@ public static class CommandRunner
         w.WriteLine();
         w.WriteLine("Commands:");
         w.WriteLine("  list     [--path /Link/Path]                 list children of a page (or root)");
+        w.WriteLine("  walk     [--path /Link/Path]                 list every page in .order order (or a subtree)");
         w.WriteLine("  read     --path /Link/Path [--section H]     print page markdown (or one section) to stdout");
         w.WriteLine("  write    --path /Link/Path [--file F | --stdin]  write/overwrite a page");
         w.WriteLine("  edit     --path /P (--old T | --old-file F) (--new T | --new-file F | --stdin) [--all]");
@@ -156,6 +158,26 @@ public static class CommandRunner
 
             """,
 
+        ["walk"] =
+            """
+            Usage:
+              wikidown walk [--path /Link/Path] [--root <path>]
+
+            List every page in the wiki, depth-first in .order order, one per
+            line as 'path<TAB>title'. With --path, list only that page's
+            descendants. Prints '(empty wiki)' when there is nothing to list.
+
+            Options:
+              --path    Wiki link path to walk from (default: the whole wiki)
+              --root    Path to the docs folder (default: ./docs)
+              -h, --help
+
+            Examples:
+              wikidown walk
+              wikidown walk --path /Getting-Started
+
+            """,
+
         ["read"] =
             """
             Usage:
@@ -178,7 +200,7 @@ public static class CommandRunner
             Examples:
               wikidown read --path /Getting-Started
               wikidown read --path /Getting-Started/Format --root ./my-wiki
-              wikidown read --path /MCP-Server --section "Wiki root"
+              wikidown read --path /CLI --section "Exporting"
 
             """,
 

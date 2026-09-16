@@ -1,7 +1,7 @@
 # Wikidown — agent guidance
 
-This repo builds Wikidown itself: a `/docs` wiki + CLI + MCP server + WASM
-editor + product site. See [`PLAN.md`](./PLAN.md) for the build plan and
+This repo builds Wikidown itself: a `/docs` wiki + CLI + WASM editor +
+product site. See [`PLAN.md`](./PLAN.md) for the build plan and
 chunk-by-chunk progress.
 
 ## Build, test, package
@@ -21,13 +21,11 @@ pack on every push/PR.
 
 - `src/Wikidown.Core/` — page model, `.order`, repo, search.
 - `src/Wikidown.Cli/` — `wikidown` command-line tool.
-- `src/Wikidown.Mcp/` — `wikidown-mcp` stdio MCP server.
 - `src/Wikidown.Html/` — Jekyll-compatible starter theme + `export-html` (Markdig + Fluid).
 - `src/Wikidown.Web/` — Blazor WASM editor PWA *(coming in chunk 4)*.
 - *(no separate marketing site)* — wikidown.org is `/docs` + its `index.html`, published by `pages.yml` via `wikidown export-html`.
 - `tests/Wikidown.Core.Tests/` — xUnit tests.
 - `agents/` — drop-in agent configs for downstream repos.
-- `samples/mcp/` — sample MCP configs.
 - `docs/` — this repo's own Wikidown wiki (dogfood).
 
 ## Conventions
@@ -43,10 +41,12 @@ pack on every push/PR.
   files. Page links use title form: `/Getting-Started/Format`.
 - A `wikidown-editor` subagent and a `wikidown` skill are configured in
   `.claude/`. Use them for ANY read/write of `/docs/*.md`.
-- Never edit `/docs/*.md` directly with `Write`/`Edit`. Use the `wiki_*` MCP
-  tools so `.order` files stay consistent.
-- Prefer `wiki_edit` for small changes, `wiki_write_section` for one
-  section, and `wiki_append` to add at the end; `wiki_write` is for new
-  pages or full rewrites only.
+- Never edit `/docs/*.md` directly with `Write`/`Edit`. Use the `wikidown`
+  CLI so `.order` files stay consistent. Under Git Bash, pass page paths
+  without the leading slash (`--path Getting-Started/Format`) or set
+  `MSYS_NO_PATHCONV=1`.
+- Prefer `wikidown edit` for small changes, `wikidown write-section` for
+  one section, and `wikidown append` to add at the end; `wikidown write` is
+  for full rewrites only and `wikidown new` for new pages.
 - When you ship a feature that changes user-visible behavior, ask whether the
   wiki should be updated, and (if yes) delegate to `wikidown-editor`.

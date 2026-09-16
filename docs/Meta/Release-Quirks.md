@@ -8,14 +8,14 @@ from reading the workflow YAML alone. For the consumer-facing side of the
 same pipelines (how a downstream repo picks up a release once it ships),
 see [Updating](../Getting-Started/Updating.md).
 
-## NuGet (`Wikidown.Core` / `Wikidown.Cli` / `Wikidown.Mcp`)
+## NuGet (`Wikidown.Core` / `Wikidown.Cli`)
 
 Driven by
 [`release.yml`](https://github.com/markdav-is/Wikidown/blob/main/.github/workflows/release.yml).
 
 - **Trigger is a path filter, and it's narrower than the test matrix.** The
   workflow only fires on a push to `main` touching `Directory.Build.props`,
-  `src/Wikidown.Cli/**`, `src/Wikidown.Mcp/**`, `src/Wikidown.Core/**`,
+  `src/Wikidown.Cli/**`, `src/Wikidown.Core/**`,
   `assets/**`, or the workflow file itself. It does **not** include
   `src/Wikidown.Pdf/**` — even though the workflow's own
   `dotnet test Wikidown.slnf` step exercises `Wikidown.Pdf` code, because

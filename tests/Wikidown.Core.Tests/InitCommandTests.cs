@@ -35,11 +35,9 @@ public class InitCommandTests : IDisposable
         Assert.Equal(0, Run());
 
         Assert.True(File.Exists(Path.Combine(_wikiRoot, "Home.md")));
-        Assert.True(File.Exists(At(".mcp.json")));
         Assert.True(File.Exists(At(".claude/skills/wikidown/SKILL.md")));
         Assert.True(File.Exists(At(".claude/agents/wikidown-editor.md")));
         Assert.True(File.Exists(At("CLAUDE.md")));
-        Assert.True(File.Exists(At(".vscode/mcp.json")));
         Assert.True(File.Exists(At(".github/skills/wikidown/SKILL.md")));
         Assert.True(File.Exists(At(".github/copilot-instructions.md")));
         Assert.True(File.Exists(At(".github/agents/wikidown.agent.md")));
@@ -61,7 +59,7 @@ public class InitCommandTests : IDisposable
         Run("--agents", "claude");
         Assert.True(File.Exists(At(".claude/skills/wikidown/SKILL.md")));
         Assert.False(File.Exists(At(".github/copilot-instructions.md")));
-        Assert.False(File.Exists(At(".vscode/mcp.json")));
+        Assert.False(File.Exists(At(".github/agents/wikidown.agent.md")));
     }
 
     [Fact]
@@ -69,7 +67,7 @@ public class InitCommandTests : IDisposable
     {
         Run("--agents", "copilot");
         Assert.True(File.Exists(At(".github/skills/wikidown/SKILL.md")));
-        Assert.False(File.Exists(At(".mcp.json")));
+        Assert.False(File.Exists(At(".claude/agents/wikidown-editor.md")));
         Assert.False(File.Exists(At("CLAUDE.md")));
     }
 
@@ -78,7 +76,7 @@ public class InitCommandTests : IDisposable
     {
         Run("--agents", "none");
         Assert.True(File.Exists(Path.Combine(_wikiRoot, "Home.md")));
-        Assert.False(File.Exists(At(".mcp.json")));
+        Assert.False(File.Exists(At(".claude/skills/wikidown/SKILL.md")));
         Assert.False(File.Exists(At(".github/copilot-instructions.md")));
     }
 
@@ -94,17 +92,19 @@ public class InitCommandTests : IDisposable
     [Fact]
     public void Init_SkipsExistingFilesWithoutForce()
     {
-        File.WriteAllText(At(".mcp.json"), "{ \"custom\": true }");
+        Directory.CreateDirectory(At(".github"));
+        File.WriteAllText(At(".github/copilot-instructions.md"), "custom");
         Run();
-        Assert.Equal("{ \"custom\": true }", File.ReadAllText(At(".mcp.json")));
+        Assert.Equal("custom", File.ReadAllText(At(".github/copilot-instructions.md")));
     }
 
     [Fact]
     public void Init_ForceOverwritesExistingFiles()
     {
-        File.WriteAllText(At(".mcp.json"), "{ \"custom\": true }");
+        Directory.CreateDirectory(At(".github"));
+        File.WriteAllText(At(".github/copilot-instructions.md"), "custom");
         Run("--force");
-        Assert.Contains("wikidown-mcp", File.ReadAllText(At(".mcp.json")));
+        Assert.Contains("wikidown", File.ReadAllText(At(".github/copilot-instructions.md")));
     }
 
     [Fact]

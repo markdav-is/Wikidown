@@ -17,12 +17,11 @@ Welcome to Wikidown. This folder is itself a Wikidown-format wiki.
 
 - [Format](Getting-Started/Format.md) — full on-disk format reference
 - [Visual Studio Extension](Getting-Started/Visual-Studio-Extension.md) — add a Wikidown project in VS 2022+
-- [Updating](Getting-Started/Updating.md) — how downstream repos pick up new CLI/MCP releases, agent config changes, and VS extension updates
+- [Updating](Getting-Started/Updating.md) — how downstream repos pick up new CLI releases, agent config changes, and VS extension updates
 - [Publishing to GitHub Pages](Getting-Started/Publishing-to-GitHub-Pages.md) — publish the wiki as a static site with `wikidown pages` and GitHub's built-in Jekyll, or anywhere via `wikidown export-html`
 - [Publishing to GitLab Pages](Getting-Started/Publishing-to-GitLab-Pages.md) — one CI job running `wikidown export-html`, no Jekyll or Ruby
 - [Customizing the Theme](Getting-Started/Customizing-the-Theme.md) — swap the wiki page layout or replace the root `index.html` with a hand-authored landing page
 - [CLI](CLI.md) — `wikidown` dotnet tool
-- [MCP Server](MCP-Server.md) — `wikidown-mcp` for AI agents
 - [Editor](Editor.md) — Blazor WASM browser editor
 - [Agents](Agents.md) — drop-in Claude + Copilot configs
 - [Handy Prompts](Handy-Prompts.md) — example prompts for everyday wiki work: adding pages, editing content, reordering, and committing changes

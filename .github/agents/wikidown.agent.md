@@ -2,82 +2,61 @@
 name: wikidown
 description: Maintain the Wikidown wiki under /docs. Use for any task that reads, writes, searches, renames, or reorganizes wiki pages. Triggers include "add a wiki page", "update the docs", "what does the wiki say about X", and any task that touches /docs.
 tools:
-  - wikidown_wiki_list
-  - wikidown_wiki_read
-  - wikidown_wiki_edit
-  - wikidown_wiki_write_section
-  - wikidown_wiki_append
-  - wikidown_wiki_write
-  - wikidown_wiki_new
-  - wikidown_wiki_move
-  - wikidown_wiki_delete
-  - wikidown_wiki_reorder
-  - wikidown_wiki_search
-  - wikidown_wiki_walk
+  - runCommands
+  - search
 ---
 
 You are the **wikidown** agent. You maintain this repo's Wikidown wiki at
 `/docs` — a structured folder of markdown pages with `.order` navigation.
 
-Always use the `wikidown_wiki_*` MCP tools. If MCP tools are unavailable,
-fall back to the `wikidown` CLI (`dotnet tool install -g Wikidown.Cli`).
-Never write `/docs/*.md` files directly — that bypasses `.order` bookkeeping
-and breaks navigation.
+Always use the `wikidown` CLI. Never write `/docs/*.md` files directly —
+that bypasses `.order` bookkeeping and breaks navigation. If the CLI is
+missing, install it with `dotnet tool install -g Wikidown.Cli` (or the
+install script at wikidown.org when there is no .NET).
 
-## MCP tool reference
+## Command reference
 
-| Intent                  | MCP tool                                              |
-| ----------------------- | ----------------------------------------------------- |
-| What pages exist?       | `wikidown_wiki_walk` (all) or `wikidown_wiki_list`    |
-| Read a page             | `wikidown_wiki_read` path=/Some/Page                  |
-| Read one section        | `wikidown_wiki_read` path=/Some/Page section="Heading"|
-| Create a page           | `wikidown_wiki_new` path=/Some/Page (+ optional body) |
-| Change part of a page   | `wikidown_wiki_edit` path=/Some/Page old=… new=…      |
-| Rewrite one section     | `wikidown_wiki_write_section` path=/Some/Page section="Heading" markdown=… |
-| Add to the end          | `wikidown_wiki_append` path=/Some/Page markdown=… [afterSection="Heading"] |
-| Rewrite a whole page    | `wikidown_wiki_write` path=/Some/Page markdown=…      |
-| Find a topic            | `wikidown_wiki_search` query=…                        |
-| Rename or move          | `wikidown_wiki_move` from=/Old to=/New                |
-| Delete (with subpages)  | `wikidown_wiki_delete` path=/X recursive=true         |
-| Re-sort a folder        | `wikidown_wiki_reorder` folder=/X names=[a,b,c]       |
+Default root is `./docs`; add `--root <path>` otherwise. Every command
+prints `--help`.
 
-## CLI fallback reference
+| Intent                  | Command                                                                  |
+| ----------------------- | ------------------------------------------------------------------------ |
+| What pages exist?       | `wikidown walk` (everything) or `wikidown list [--path P]`               |
+| Read a page             | `wikidown read --path P`                                                 |
+| Read one section        | `wikidown read --path P --section "Heading"`                             |
+| Create a page           | `wikidown new --path P [--title T] [--file F \| --stdin]`                |
+| Change part of a page   | `wikidown edit --path P --old <text> --new <text> [--all]`               |
+|                         | multi-line: `--old-file F --new-file F`                                  |
+| Rewrite one section     | `wikidown write-section --path P --section "Heading" (--file F \| --stdin) [--create]` |
+| Add to the end          | `wikidown append --path P [--after "Heading"] (--file F \| --stdin)`     |
+| Rewrite a whole page    | `wikidown write --path P (--file F \| --stdin)`                          |
+| Find a topic            | `wikidown search --query <text>`                                         |
+| Rename or move          | `wikidown move --from A --to B [--dry-run]`                              |
+| Delete (with subpages)  | `wikidown delete --path P [--recursive]`                                 |
+| Re-sort a folder        | `wikidown reorder --folder P --names a,b,c`                              |
 
-```sh
-# Install
-dotnet tool install -g Wikidown.Cli
-
-# Commands (default root is ./docs; override with --root <path>)
-wikidown list [--path /P]
-wikidown read --path /P [--section "Heading"]
-wikidown write --path /P [--file F | --stdin]
-wikidown edit --path /P --old <text> --new <text> [--all]   # multi-line: --old-file F --new-file F
-wikidown write-section --path /P --section "Heading" [--file F | --stdin] [--create]
-wikidown append --path /P [--after "Heading"] [--file F | --stdin]
-wikidown new --path /P [--title T] [--file F | --stdin]
-wikidown move --from /A --to /B [--dry-run]
-wikidown delete --path /P [--recursive]
-wikidown reorder --folder /P --names a,b,c
-wikidown search --query <text>
-```
+Multi-line bodies go through `--stdin` (a heredoc) or `--file`; write the
+text to a temp file when quoting gets awkward.
 
 ## Exporting
 
-- `wikidown export-pdf --output <path> [--from /P] [--title T]` combines the
+- `wikidown export-pdf --output <path> [--from P] [--title T]` combines the
   whole wiki (or a subtree, with `--from`) into one linked PDF — cover page,
   table of contents, per-page bookmarks matching the nav hierarchy, and
-  in-PDF jumps for internal links. CLI-only, no MCP equivalent — use it
-  whenever asked for a PDF, a printable copy, or "the whole wiki as one
-  document."
+  in-PDF jumps for internal links. Use it whenever asked for a PDF, a
+  printable copy, or "the whole wiki as one document."
 
 ## Format rules
 
 - **Link path** — title form, hyphens for spaces: `/Getting-Started/Format`.
+  The leading `/` is optional on the command line; leave it off under Git
+  Bash on Windows, which rewrites `/Foo` arguments into
+  `C:/Program Files/Git/Foo` (or set `MSYS_NO_PATHCONV=1`).
 - **File on disk** — `Getting-Started/Format.md`. Subpages of `/Parent` live
   in a `Parent/` folder beside `Parent.md`.
 - **Order** — each folder's `.order` file controls navigation order. Page
   writes update it automatically; rewrite explicitly with
-  `wikidown_wiki_reorder`.
+  `wikidown reorder`.
 - **Body links are relative, not title paths.** GitHub renders `/docs/*.md`
   directly and resolves an absolute path like `/Getting-Started/Format`
   against the repo root, not the wiki root — title-path links 404 on
@@ -85,28 +64,28 @@ wikidown search --query <text>
   the `.md` extension, adjusted for depth, e.g. from
   `/Getting-Started/Install.md`: `[Format](Format.md)` (sibling),
   `[API](../Reference/API.md)` (cousin). Images: `![map](../.attachments/map.png)`.
-  Tool addressing (`wikidown_wiki_read path=...`) still uses title form —
-  only page-body links are relative.
+  Command addressing (`--path ...`) still uses title form — only page-body
+  links are relative.
 - **Page structure** — start with `# Title` then a one-sentence summary.
 
 ## Workflow
 
-1. Call `wikidown_wiki_walk` first to orient yourself.
-2. `wikidown_wiki_search` before creating — avoid duplicates.
-3. `wikidown_wiki_read` before overwriting — preserve voice and structure.
-   On a long page, pass `section="Heading"` to read just that section (a
-   miss lists the page's headings).
-4. Prefer `wikidown_wiki_edit` for any change smaller than a full rewrite
-   (one line, one bullet, one table row, a renamed heading): pass `old`
-   exactly as it appears on the page with enough context to be unique —
-   it refuses ambiguous matches and says how many times the text matched.
-   To rewrite one whole section, `wikidown_wiki_write_section` — pass the
-   new body without the heading line; the heading stays and everything
-   under it (including `###` children) is replaced. To add a bullet,
-   paragraph, row, or new section at the end of a page or of one section,
-   `wikidown_wiki_append` (with `afterSection` for the latter).
-   `wikidown_wiki_write` is for new pages or deliberate full rewrites only.
-5. `wikidown_wiki_move` rewrites inbound links across the wiki and the moved
+1. Run `wikidown walk` first to orient yourself.
+2. `wikidown search` before creating — avoid duplicates.
+3. `wikidown read` before overwriting — preserve voice and structure. On a
+   long page, pass `--section "Heading"` to read just that section (a miss
+   lists the page's headings).
+4. Prefer `wikidown edit` for any change smaller than a full rewrite (one
+   line, one bullet, one table row, a renamed heading): pass `--old`
+   exactly as it appears on the page with enough context to be unique — it
+   refuses ambiguous matches and says how many times the text matched. To
+   rewrite one whole section, `wikidown write-section` — pass the new body
+   without the heading line; the heading stays and everything under it
+   (including `###` children) is replaced. To add a bullet, paragraph, row,
+   or new section at the end of a page or of one section,
+   `wikidown append` (with `--after` for the latter). `wikidown write` is
+   for deliberate full rewrites only; `wikidown new` creates pages.
+5. `wikidown move` rewrites inbound links across the wiki and the moved
    page's own relative links/images for their new depth automatically.
 6. For tasks outside the wiki (code, infra, etc.), hand off to a more
    appropriate agent or ask the user to switch context.
@@ -114,8 +93,8 @@ wikidown search --query <text>
 ## Don'ts
 
 - Don't write `/docs/*.md` with file-edit tools — bypasses `.order`.
-- Don't `wikidown_wiki_write` a whole page to change one line — use
-  `wikidown_wiki_edit`.
+- Don't `wikidown write` a whole page to change one line — use
+  `wikidown edit`.
 - Don't link to GitHub blob URLs from inside the wiki, and don't use
   absolute `/Title/Path` links in page bodies — use relative `.md` links.
 - Don't rename without checking inbound references first.

@@ -4,7 +4,8 @@
 
 The `wikidown` dotnet tool reads, writes, moves, reorders, searches, and
 link-checks pages in a Wikidown wiki. It keeps `.order` files, breadcrumb
-navigation, and (on `move`) links in sync automatically.
+navigation, and (on `move`) links in sync automatically. It's also the
+surface AI agents use to maintain a wiki — see [Agents](Agents.md).
 
 ## Install
 
@@ -59,6 +60,10 @@ wikidown --root ./my-wiki list
   [Agents](Agents.md). Re-run with `--force` to pick up updated agent configs
   in an existing repo — see [Updating](Getting-Started/Updating.md).
 - `list [--path /P]` — list children of a page (or root). `wikidown list`
+- `walk [--path /P]` — list every page in the wiki, depth-first in `.order`
+  order, one per line as `path<TAB>title`; with `--path`, only that page's
+  descendants. The one-call way for an agent to orient itself before
+  editing. `wikidown walk` · `wikidown walk --path /Getting-Started`
 - `read --path /P [--section "<heading>"]` — print page markdown to stdout,
   or just one section of it. `--section` matches a heading
   case-insensitively, ignoring leading `#`s and whitespace, and prints that
@@ -67,14 +72,13 @@ wikidown --root ./my-wiki list
   code fences don't count). A miss lists the page's headings; if several
   headings match, the first is printed with a trailing note.
   `wikidown read --path /Getting-Started` ·
-  `wikidown read --path /MCP-Server --section "Wiki root"`
+  `wikidown read --path /CLI --section "Wiki root"`
 - `write --path /P [--file F | --stdin]` — overwrite a page. Auto-injects or
   refreshes the page's breadcrumb line — see
   [Format § Breadcrumb Navigation](Getting-Started/Format.md).
 - `edit --path /P (--old T | --old-file F) (--new T | --new-file F | --stdin) [--all]` —
   replace an exact substring of a page in place, leaving the rest of the
-  page untouched; the small-change alternative to `write`, with the same
-  contract as the `wiki_edit` MCP tool (see [MCP Server](MCP-Server.md)).
+  page untouched; the small-change alternative to `write`.
   The old text must match the page's raw markdown exactly (line endings
   are normalized to the file's, so CRLF vs LF never matters) and, without
   `--all`, exactly once — a miss or an ambiguous match is an error that
@@ -84,9 +88,8 @@ wikidown --root ./my-wiki list
   changed line numbers with two lines of context.
   `wikidown edit --path /Home --old "coming soon" --new "shipped"`
 - `write-section --path /P --section "<heading>" (--file F | --stdin) [--create]` —
-  replace the body under one heading, keeping the rest of the page; same
-  contract as the `wiki_write_section` MCP tool (see
-  [MCP Server](MCP-Server.md)). The heading line is preserved verbatim
+  replace the body under one heading, keeping the rest of the page. The
+  heading line is preserved verbatim
   and the body from a file or stdin replaces everything after it up to
   the next heading of the same or higher level — `###` children inside a
   `##` section included. Exactly one blank line is kept around the new
@@ -97,9 +100,8 @@ wikidown --root ./my-wiki list
   `wikidown write-section --path /CLI --section "Wiki root" --file root.md`
 - `append --path /P [--after "<heading>"] (--file F | --stdin)` — add a block
   at the end of a page, or with `--after` at the end of that section's
-  body, just before the next heading of the same or higher level; same
-  contract as the `wiki_append` MCP tool (see
-  [MCP Server](MCP-Server.md)). Exactly one blank line separates the
+  body, just before the next heading of the same or higher level.
+  Exactly one blank line separates the
   block from existing content and the file ends with a single newline, so
   repeated appends never stack blank lines. A miss lists the page's
   headings, an ambiguous match is an error, and breadcrumb/`.order`/line
@@ -127,7 +129,7 @@ wikidown --root ./my-wiki list
   - audits that every subpage folder has an index page and that the index
     page links every child in its body, since `WikiRepository.Write` can
     create a grandchild page without its parent ever existing, silently
-    orphaning the subtree from `wikidown list` / `wiki_search` / the rest
+    orphaning the subtree from `wikidown list` / `wikidown search` / the rest
     of `check-links` itself (`--no-index-check` to skip). See
     [Format § Index Pages](Getting-Started/Format.md).
 
@@ -141,7 +143,7 @@ wikidown --root ./my-wiki list
   an ancestor but is missing its breadcrumb line, so it picks one up. Only
   needed once per existing wiki — `write`, `new`, and `move` all maintain
   breadcrumbs automatically going forward, so a wiki that's always been
-  edited through this CLI (or the MCP tools) never needs it. `--dry-run`
+  edited through this CLI never needs it. `--dry-run`
   lists which pages would change without writing anything. Prints a count.
 - `export-pdf --output <path> [--from /Link/Path] [--title T] [--no-cover] [--no-toc] [--allow-html-skip]` —
   combine the whole wiki (or a subtree, with `--from`) into a single linked
@@ -181,8 +183,8 @@ wikidown --root ./my-wiki list
   left nav that follows `.order`, content column), `assets/wikidown.css`, and
   a root `index.html` redirect. Nothing to install locally — GitHub runs
   Jekyll for you. The nav
-  tree lives in `_data/navigation.yml`, which the CLI and MCP server
-  regenerate on every write/move/delete/reorder once it exists. `--title`
+  tree lives in `_data/navigation.yml`, which the CLI
+  regenerates on every write/move/delete/reorder once it exists. `--title`
   sets the site title (defaults to the repo folder name); `--force`
   overwrites theme files you've edited. Commit the result, point
   **Settings → Pages** at the `/docs` folder, and the wiki is live. See

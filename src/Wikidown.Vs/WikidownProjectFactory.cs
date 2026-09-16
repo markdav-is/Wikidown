@@ -149,7 +149,7 @@ namespace Wikidown.Vs
             if (!File.Exists(home))
             {
                 File.WriteAllText(home,
-                    "# Home\n\nWelcome to your Wikidown wiki. Add pages with `wikidown new` or the `wiki_*` MCP tools.\n");
+                    "# Home\n\nWelcome to your Wikidown wiki. Add pages with `wikidown new`.\n");
             }
         }
 

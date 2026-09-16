@@ -4,7 +4,7 @@ Living document. Updated at the end of each chunk.
 
 ## Goal
 A structured markdown wiki that lives in `/docs` of any code repo,
-with a C# CLI, an MCP server, AI agent configs (Claude + Copilot), and a
+with a C# CLI, AI agent configs (Claude + Copilot) that drive it, and a
 Blazor WASM PWA editor + marketing site hosted on GitHub Pages.
 
 ## Confirmed scope (from user)
@@ -20,8 +20,7 @@ Blazor WASM PWA editor + marketing site hosted on GitHub Pages.
 /src
   Wikidown.Core/       shared lib: page model, filename<->title, .order, links, md I/O,
                         markdown->PDF intermediate representation (PdfExport/)
-  Wikidown.Cli/        dotnet tool: list/read/write/move/reorder/new/search/export-pdf
-  Wikidown.Mcp/        MCP stdio server wrapping Core
+  Wikidown.Cli/        dotnet tool: list/walk/read/write/edit/move/reorder/new/search/exports
   Wikidown.Pdf/        renders Wikidown.Core's PDF IR to an actual PDF via PDFsharp/MigraDoc
   Wikidown.Html/       Jekyll-compatible starter theme + static HTML export (Markdig + Fluid)
   Wikidown.Web/        Blazor WASM PWA editor
@@ -692,6 +691,40 @@ Blazor WASM PWA editor + marketing site hosted on GitHub Pages.
       and joined with exactly one blank line + a single trailing newline,
       so repeated appends are stable. Miss lists headings; duplicates
       refuse; empty block refuses.
+
+25. **Remove the MCP server — the CLI is the only agent surface.** *(shipped)*
+    - Decision (2026-09-15): `Wikidown.Mcp` was 236 lines wrapping the same
+      Core calls the CLI already exposes, and every verb had a CLI twin
+      (`list`, `read --section`, `write`, `edit`, `write-section`,
+      `append`, `new`, `move`, `delete`, `reorder`, `search`) plus the
+      exports the MCP never had. The real cost was shipping every
+      operation twice — tool + verb, NuGet package, docs page, three
+      sample host configs — and the wikidown-editor subagent having a tool
+      list that went stale whenever the server did. Claude Code and the
+      Copilot coding agent both have a shell, so nothing is lost there;
+      chat-only hosts (Claude Desktop, VS Code chat without terminal) can
+      no longer edit a wiki directly and instead get the command list from
+      the skill and suggest commands to the user.
+    - Gone: `src/Wikidown.Mcp`, `samples/mcp`, `.mcp.json`,
+      `.vscode/mcp.json`, the `ModelContextProtocol` package pin, the pack
+      and release steps, the `/MCP-Server` wiki page. `wikidown init` no
+      longer writes MCP configs (`InitCommandTests` updated to match).
+    - Added: `wikidown walk` (the one `wiki_*` tool with no CLI twin),
+      `path<TAB>title` per page depth-first in `.order` order, `--path` for
+      a subtree, `WalkCommandTests`.
+    - Agent configs rewritten CLI-first: shared skill (command cheat sheet,
+      "no shell: suggest commands" fallback, hand-edit last resort kept),
+      Claude subagent now has `Bash` instead of twelve `mcp__wikidown__*`
+      tools, Copilot agent/chat mode use `runCommands`. All mention that
+      the leading `/` on page paths is optional and should be dropped under
+      Git Bash on Windows (MSYS rewrites `/Foo` to `C:/Program Files/Git/Foo`);
+      `PagePath.Parse` already tolerated that. This repo's own
+      `.claude/` + `.github/` copies refreshed from the templates;
+      `CLAUDE.md` and `README.md` updated.
+    - `VersionPrefix` bumped to 0.8.0 so the next NuGet publish carries the
+      new skill/subagent/agent templates and `walk`. Users: `dotnet tool
+      uninstall -g Wikidown.Mcp`, delete the two mcp.json files, re-run
+      `wikidown init --agents all --force`.
 
 ## Open questions / parking lot
 - `[[_TOC_]]`, mermaid, `:::` callouts rendering in WASM preview.

@@ -2,7 +2,7 @@
 
 # Format Specification
 
-Wikidown's on-disk format is deliberately minimal: markdown pages, folder-based hierarchy, and `.order` navigation files. The goal of this specification is to ensure that a repository's documentation is equally readable by humans browsing the file system, AI agents using the MCP server, and web-based renderers.
+Wikidown's on-disk format is deliberately minimal: markdown pages, folder-based hierarchy, and `.order` navigation files. The goal of this specification is to ensure that a repository's documentation is equally readable by humans browsing the file system, AI agents using the CLI, and web-based renderers.
 
 By enforcing these rules, Wikidown prevents the link rot and structural drift that typically plagues flat-file documentation.
 
@@ -29,7 +29,7 @@ Every subpage folder's parent page should exist and should **link every
 child in its body** — see § Index pages below. `WikiRepository.Write` will
 happily create `/Architecture/Data-Model` even if `/Architecture` doesn't
 exist yet, which silently orphans the whole subtree: `wikidown list` /
-`wiki_search` / `wikidown check-links`' normal link scan all walk the wiki
+`wikidown search` / `wikidown check-links`' normal link scan all walk the wiki
 by descending from already-discovered pages, so a page whose parent was
 never created is invisible to all of them. `check-links` catches this
 specific case — see below.
@@ -78,9 +78,9 @@ default it also flags any absolute title-path links left in page bodies,
 and audits that every folder has a linked index page (§ Index pages).
 
 This rule only applies to links **inside page bodies**. Addressing a page
-through a tool or the CLI — e.g. `wikidown read --path /Getting-Started/Format`,
-`wiki_read --path /Getting-Started/Format` — still uses the absolute title
-path, since that's a tool argument rather than a rendered link.
+through the CLI — e.g. `wikidown read --path /Getting-Started/Format` —
+still uses the absolute title path, since that's a command argument rather
+than a rendered link.
 
 ### Fixing `check-links` failures
 
@@ -109,21 +109,20 @@ What to do depends on the `(reason)`:
     the target page genuinely no longer exists, either remove the link or
     point it at wherever that content now lives.
 
-*   **A link that broke because a page moved** — `wikidown move` /
-    `wiki_move` (see [CLI](../CLI.md) and
-    [MCP Server](../MCP-Server.md)) automatically rewrite inbound links and
+*   **A link that broke because a page moved** — `wikidown move` (see
+    [CLI](../CLI.md)) automatically rewrites inbound links and
     the moved page's own relative links when they change a page's path or
     folder depth. So a `check-links` failure pointing at a page that was
     clearly moved usually means one of two things: the move happened before
     that link-rewriting behavior shipped, or the link was added by hand
     (e.g. typed into a body) after the move rather than being created
-    through `move`/`wiki_move`. Either way, fix it the same way as a
+    through `wikidown move`. Either way, fix it the same way as a
     broken relative link above — retarget it at the page's current path and
     depth.
 
 *   **`(no index page <Folder>.md)`** — a subpage folder exists but its
-    sibling parent page is missing. Create it (`wikidown new --path /Folder`
-    or `wiki_new`), then link every child from its body — see § Index pages.
+    sibling parent page is missing. Create it (`wikidown new --path /Folder`),
+    then link every child from its body — see § Index pages.
 
 *   **`(not linked from parent)`** — the parent page exists but its body
     never links this child, so a reader browsing rendered markdown (or the
@@ -144,7 +143,7 @@ that entry point real rather than aspirational, both audited by
     created without `/Architecture` ever existing — nothing in
     `WikiRepository.Write` requires the parent first. When that happens the
     whole subtree becomes invisible to every wiki-model-based tool
-    (`wikidown list`, `wiki_search`, and `check-links`' own link scan),
+    (`wikidown list`, `wikidown search`, and `check-links`' own link scan),
     since they all discover pages by descending from an already-discovered
     parent. `check-links` finds these orphans by walking the raw
     filesystem instead, specifically because it can't rely on the page
@@ -183,8 +182,8 @@ shape GitHub uses, just scoped to the wiki rather than the whole repo.
 
 Key behavior:
 
-*   **Automatic.** `wikidown write` / `wiki_write` (and `new` / `wiki_new`,
-    which write through the same path) inject or refresh the breadcrumb on
+*   **Automatic.** `wikidown write` (and `new`, which writes through the
+    same path) inject or refresh the breadcrumb on
     every save — there's nothing to opt into or maintain by hand. Write
     whatever body content you want; the first line is managed for you.
 *   **Idempotent.** The line carries an HTML comment marker
@@ -203,7 +202,7 @@ Key behavior:
     top-level pages simply have no breadcrumb, and nested pages' breadcrumbs
     start from their nearest real ancestor, same as before `/Home` was
     introduced. `/Home` itself never links to itself.
-*   **Moves regenerate it, not just patch it.** `wikidown move` / `wiki_move`
+*   **Moves regenerate it, not just patch it.** `wikidown move`
     fully regenerates the breadcrumb for the moved page and every moved
     descendant, rather than trying to edit the existing links in place —
     a move can change *which* ancestors a page has, not just how many

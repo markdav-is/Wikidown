@@ -12,6 +12,19 @@ public static class Commands
         return 0;
     }
 
+    public static int Walk(WikiRepository repo, ParsedArgs args, TextWriter w)
+    {
+        var from = args.Optional("path") is { } p ? PagePath.Parse(p) : null;
+        var any = false;
+        foreach (var page in repo.Walk(from))
+        {
+            w.WriteLine($"{page.ToLinkPath()}	{page.Name.Title}");
+            any = true;
+        }
+        if (!any) w.WriteLine("(empty wiki)");
+        return 0;
+    }
+
     public static int Read(WikiRepository repo, ParsedArgs args, TextWriter w)
     {
         var path = PagePath.Parse(args.Require("path"));

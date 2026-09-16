@@ -6,14 +6,12 @@ public static class InitCommand
 {
     private static readonly (string Resource, string Destination)[] ClaudeFiles =
     {
-        ("agents/claude/mcp.json", ".mcp.json"),
         ("agents/skills/wikidown/SKILL.md", ".claude/skills/wikidown/SKILL.md"),
         ("agents/claude/wikidown.subagent.md", ".claude/agents/wikidown-editor.md"),
     };
 
     private static readonly (string Resource, string Destination)[] CopilotFiles =
     {
-        ("agents/copilot/mcp.json", ".vscode/mcp.json"),
         ("agents/skills/wikidown/SKILL.md", ".github/skills/wikidown/SKILL.md"),
         ("agents/copilot/copilot-instructions.md", ".github/copilot-instructions.md"),
         ("agents/copilot/wikidown.agent.md", ".github/agents/wikidown.agent.md"),
@@ -54,7 +52,7 @@ public static class InitCommand
         }
         repo.Write(new WikiPage(
             PagePath.Parse("/Home"),
-            "# Home\n\nWelcome to your Wikidown wiki. Add pages with `wikidown new` or the `wiki_*` MCP tools.\n"));
+            "# Home\n\nWelcome to your Wikidown wiki. Add pages with `wikidown new`.\n"));
         w.WriteLine("seeded /Home");
     }
 

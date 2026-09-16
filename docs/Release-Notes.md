@@ -6,6 +6,64 @@ What changed in each Wikidown release, and where to get it. Newest first.
 For how to update an existing install, see
 [Updating](Getting-Started/Updating.md).
 
+## 0.8.0 — 15 September 2026
+
+The MCP server is gone: the `wikidown` CLI is now the only surface AI
+agents use. `Wikidown.Mcp` is no longer published, the `wikidown-mcp`
+executable is retired, and the `wiki_*` tools go with it.
+
+### Where to get it
+
+| Component | Link |
+|---|---|
+| `wikidown` CLI (NuGet global tool) | [Wikidown.Cli 0.8.0](https://www.nuget.org/packages/Wikidown.Cli/0.8.0) — `dotnet tool update -g Wikidown.Cli` |
+| `Wikidown.Core` library | [Wikidown.Core 0.8.0](https://www.nuget.org/packages/Wikidown.Core/0.8.0) |
+| Self-contained CLI binaries (no .NET needed) | [GitHub Release cli-v0.8.0](https://github.com/markdav-is/Wikidown/releases/tag/cli-v0.8.0) — win/linux/osx, x64 and arm64; or re-run the [install script](CLI.md) |
+| Source | [markdav-is/Wikidown](https://github.com/markdav-is/Wikidown) |
+
+The Visual Studio extension and the browser editor are unchanged in this
+release.
+
+### Why
+
+Every `wiki_*` MCP tool was a thin wrapper over the same `wikidown` verb,
+so the CLI has had full parity since 0.7.0. Shipping two surfaces meant two
+things to keep correct, two things to document, and two version numbers that
+had to move together. One surface is easier to keep correct, and an agent
+that can run a shell loses nothing.
+
+### What to do
+
+1. Uninstall the old server: `dotnet tool uninstall -g Wikidown.Mcp`.
+2. Delete `.mcp.json` and `.vscode/mcp.json` from downstream repos — they
+   only wired up `wikidown-mcp`.
+3. Re-run `wikidown init --agents all --force` to refresh the agent
+   configs. The skill, the Claude Code subagent, and the Copilot agent and
+   chat mode now instruct agents to run the CLI — see [Agents](Agents.md).
+
+The tool names map one-to-one onto CLI verbs, so prompts, notes, or
+scripts that mention them translate directly:
+
+| MCP tool | CLI verb |
+|---|---|
+| `wiki_list` | `wikidown list` |
+| `wiki_read` (with `section`) | `wikidown read` (with `--section`) |
+| `wiki_write` | `wikidown write` |
+| `wiki_edit` | `wikidown edit` |
+| `wiki_write_section` | `wikidown write-section` |
+| `wiki_append` | `wikidown append` |
+| `wiki_new` | `wikidown new` |
+| `wiki_move` | `wikidown move` |
+| `wiki_delete` | `wikidown delete` |
+| `wiki_reorder` | `wikidown reorder` |
+| `wiki_search` | `wikidown search` |
+| `wiki_walk` | `wikidown walk` |
+
+Chat-only hosts that can't run a shell (Claude Desktop, a VS Code chat mode
+without a terminal) can no longer edit a wiki directly. The skill gives them
+the command list, so they can suggest the exact `wikidown` commands for you
+to run instead.
+
 ## 0.7.0 — 12 September 2026
 
 The small-change toolkit for agents. Until now the only way to change a
@@ -33,8 +91,8 @@ All four are in the MCP server and the CLI. They match the raw markdown
 exactly, detect and preserve the file's line endings (CRLF or LF), never
 touch the breadcrumb line or `.order`, never create a page, and fail with
 a message that says what to do next — the page's headings on a section
-miss, the match count on an ambiguous edit. See
-[MCP Server](MCP-Server.md) § Tools and [CLI](CLI.md) § Commands.
+miss, the match count on an ambiguous edit. See [CLI](CLI.md) § Commands
+(the MCP Server page was retired with 0.8.0).
 
 - **`wiki_edit` / `wikidown edit`** — replace an exact substring in place,
   with the same contract as Claude Code's `Edit` tool: `old`, `new`,
