@@ -90,7 +90,10 @@ Driven by
   output folders.** `Wikidown.Vs.csproj` has a `PublishBundledCli` MSBuild
   target that bundles a framework-dependent copy of `Wikidown.Cli` into the
   VSIX (under `Tools\cli\`, used by the extension's "Export to PDF"
-  command to shell out via `dotnet exec`). That target's nested
+  command to shell out via `dotnet exec`). At run time the extension
+  prefers a globally installed `wikidown` tool and only uses the bundled
+  copy as a fallback, so a stale bundle only affects users without the
+  global tool. That target's nested
   `<MSBuild Projects="...Wikidown.Cli.csproj" Targets="Restore;Publish">`
   call needs its own explicit `Restore` — `vsix.yml`'s "Restore NuGet
   packages" step only restores `Wikidown.Vs.csproj` itself, not

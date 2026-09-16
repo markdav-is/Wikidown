@@ -413,6 +413,18 @@ Blazor WASM PWA editor + marketing site hosted on GitHub Pages.
       --from /Getting-Started ...`) against this repo's own `/docs` and
       read the resulting PDF back — correct cover, TOC, and outline scoped
       to `Getting-Started` and its three children.
+    - Follow-up (2026-09-15): the bundled copy is frozen at whatever commit
+      the VSIX was built from, and VSIX 1.5.0 was built hours *before* the
+      block-quote fix landed in `MarkdownIrBuilder` — so "Export to PDF"
+      from VS kept failing on `>` with `unsupported markdown block
+      'QuoteBlock'` long after `wikidown export-pdf` from the terminal
+      worked. `ExportPdf` now prefers a globally installed `wikidown`
+      tool (`%USERPROFILE%\.dotnet\tools\wikidown.exe`, or `wikidown.exe`
+      anywhere on `PATH`) and only falls back to `Tools\cli\` via `dotnet
+      exec` when none is installed. `dotnet tool update -g Wikidown.Cli`
+      is now enough to pick up Core fixes in VS; the bundle still makes a
+      bare install work. Status bar names which one it used. Manifest
+      bumped to 1.5.1 for the re-release.
 
 19. **Self-contained native CLI binaries + a smart install script.** *(shipped)*
     - Goal: someone tells an LLM coding agent "install wikidown from

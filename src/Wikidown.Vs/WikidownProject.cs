@@ -917,13 +917,17 @@ namespace Wikidown.Vs
         }
 
         // ── export to PDF ────────────────────────────────────────────────────
-        // Shells out to the Wikidown CLI (bundled with this VSIX under
-        // Tools\cli\, published framework-dependent for net10.0 — see the
-        // PublishBundledCli target in Wikidown.Vs.csproj) rather than
-        // rendering in-process: Wikidown.Core/Wikidown.Pdf target net10.0 and
-        // this project targets net472 (a VS SDK requirement), so reusing the
-        // CLI's already-tested MigraDoc pipeline via `dotnet exec` avoids a
-        // much larger multi-targeting migration for a single command.
+        // Shells out to the Wikidown CLI rather than rendering in-process:
+        // Wikidown.Core/Wikidown.Pdf target net10.0 and this project targets
+        // net472 (a VS SDK requirement), so reusing the CLI's already-tested
+        // MigraDoc pipeline avoids a much larger multi-targeting migration for
+        // a single command.
+        //
+        // A globally installed `wikidown` tool is preferred over the copy
+        // bundled in this VSIX (Tools\cli\, see PublishBundledCli in
+        // Wikidown.Vs.csproj): the bundle is frozen at whatever commit the
+        // VSIX was built from, so `dotnet tool update -g Wikidown.Cli` picks
+        // up Core fixes without waiting on a Marketplace re-release.
 
         private int ExportPdf(uint itemid)
         {
@@ -946,25 +950,86 @@ namespace Wikidown.Vs
             };
             if (dlg.ShowDialog() != true) return VSConstants.S_OK;
 
-            var cliDll = Path.Combine(
-                Path.GetDirectoryName(typeof(WikidownProject).Assembly.Location) ?? "",
-                "Tools", "cli", "wikidown.dll");
-            if (!File.Exists(cliDll))
+            var cli = ResolveCli();
+            if (cli == null)
             {
                 VsShellUtilities.ShowMessageBox(
                     _serviceProvider,
-                    "The bundled Wikidown CLI is missing from this extension install (Tools\\cli\\wikidown.dll not found).",
+                    "No Wikidown CLI found: `wikidown` is not installed as a global dotnet tool and the bundled copy is missing from this extension install (Tools\\cli\\wikidown.dll not found).",
                     "Wikidown",
                     OLEMSGICON.OLEMSGICON_CRITICAL, OLEMSGBUTTON.OLEMSGBUTTON_OK, OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
                 return VSConstants.S_OK;
             }
 
-            var cliArgs = new List<string> { "exec", cliDll, "export-pdf", "--root", _wikiRoot, "--output", dlg.FileName, "--title", title };
+            var cliArgs = new List<string>(cli.LeadingArgs) { "export-pdf", "--root", _wikiRoot, "--output", dlg.FileName, "--title", title };
             if (linkPath != null) { cliArgs.Add("--from"); cliArgs.Add(linkPath); }
 
-            SetStatusBarText("Wikidown: exporting to PDF...");
-            RunExportAsync(BuildArguments(cliArgs), dlg.FileName);
+            SetStatusBarText($"Wikidown: exporting to PDF ({cli.Description})...");
+            RunExportAsync(cli, BuildArguments(cliArgs), dlg.FileName);
             return VSConstants.S_OK;
+        }
+
+        private sealed class CliLaunch
+        {
+            public readonly string FileName;
+            public readonly string[] LeadingArgs;
+            public readonly string Description;
+            public readonly string LaunchFailureHint;
+
+            public CliLaunch(string fileName, string[] leadingArgs, string description, string launchFailureHint)
+            {
+                FileName = fileName;
+                LeadingArgs = leadingArgs;
+                Description = description;
+                LaunchFailureHint = launchFailureHint;
+            }
+        }
+
+        private static CliLaunch? ResolveCli()
+        {
+            var installed = FindInstalledCli();
+            if (installed != null)
+                return new CliLaunch(
+                    installed,
+                    new string[0],
+                    "installed wikidown tool",
+                    $"Could not launch '{installed}'. Reinstall it with `dotnet tool update -g Wikidown.Cli`, or uninstall it to fall back to the copy bundled with this extension.");
+
+            var cliDll = Path.Combine(
+                Path.GetDirectoryName(typeof(WikidownProject).Assembly.Location) ?? "",
+                "Tools", "cli", "wikidown.dll");
+            if (!File.Exists(cliDll)) return null;
+            return new CliLaunch(
+                "dotnet",
+                new[] { "exec", cliDll },
+                "bundled CLI",
+                "Could not launch 'dotnet'. Install the .NET runtime (needed to run the bundled Wikidown CLI) and try again.");
+        }
+
+        // `dotnet tool install -g` puts its shims in %USERPROFILE%\.dotnet\tools
+        // (or $DOTNET_CLI_HOME\.dotnet\tools when that override is set) and
+        // adds that folder to the user's PATH — but VS may have been launched
+        // with a PATH that predates the install, so check the known folder
+        // explicitly before falling back to a PATH search.
+        private static string? FindInstalledCli()
+        {
+            var candidates = new List<string>();
+            foreach (var home in new[] { Environment.GetEnvironmentVariable("DOTNET_CLI_HOME"), Environment.GetEnvironmentVariable("USERPROFILE") })
+            {
+                if (!string.IsNullOrEmpty(home))
+                    candidates.Add(Path.Combine(home, ".dotnet", "tools", "wikidown.exe"));
+            }
+            foreach (var dir in (Environment.GetEnvironmentVariable("PATH") ?? "").Split(Path.PathSeparator))
+            {
+                if (!string.IsNullOrWhiteSpace(dir))
+                    candidates.Add(Path.Combine(dir.Trim(), "wikidown.exe"));
+            }
+            foreach (var c in candidates)
+            {
+                try { if (File.Exists(c)) return c; }
+                catch (ArgumentException) { }
+            }
+            return null;
         }
 
         // Node.FullPath is always rooted under _wikiRoot (built entirely from
@@ -989,23 +1054,23 @@ namespace Wikidown.Vs
         private static string BuildArguments(IEnumerable<string> parts) =>
             string.Join(" ", parts.Select(p => "\"" + p.Replace("\"", "\\\"") + "\""));
 
-        private void RunExportAsync(string arguments, string outputPath)
+        private void RunExportAsync(CliLaunch cli, string arguments, string outputPath)
         {
             ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
             {
-                var (exitCode, stdOut, stdErr) = await Task.Run(() => RunCli(arguments));
+                var (exitCode, stdOut, stdErr) = await Task.Run(() => RunCli(cli, arguments));
                 await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
                 ShowExportResult(exitCode, stdOut, stdErr, outputPath);
             });
         }
 
-        private static (int ExitCode, string StdOut, string StdErr) RunCli(string arguments)
+        private static (int ExitCode, string StdOut, string StdErr) RunCli(CliLaunch cli, string arguments)
         {
             try
             {
                 using (var proc = new Process
                 {
-                    StartInfo = new ProcessStartInfo("dotnet", arguments)
+                    StartInfo = new ProcessStartInfo(cli.FileName, arguments)
                     {
                         UseShellExecute = false,
                         RedirectStandardOutput = true,
@@ -1023,7 +1088,7 @@ namespace Wikidown.Vs
             }
             catch (Win32Exception)
             {
-                return (-1, "", "Could not launch 'dotnet'. Install the .NET runtime (needed to run the bundled Wikidown CLI) and try again.");
+                return (-1, "", cli.LaunchFailureHint);
             }
         }
 
