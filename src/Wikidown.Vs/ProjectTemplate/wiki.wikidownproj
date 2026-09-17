@@ -2,8 +2,9 @@
   <!--
     WikiRoot: path to the wiki folder, relative to this file.
     Defaults to "docs" when omitted. When the project is created from the
-    Visual Studio template, the extension rewrites this to point at an
-    existing docs/ folder found near the solution, or creates one.
+    Visual Studio template, the extension rewrites this to point at docs/
+    under the repository root (the folder containing .git), creating it
+    if needed.
   -->
   <WikiRoot>docs</WikiRoot>
 </WikidownProject>

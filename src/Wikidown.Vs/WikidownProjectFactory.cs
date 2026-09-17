@@ -108,10 +108,11 @@ namespace Wikidown.Vs
 
         /// <summary>
         /// Makes a freshly created project point at a real wiki. If the configured
-        /// WikiRoot doesn't exist, probes up to two folders above the project file
-        /// for an existing docs/ folder (covers "VS put the project in a Wiki/
-        /// subfolder of the solution" and "solution folder is one below the repo
-        /// root"). Falls back to creating the folder with a starter Home page.
+        /// WikiRoot doesn't exist, the wiki lives at <c>docs/</c> under the
+        /// repository root (the nearest ancestor containing <c>.git</c>) so every
+        /// project in the repo shares one wiki regardless of where VS put the
+        /// .wikidownproj. Outside a repo it falls back to the project folder.
+        /// The folder is created with a starter Home page when missing.
         /// </summary>
         private static void InitializeWikiRoot(string projectFile)
         {
@@ -129,28 +130,42 @@ namespace Wikidown.Vs
             if (Directory.Exists(Path.GetFullPath(Path.Combine(projectDir, configured))))
                 return;
 
-            var probe = projectDir;
-            var prefix = "";
-            for (var depth = 0; depth < 3 && probe != null; depth++)
-            {
-                var candidate = Path.Combine(probe, "docs");
-                if (Directory.Exists(candidate))
-                {
-                    RewriteWikiRoot(doc, wikiRootElement, projectFile, prefix + "docs");
-                    return;
-                }
-                probe = Path.GetDirectoryName(probe);
-                prefix += "../";
-            }
+            var repoRoot = FindRepoRoot(projectDir);
+            var wikiDir = Path.Combine(repoRoot ?? projectDir, "docs");
+            var relative = RelativeDocsPath(projectDir, repoRoot);
+            if (!string.Equals(relative, configured, StringComparison.OrdinalIgnoreCase))
+                RewriteWikiRoot(doc, wikiRootElement, projectFile, relative);
 
-            var target = Path.GetFullPath(Path.Combine(projectDir, configured));
-            Directory.CreateDirectory(target);
-            var home = Path.Combine(target, "Home.md");
+            if (Directory.Exists(wikiDir)) return;
+            Directory.CreateDirectory(wikiDir);
+            var home = Path.Combine(wikiDir, "Home.md");
             if (!File.Exists(home))
             {
                 File.WriteAllText(home,
                     "# Home\n\nWelcome to your Wikidown wiki. Add pages with `wikidown new`.\n");
             }
+        }
+
+        // .git is a directory in a normal clone and a file in a worktree or submodule.
+        private static string FindRepoRoot(string startDir)
+        {
+            for (var dir = Path.GetFullPath(startDir); dir != null; dir = Path.GetDirectoryName(dir))
+            {
+                var git = Path.Combine(dir, ".git");
+                if (Directory.Exists(git) || File.Exists(git)) return dir;
+            }
+            return null;
+        }
+
+        private static string RelativeDocsPath(string projectDir, string repoRoot)
+        {
+            if (repoRoot == null) return "docs";
+            var prefix = "";
+            for (var dir = Path.GetFullPath(projectDir);
+                 dir != null && !string.Equals(dir, repoRoot, StringComparison.OrdinalIgnoreCase);
+                 dir = Path.GetDirectoryName(dir))
+                prefix += "../";
+            return prefix + "docs";
         }
 
         private static void RewriteWikiRoot(XDocument doc, XElement wikiRootElement, string projectFile, string value)

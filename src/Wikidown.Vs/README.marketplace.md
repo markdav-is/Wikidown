@@ -13,8 +13,8 @@ Surface your [Wikidown](https://github.com/markdav-is/Wikidown) `docs/` wiki fol
 
 1. Install the extension from the Visual Studio Marketplace (or double-click the `.vsix`).
 2. In your solution, choose **Add → New Project**, search for **Wikidown**, and select **Wikidown Wiki**.
-3. Name the project (default: `wiki`) and place it alongside your `.sln` file, then click **Create**.  
-   A `wiki.wikidownproj` file is created and the `docs/` folder appears under the new project node.
+3. Name the project (default: `wiki`) and click **Create**.  
+   A `wiki.wikidownproj` file is created and points at `docs/` under your repository root (the folder containing `.git`), creating it with a starter Home page if it doesn't exist. The wiki appears under the new project node.
 4. Double-click any `.md` file in Solution Explorer to open it in VS's built-in markdown editor.
 
 ## Configuring the wiki root
