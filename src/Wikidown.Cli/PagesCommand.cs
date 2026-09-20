@@ -19,7 +19,7 @@ public static class PagesCommand
             var content = ThemeResources.Read(file)
                 .Replace("{{TITLE}}", title.Replace("\"", "\\\""))
                 .Replace("{{HOME}}", home);
-            WriteFile(repo.RootPath, file, content, force, w);
+            WriteFile(repo, file, content, force, w);
         }
 
         JekyllNavigation.Write(repo);
@@ -38,16 +38,16 @@ public static class PagesCommand
         return string.IsNullOrEmpty(name) ? "Wiki" : name;
     }
 
-    private static void WriteFile(string root, string relPath, string content, bool force, TextWriter w)
+    private static void WriteFile(WikiRepository repo, string relPath, string content, bool force, TextWriter w)
     {
-        var path = Path.Combine(root, relPath.Replace('/', Path.DirectorySeparatorChar));
+        var path = Path.Combine(repo.RootPath, relPath.Replace('/', Path.DirectorySeparatorChar));
         if (File.Exists(path) && !force)
         {
             w.WriteLine($"exists, skipped {relPath} (use --force to overwrite)");
             return;
         }
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        File.WriteAllText(path, content);
+        LineEndings.WriteFile(path, content, repo.NewFileEnding());
         w.WriteLine($"wrote {relPath}");
     }
 }

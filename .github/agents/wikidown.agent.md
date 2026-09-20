@@ -35,8 +35,9 @@ prints `--help`.
 | Delete (with subpages)  | `wikidown delete --path P [--recursive]`                                 |
 | Re-sort a folder        | `wikidown reorder --folder P --names a,b,c`                              |
 
-Multi-line bodies go through `--stdin` (a heredoc) or `--file`; write the
-text to a temp file when quoting gets awkward.
+For multi-line bodies, write the text to a temp file and pass `--file` — it
+works the same in every shell. `--stdin` also works (pipe a PowerShell
+here-string, or use a bash heredoc).
 
 ## Exporting
 

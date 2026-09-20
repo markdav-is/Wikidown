@@ -141,8 +141,9 @@ namespace Wikidown.Vs
             var home = Path.Combine(wikiDir, "Home.md");
             if (!File.Exists(home))
             {
+                var nl = Environment.NewLine;
                 File.WriteAllText(home,
-                    "# Home\n\nWelcome to your Wikidown wiki. Add pages with `wikidown new`.\n");
+                    "# Home" + nl + nl + "Welcome to your Wikidown wiki. Add pages with `wikidown new`." + nl);
             }
         }
 

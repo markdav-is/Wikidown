@@ -14,7 +14,7 @@ public class WikiRepositoryAppendTests : IDisposable
     {
         _root = Path.Combine(Path.GetTempPath(), "wikidown-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(_root);
-        _repo = new WikiRepository(_root);
+        _repo = new WikiRepository(_root, LineEndings.Lf);
         _repo.Write(new WikiPage(PagePath.Parse("/Home"), "# Home\n"));
         _repo.Write(new WikiPage(PagePath.Parse("/Parent"), "# Parent\n"));
     }

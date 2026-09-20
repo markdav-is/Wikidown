@@ -14,7 +14,7 @@ public class WikiRepositoryEditTests : IDisposable
     {
         _root = Path.Combine(Path.GetTempPath(), "wikidown-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(_root);
-        _repo = new WikiRepository(_root);
+        _repo = new WikiRepository(_root, LineEndings.Lf);
         _repo.Write(new WikiPage(PagePath.Parse("/Home"), "# Home\n"));
         _repo.Write(new WikiPage(PagePath.Parse("/Parent"), "# Parent\n"));
     }
@@ -234,6 +234,24 @@ public class WikiRepositoryEditTests : IDisposable
         var (code, _, stderr) = RunCli("--old", "* one");
         Assert.Equal(2, code);
         Assert.Contains("--new", stderr);
+    }
+
+    [Fact]
+    public void Cli_Edit_Delete_RemovesTheMatch_WithoutAnEmptyStringArgument()
+    {
+        Seed();
+        var (code, _, _) = RunCli("--old", ", exhausted", "--delete");
+        Assert.Equal(0, code);
+        Assert.Contains("Wry.\n", ReadRaw());
+    }
+
+    [Fact]
+    public void Cli_Edit_DeleteWithReplacement_IsUsageError()
+    {
+        Seed();
+        var (code, _, stderr) = RunCli("--old", "* one", "--new", "x", "--delete");
+        Assert.Equal(2, code);
+        Assert.Contains("--delete", stderr);
     }
 
     [Fact]

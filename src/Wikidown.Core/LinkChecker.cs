@@ -6,6 +6,8 @@ public enum LinkIssueKind
 {
     Broken,
     AbsoluteTitlePath,
+    // Resolves on Windows/macOS, 404s once published to a case-sensitive host.
+    CaseMismatch,
 }
 
 public sealed record LinkIssue(PagePath Page, int LineNumber, string Target, LinkIssueKind Kind);
@@ -42,22 +44,21 @@ public static partial class LinkChecker
                 ? new LinkIssue(page, lineNumber, target, LinkIssueKind.AbsoluteTitlePath)
                 : null;
 
-        return Resolves(repo, page, target)
+        var withoutFragment = target.Split('#')[0];
+        if (withoutFragment.Length == 0) return null;
+
+        var full = ResolveFullPath(repo, page, withoutFragment);
+        if (!File.Exists(full))
+            return new LinkIssue(page, lineNumber, target, LinkIssueKind.Broken);
+        return PathCase.ExistsExactBelow(repo.RootPath, full)
             ? null
-            : new LinkIssue(page, lineNumber, target, LinkIssueKind.Broken);
+            : new LinkIssue(page, lineNumber, target, LinkIssueKind.CaseMismatch);
     }
 
     internal static bool IsExternal(string target) =>
         target.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
         target.StartsWith("https://", StringComparison.OrdinalIgnoreCase) ||
         target.StartsWith("mailto:", StringComparison.OrdinalIgnoreCase);
-
-    private static bool Resolves(WikiRepository repo, PagePath page, string target)
-    {
-        var withoutFragment = target.Split('#')[0];
-        if (withoutFragment.Length == 0) return true;
-        return File.Exists(ResolveFullPath(repo, page, withoutFragment));
-    }
 
     // Resolves a relative link/image target (fragment already stripped) to an
     // absolute disk path, relative to the page it appears on. Shared with

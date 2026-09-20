@@ -97,17 +97,20 @@ backend involved.
 
 ## Everyday CLI usage
 
-```bash
-wikidown list --path /                            # pages at the wiki root, in nav order
-wikidown new --path /Guides/Getting-Started       # create a page (updates .order)
-wikidown read --path /Guides/Getting-Started      # print a page
+```
+wikidown list                                     # pages at the wiki root, in nav order
+wikidown new --path Guides/Getting-Started        # create a page (updates .order)
+wikidown read --path Guides/Getting-Started       # print a page
 wikidown search --query "release notes"           # full-text search
-wikidown move --from /Old-Name --to /New-Name     # rename/move, keeps .order consistent
-wikidown reorder --folder / --names Home,Guides   # set explicit nav order
-wikidown delete --path /Scratch --recursive       # remove a page (and its subpages)
+wikidown move --from Old-Name --to New-Name       # rename/move, keeps .order consistent
+wikidown reorder --folder . --names Home,Guides   # set explicit nav order
+wikidown delete --path Scratch --recursive        # remove a page (and its subpages)
 ```
 
-All commands accept `--root <folder>` (default `docs`).
+These work as written in PowerShell, cmd, and bash. All commands accept
+`--root <folder>` (default `docs`). Page paths may also be written with a
+leading slash (`/Guides/Getting-Started`) — except under Git Bash, which
+rewrites such arguments into Windows paths.
 
 ## What's in this repo
 

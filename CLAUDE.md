@@ -34,6 +34,10 @@ pack on every push/PR.
   chunk ships.
 - No comments unless the *why* is non-obvious.
 - Don't add backwards-compat shims — this is pre-1.0.
+- Stay platform agnostic; most users are on Windows. Never hard-code `"\n"`
+  for files written to disk (keep a file's own endings; new files match the
+  wiki, else `Environment.NewLine`), tolerate CRLF when parsing, and give
+  PowerShell or shell-neutral forms in docs and help — not bash-only ones.
 
 ## Documentation lives in `/docs` (Wikidown wiki)
 

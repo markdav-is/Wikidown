@@ -52,7 +52,9 @@ public sealed record PagePath(IReadOnlyList<PageName> Segments)
     {
         ArgumentNullException.ThrowIfNull(linkPath);
         var trimmed = linkPath.Trim().TrimStart('/');
-        if (trimmed.Length == 0) return Root;
+        // "." names the root without a leading slash, which Git Bash rewrites
+        // into a Windows path and PowerShell 5.1 can't pass as "".
+        if (trimmed.Length == 0 || trimmed == ".") return Root;
 
         var parts = trimmed.Split('/', StringSplitOptions.RemoveEmptyEntries);
         var names = parts.Select(PageName.FromFileBase).ToList();

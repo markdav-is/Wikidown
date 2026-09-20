@@ -2,7 +2,8 @@ namespace Wikidown.Core;
 
 // An ADO wiki `.order` file: one page base-name per line, defining the
 // display order of pages within a folder. Blank lines and comments ignored on
-// read; writes are normalized to LF with a trailing newline.
+// read, as is CRLF vs LF. Render emits LF text with a trailing newline;
+// WikiRepository applies the file's own line endings when it saves.
 public static class OrderFile
 {
     public const string FileName = ".order";

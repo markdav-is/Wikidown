@@ -14,7 +14,7 @@ public class PagesCommandTests : IDisposable
         _repoRoot = Path.Combine(Path.GetTempPath(), "wikidown-pages-" + Guid.NewGuid().ToString("N"), "MyProject");
         _wikiRoot = Path.Combine(_repoRoot, "docs");
         Directory.CreateDirectory(_wikiRoot);
-        _repo = new WikiRepository(_wikiRoot);
+        _repo = new WikiRepository(_wikiRoot, LineEndings.Lf);
     }
 
     public void Dispose()

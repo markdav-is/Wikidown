@@ -61,7 +61,12 @@ public static class Commands
     {
         var path = PagePath.Parse(args.Require("path"));
         var oldText = LoadValue(args, "old", "old-file", allowStdin: false);
-        var newText = LoadValue(args, "new", "new-file", allowStdin: true);
+        // --delete, not --new "": Windows PowerShell 5.1 drops empty-string
+        // arguments before a native command ever sees them.
+        var delete = args.Flag("delete");
+        if (delete && (args.Optional("new") ?? args.Optional("new-file")) is not null)
+            throw new CliUsageException("pass either --delete or a replacement (--new/--new-file), not both");
+        var newText = delete ? "" : LoadValue(args, "new", "new-file", allowStdin: true);
         var result = repo.Edit(path, oldText, newText, replaceAll: args.Flag("all"));
         w.WriteLine(result.Summary);
         return 0;
@@ -94,7 +99,7 @@ public static class Commands
             throw new CliUsageException($"pass either --{inline} or --{fromFile}, not both");
         if (literal is not null) return literal;
         if (file is not null) return File.ReadAllText(file);
-        if (allowStdin && args.Flag("stdin")) return Console.In.ReadToEnd();
+        if (allowStdin && args.Flag("stdin")) return ReadStdin();
         throw new CliUsageException(allowStdin
             ? $"provide --{inline} <text>, --{fromFile} <path>, or --stdin"
             : $"provide --{inline} <text> or --{fromFile} <path>");
@@ -179,9 +184,12 @@ public static class Commands
 
         foreach (var issue in LinkChecker.Check(repo, flagAbsolute))
         {
-            var reason = issue.Kind == LinkIssueKind.AbsoluteTitlePath
-                ? "absolute title-path link (404s on GitHub)"
-                : "broken link";
+            var reason = issue.Kind switch
+            {
+                LinkIssueKind.AbsoluteTitlePath => "absolute title-path link (404s on GitHub)",
+                LinkIssueKind.CaseMismatch => "upper/lower case differs from the file on disk (404s once published)",
+                _ => "broken link",
+            };
             w.WriteLine($"{issue.Page.ToLinkPath()}:{issue.LineNumber} -> {issue.Target}  ({reason})");
             issues++;
         }
@@ -221,11 +229,14 @@ public static class Commands
         return 0;
     }
 
+    // Windows PowerShell 5.1 prefixes piped UTF-8 with a BOM.
+    private static string ReadStdin() => Console.In.ReadToEnd().TrimStart('\uFEFF');
+
     private static string LoadContent(ParsedArgs args)
     {
         var file = args.Optional("file");
         if (file is not null) return File.ReadAllText(file);
-        if (args.Flag("stdin")) return Console.In.ReadToEnd();
+        if (args.Flag("stdin")) return ReadStdin();
         throw new CliUsageException("provide --file <path> or --stdin");
     }
 }

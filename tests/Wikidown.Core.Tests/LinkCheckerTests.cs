@@ -42,6 +42,24 @@ public class LinkCheckerTests : IDisposable
         Assert.Empty(LinkChecker.Check(_repo));
     }
 
+    // Same verdict on every platform: Windows would resolve these links, the
+    // Linux host the wiki is published to would not.
+    [Fact]
+    public void Check_FlagsLinkWhoseCaseDiffersFromDisk()
+    {
+        _repo.Write(new WikiPage(PagePath.Parse("/Parent"), "p"));
+        _repo.Write(new WikiPage(PagePath.Parse("/Parent/Child"), "c"));
+        _repo.Write(new WikiPage(PagePath.Parse("/Other"), "[a](parent.md)\n[b](PARENT/Child.md)\n[ok](Parent/Child.md)\n"));
+
+        var issues = LinkChecker.Check(_repo).Where(i => i.Page.ToLinkPath() == "/Other").ToList();
+
+        Assert.Equal(new[] { "parent.md", "PARENT/Child.md" }, issues.Select(i => i.Target));
+        Assert.All(issues, i => Assert.True(
+            i.Kind is LinkIssueKind.CaseMismatch or LinkIssueKind.Broken));
+        if (OperatingSystem.IsWindows())
+            Assert.All(issues, i => Assert.Equal(LinkIssueKind.CaseMismatch, i.Kind));
+    }
+
     [Fact]
     public void Check_ResolvesRelativeLinkAcrossFolders()
     {

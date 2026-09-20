@@ -262,7 +262,45 @@ namespace Wikidown.Vs
             }
             if (!Contains(result, baseName)) result.Add(baseName);
 
-            File.WriteAllText(Path.Combine(dir, ".order"), string.Join("\n", result) + "\n");
+            WriteOrderEntries(dir, result);
+        }
+
+        // Keeps the .order file's own line endings; a new one matches a page
+        // beside it, else the platform (mirrors Wikidown.Core.LineEndings).
+        private static void WriteOrderEntries(string dir, List<string> entries)
+        {
+            var path = Path.Combine(dir, ".order");
+            if (entries.Count == 0)
+            {
+                File.WriteAllText(path, "");
+                return;
+            }
+            var ending = FolderLineEnding(dir);
+            File.WriteAllText(path, string.Join(ending, entries) + ending);
+        }
+
+        internal static string FolderLineEnding(string dir)
+        {
+            var ending = DetectLineEnding(Path.Combine(dir, ".order"));
+            if (ending != null) return ending;
+            foreach (var page in Directory.GetFiles(dir, "*.md"))
+            {
+                ending = DetectLineEnding(page);
+                if (ending != null) return ending;
+            }
+            return Environment.NewLine;
+        }
+
+        private static string DetectLineEnding(string path)
+        {
+            try
+            {
+                if (!File.Exists(path)) return null;
+                var text = File.ReadAllText(path);
+                if (text.IndexOf('\n') < 0) return null;
+                return text.Contains("\r\n") ? "\r\n" : "\n";
+            }
+            catch { return null; }
         }
 
         // ── file-system watcher ──────────────────────────────────────────────
@@ -849,7 +887,7 @@ namespace Wikidown.Vs
             if (index < 0 || target < 0 || target >= order.Count) return VSConstants.S_OK;
 
             (order[index], order[target]) = (order[target], order[index]);
-            File.WriteAllText(Path.Combine(dir, ".order"), string.Join("\n", order) + "\n");
+            WriteOrderEntries(dir, order);
 
             RebuildAndNotify();
             return VSConstants.S_OK;
@@ -889,8 +927,7 @@ namespace Wikidown.Vs
             if (!string.IsNullOrEmpty(parentDir) && File.Exists(Path.Combine(parentDir, ".order")))
             {
                 var order = MaterializeOrder(parentDir);
-                File.WriteAllText(Path.Combine(parentDir, ".order"),
-                    order.Count == 0 ? "" : string.Join("\n", order) + "\n");
+                WriteOrderEntries(parentDir, order);
             }
 
             RebuildAndNotify();
@@ -907,7 +944,7 @@ namespace Wikidown.Vs
             if (!File.Exists(orderPath))
             {
                 var order = MaterializeOrder(dir);
-                File.WriteAllText(orderPath, order.Count == 0 ? "" : string.Join("\n", order) + "\n");
+                WriteOrderEntries(dir, order);
             }
 
             // .order is not a hierarchy item, so this opens it as a loose file
@@ -1052,7 +1089,25 @@ namespace Wikidown.Vs
         }
 
         private static string BuildArguments(IEnumerable<string> parts) =>
-            string.Join(" ", parts.Select(p => "\"" + p.Replace("\"", "\\\"") + "\""));
+            string.Join(" ", parts.Select(QuoteArgument));
+
+        // CommandLineToArgvW rules: backslashes are literal unless they run
+        // into a quote, where each must be doubled — so "D:\" needs "D:\\".
+        private static string QuoteArgument(string arg)
+        {
+            var sb = new System.Text.StringBuilder("\"");
+            var backslashes = 0;
+            foreach (var c in arg)
+            {
+                if (c == '\\') { backslashes++; continue; }
+                if (c == '"') sb.Append('\\', backslashes * 2 + 1);
+                else sb.Append('\\', backslashes);
+                backslashes = 0;
+                sb.Append(c);
+            }
+            sb.Append('\\', backslashes * 2).Append('"');
+            return sb.ToString();
+        }
 
         private void RunExportAsync(CliLaunch cli, string arguments, string outputPath)
         {
@@ -1075,6 +1130,8 @@ namespace Wikidown.Vs
                         UseShellExecute = false,
                         RedirectStandardOutput = true,
                         RedirectStandardError = true,
+                        StandardOutputEncoding = System.Text.Encoding.UTF8,
+                        StandardErrorEncoding = System.Text.Encoding.UTF8,
                         CreateNoWindow = true,
                     }
                 })
@@ -1188,7 +1245,7 @@ namespace Wikidown.Vs
             var path = Path.Combine(dir, name + ".md");
             if (!File.Exists(path))
             {
-                File.WriteAllText(path, "# " + name.Replace('-', ' ') + "\n");
+                File.WriteAllText(path, "# " + name.Replace('-', ' ') + FolderLineEnding(dir));
                 AppendToOrder(dir, name);
             }
             return path;

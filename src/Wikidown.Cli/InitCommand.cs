@@ -30,14 +30,14 @@ public static class InitCommand
         if (agents.Claude)
         {
             foreach (var (resource, destination) in ClaudeFiles)
-                WriteFile(repoRoot, destination, ReadResource(resource), force, w);
-            AppendClaudeMd(repoRoot, w);
+                WriteFile(repoRoot, destination, ReadResource(resource), force, repo.NewFileEnding(), w);
+            AppendClaudeMd(repoRoot, repo.NewFileEnding(), w);
         }
 
         if (agents.Copilot)
         {
             foreach (var (resource, destination) in CopilotFiles)
-                WriteFile(repoRoot, destination, ReadResource(resource), force, w);
+                WriteFile(repoRoot, destination, ReadResource(resource), force, repo.NewFileEnding(), w);
         }
 
         return 0;
@@ -56,13 +56,13 @@ public static class InitCommand
         w.WriteLine("seeded /Home");
     }
 
-    private static void AppendClaudeMd(string repoRoot, TextWriter w)
+    private static void AppendClaudeMd(string repoRoot, string newFileEnding, TextWriter w)
     {
         var snippet = ReadResource("agents/claude/CLAUDE.md");
         var path = Path.Combine(repoRoot, "CLAUDE.md");
         if (!File.Exists(path))
         {
-            File.WriteAllText(path, snippet);
+            LineEndings.WriteFile(path, snippet, newFileEnding);
             w.WriteLine("wrote CLAUDE.md");
             return;
         }
@@ -72,11 +72,11 @@ public static class InitCommand
             w.WriteLine("CLAUDE.md already mentions the wiki, skipped");
             return;
         }
-        File.WriteAllText(path, existing.TrimEnd('\r', '\n') + "\n\n" + snippet);
+        LineEndings.WriteFile(path, existing.TrimEnd('\r', '\n') + "\n\n" + snippet, newFileEnding);
         w.WriteLine("appended wiki section to CLAUDE.md");
     }
 
-    private static void WriteFile(string repoRoot, string relPath, string content, bool force, TextWriter w)
+    private static void WriteFile(string repoRoot, string relPath, string content, bool force, string newFileEnding, TextWriter w)
     {
         var path = Path.Combine(repoRoot, relPath.Replace('/', Path.DirectorySeparatorChar));
         if (File.Exists(path) && !force)
@@ -85,7 +85,7 @@ public static class InitCommand
             return;
         }
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        File.WriteAllText(path, content);
+        LineEndings.WriteFile(path, content, newFileEnding);
         w.WriteLine($"wrote {relPath}");
     }
 

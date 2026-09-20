@@ -7,6 +7,25 @@ on:
   workflow_dispatch:
 
 jobs:
+  # Most users run Wikidown on Windows: line endings, path casing, reserved
+  # file names and console encoding only misbehave there.
+  test-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - name: Build
+        run: dotnet build Wikidown.slnf --configuration Release
+      - name: Test
+        run: dotnet test Wikidown.slnf --configuration Release --no-build
+      - name: Walk /docs with the CLI (dogfood)
+        run: |
+          dotnet run --project src/Wikidown.Cli --no-build --configuration Release -- list
+          dotnet run --project src/Wikidown.Cli --no-build --configuration Release -- export-html --output publish/docs-site --clean
+          if (-not (Test-Path publish/docs-site/Getting-Started/Format.html)) { exit 1 }
+
   build-test:
     runs-on: ubuntu-latest
     steps:

@@ -101,6 +101,14 @@ What to do depends on the `(reason)`:
     `[Bar](../Bar.md)`. Count the folder hops between the linking page and
     the target page to get the right number of `../`.
 
+*   **`(upper/lower case differs from the file on disk (404s once published))`** —
+    the target exists, but not with that capitalisation: `[Format](format.md)`
+    against a file named `Format.md`. Windows and macOS open it anyway; the
+    Linux hosts a wiki is published to do not. Fix the link to match the
+    file name exactly — or, if the file is the one that's wrong, rename it
+    with `wikidown move --from Format --to format` (case-only renames work
+    on every platform).
+
 *   **`(broken link)`** — a relative link/image that doesn't resolve to a
     real file. This is either a typo in the relative path or a stale link
     left over from a page that moved or was deleted. Open the linking

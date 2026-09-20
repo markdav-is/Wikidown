@@ -6,6 +6,51 @@ What changed in each Wikidown release, and where to get it. Newest first.
 For how to update an existing install, see
 [Updating](Getting-Started/Updating.md).
 
+## Visual Studio extension 1.5.4 — 20 September 2026
+
+A Windows-first pass. Most Wikidown users are on Windows, and a sweep of the
+code turned up several places that quietly assumed Unix. They are fixed in
+the extension and its bundled CLI now; the same fixes reach the NuGet tool
+and the standalone binaries with the next CLI release.
+
+### Where to get it
+
+| Component | Link |
+|---|---|
+| Visual Studio extension | [Wikidown Wiki Project on the Marketplace](https://marketplace.visualstudio.com/items?itemName=MarkDavis.wikidown) — or let Visual Studio auto-update |
+| VSIX download | [GitHub Release vsix-v1.5.4](https://github.com/markdav-is/Wikidown/releases/tag/vsix-v1.5.4) |
+
+### What changed
+
+- **Line endings are left alone.** The CLI and the extension used to write
+  LF into every file they touched — `.order`, new pages, whole-page
+  rewrites, `init` and `pages` output — leaving a Windows checkout with
+  mixed endings and a stream of git "LF will be replaced by CRLF" warnings.
+  Now a rewritten file keeps the endings (and UTF-8 BOM) it already had, a
+  new file matches the rest of the wiki, and a brand-new wiki uses the
+  platform default. CRLF `.order` files were always read correctly; agents
+  are now told so, and told never to "fix" them.
+- **UTF-8 in and out.** The CLI sets the console to UTF-8, so
+  `wikidown read > page.md` and piped `--stdin` no longer mangle accents,
+  dashes, and arrows on a Windows console, and edit summaries stop showing
+  `?` where an en dash should be.
+- **Page names that Windows can't store are refused** with a clear message —
+  `Report: Q1` used to vanish into an NTFS alternate data stream, and `CON`
+  echoed the page to the terminal while reporting success.
+- **Case-only renames work**: `wikidown move --from guide --to Guide` no
+  longer fails with "Destination exists" on Windows.
+- **`check-links` is case-exact on every platform**, so a link that only
+  resolves because Windows ignores case is caught before it 404s on GitHub
+  Pages.
+- **`edit --delete`** removes the matched text. The old spelling,
+  `--new ""`, never reached the CLI from Windows PowerShell 5.1.
+- **`export-html --clean`** empties the output folder instead of deleting
+  it, which failed whenever Explorer or a terminal had it open.
+- **Export to PDF from Visual Studio** quotes its arguments by Windows
+  rules, fixing wiki roots that end in a backslash (a drive root).
+- **Help, README, and agent instructions** show shell-neutral commands
+  (`--file`, slash-less page paths, `.` for the root) and PowerShell
+  alongside bash. CI now runs the test suite on Windows as well as Linux.
 ## 0.8.0 — 15 September 2026
 
 The MCP server is gone: the `wikidown` CLI is now the only surface AI

@@ -62,7 +62,13 @@ public static class HtmlExporter
         var layout = Parse(parser, theme.Text(LayoutFile), LayoutFile);
 
         var output = Path.GetFullPath(options.OutputDirectory);
-        if (options.Clean && Directory.Exists(output)) Directory.Delete(output, recursive: true);
+        // Empty the folder rather than delete it: on Windows a folder that is
+        // open in Explorer, a terminal, or a dev server can't be removed.
+        if (options.Clean && Directory.Exists(output))
+        {
+            foreach (var dir in Directory.GetDirectories(output)) Directory.Delete(dir, recursive: true);
+            foreach (var file in Directory.GetFiles(output)) File.Delete(file);
+        }
         Directory.CreateDirectory(output);
 
         foreach (var page in pages)

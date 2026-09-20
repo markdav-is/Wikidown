@@ -25,7 +25,7 @@ public static class JekyllNavigation
     {
         var path = DataPath(repo);
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        File.WriteAllText(path, Render(repo));
+        LineEndings.WriteFile(path, Render(repo), repo.NewFileEnding());
     }
 
     public static string Render(WikiRepository repo)

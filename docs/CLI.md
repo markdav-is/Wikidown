@@ -49,8 +49,32 @@ Either install path, the next step is the same: `wikidown init`.
 The CLI defaults to `./docs`. Override with `--root <path>`:
 
 ```sh
-wikidown --root ./my-wiki list
+wikidown list --root ./my-wiki
 ```
+
+Page paths may be written with or without the leading slash —
+`--path Getting-Started/Format` and `--path /Getting-Started/Format` are the
+same page, and `.` is the wiki root (`--folder .`). Prefer the slash-less
+form under Git Bash on Windows, which rewrites arguments that start with `/`
+into `C:/Program Files/Git/...` before the CLI sees them. PowerShell and cmd
+pass them through untouched.
+
+The CLI behaves the same on Windows, macOS, and Linux:
+
+- **Text is UTF-8 everywhere**, including piped `--stdin` and redirected
+  output (`wikidown read --path Home > home.md`). For multi-line text
+  `--file` is identical in every shell. With `--stdin`, note that Windows
+  PowerShell 5.1 re-encodes piped text as ASCII unless `$OutputEncoding` is
+  set to UTF-8; PowerShell 7 already is.
+- **Files keep their own line endings** — and their UTF-8 BOM, if they have
+  one — when the CLI rewrites them. New files match the rest of the wiki,
+  and a brand-new wiki uses the platform's default (CRLF on Windows). CRLF
+  and LF both read fine, in pages and in `.order`; there is nothing to
+  normalize.
+- **New page names must be portable.** Characters Windows forbids
+  (`\ : * ? " < > |`, plus `#`), names ending in a dot or a space, and
+  reserved device names (`CON`, `NUL`, `COM1`, …) are refused on every
+  platform, so a wiki authored on Linux still checks out on Windows.
 
 ## Commands
 
@@ -76,7 +100,7 @@ wikidown --root ./my-wiki list
 - `write --path /P [--file F | --stdin]` — overwrite a page. Auto-injects or
   refreshes the page's breadcrumb line — see
   [Format § Breadcrumb Navigation](Getting-Started/Format.md).
-- `edit --path /P (--old T | --old-file F) (--new T | --new-file F | --stdin) [--all]` —
+- `edit --path /P (--old T | --old-file F) (--new T | --new-file F | --stdin | --delete) [--all]` —
   replace an exact substring of a page in place, leaving the rest of the
   page untouched; the small-change alternative to `write`.
   The old text must match the page's raw markdown exactly (line endings
@@ -85,8 +109,11 @@ wikidown --root ./my-wiki list
   says how many times the text matched. Use `--old-file`/`--new-file` (or
   `--stdin` for the replacement) for multi-line text. Never touches the
   breadcrumb line or `.order`, and never creates a page. Prints the
-  changed line numbers with two lines of context.
-  `wikidown edit --path /Home --old "coming soon" --new "shipped"`
+  changed line numbers with two lines of context. To remove text, pass
+  `--delete` instead of a replacement — Windows PowerShell 5.1 drops an
+  empty `--new ""` before the CLI ever sees it.
+  `wikidown edit --path /Home --old "coming soon" --new "shipped"` ·
+  `wikidown edit --path /Home --old " (beta)" --delete`
 - `write-section --path /P --section "<heading>" (--file F | --stdin) [--create]` —
   replace the body under one heading, keeping the rest of the page. The
   heading line is preserved verbatim
@@ -106,7 +133,7 @@ wikidown --root ./my-wiki list
   repeated appends never stack blank lines. A miss lists the page's
   headings, an ambiguous match is an error, and breadcrumb/`.order`/line
   endings are untouched.
-  `echo "- Ship 0.7" | wikidown append --path /Home --after "Open concerns" --stdin`
+  `wikidown append --path /Home --after "Open concerns" --file concern.md`
 - `new --path /P [--title T] [--file F | --stdin]` — create a new page.
 - `move --from /A --to /B [--dry-run]` — rename or move a page (subpages
   travel with it). Rewrites inbound links from every other page that pointed
@@ -122,7 +149,10 @@ wikidown --root ./my-wiki list
 - `check-links [--no-absolute-check] [--no-index-check]` — walk every page
   and validate that relative markdown links (`[x](../Foo/Bar.md)`) and image
   references (`![x](../.attachments/pic.png)`) resolve to real files
-  relative to the linking page's folder. By default also:
+  relative to the linking page's folder. The match is case-exact on every
+  platform, so a link that only resolves because Windows or macOS ignores
+  case is reported before it 404s on a case-sensitive host such as GitHub
+  Pages. By default also:
   - flags absolute title-path links in page bodies (`[x](/Foo/Bar)`), since
     GitHub resolves those against the repo root and they 404 when the wiki
     is browsed on github.com (`--no-absolute-check` to skip);

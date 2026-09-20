@@ -6,10 +6,13 @@ public sealed class WikiRepository
 {
     public string RootPath { get; }
 
-    public WikiRepository(string rootPath)
+    private readonly string _newWikiEnding;
+
+    public WikiRepository(string rootPath, string? newWikiEnding = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(rootPath);
         RootPath = Path.GetFullPath(rootPath);
+        _newWikiEnding = newWikiEnding ?? Environment.NewLine;
     }
 
     public bool Exists(PagePath path) =>
@@ -32,24 +35,40 @@ public sealed class WikiRepository
             throw new InvalidOperationException("Cannot write the root as a page.");
 
         var file = ResolveFile(page.Path);
+        if (!File.Exists(file)) EnsurePortable(page.Path);
         var dir = System.IO.Path.GetDirectoryName(file)!;
         Directory.CreateDirectory(dir);
         var content = Breadcrumb.Inject(this, page.Path, page.Markdown);
-        File.WriteAllText(file, NormalizeNewlines(content));
+        LineEndings.WriteFile(file, EnsureTrailingNewline(content), NewFileEnding());
         EnsureOrderIncludes(page.Path);
         JekyllNavigation.RefreshIfEnabled(this);
     }
 
-    // Patch operations never create pages, never touch .order, and keep the
-    // file's own line endings — unlike Write, which normalizes to LF and
-    // registers the page in its folder.
+    // A new file matches the wiki it joins (root .order, else a root page);
+    // a brand-new wiki takes the platform's ending.
+    public string NewFileEnding()
+    {
+        var fromOrder = LineEndings.OfFile(OrderPath(PagePath.Root));
+        if (fromOrder is not null) return fromOrder;
+        if (Directory.Exists(RootPath))
+        {
+            foreach (var page in Directory.EnumerateFiles(RootPath, "*.md"))
+            {
+                if (LineEndings.OfFile(page) is { } ending) return ending;
+            }
+        }
+        return _newWikiEnding;
+    }
+
+    // Patch operations never create pages and never touch .order — unlike
+    // Write, which registers the page in its folder.
     public EditResult Edit(PagePath path, string oldText, string newText, bool replaceAll = false)
     {
         var file = RequireExistingFile(path);
         var raw = File.ReadAllText(file);
         var ending = LineEndings.Detect(raw);
         var result = PageEdit.Apply(path, LineEndings.ToLf(raw), oldText, newText, replaceAll, out var patched);
-        File.WriteAllText(file, LineEndings.Apply(patched, ending));
+        LineEndings.WriteKeepingBom(file, LineEndings.Apply(patched, ending));
         return result;
     }
 
@@ -69,7 +88,7 @@ public sealed class WikiRepository
         var ending = LineEndings.Detect(raw);
         var result = PageSections.Write(path, LineEndings.ToLf(raw), section, LineEndings.ToLf(markdown),
             createIfMissing, out var patched);
-        File.WriteAllText(file, LineEndings.Apply(patched, ending));
+        LineEndings.WriteKeepingBom(file, LineEndings.Apply(patched, ending));
         return result;
     }
 
@@ -80,7 +99,7 @@ public sealed class WikiRepository
         var ending = LineEndings.Detect(raw);
         var result = PageSections.Append(path, LineEndings.ToLf(raw), LineEndings.ToLf(markdown), afterSection,
             out var patched);
-        File.WriteAllText(file, LineEndings.Apply(patched, ending));
+        LineEndings.WriteKeepingBom(file, LineEndings.Apply(patched, ending));
         return result;
     }
 
@@ -120,11 +139,19 @@ public sealed class WikiRepository
             throw new InvalidOperationException("Cannot move to/from root.");
         if (!Exists(from))
             throw new FileNotFoundException($"Page not found: {from.ToLinkPath()}");
-        if (Exists(to))
-            throw new InvalidOperationException($"Destination exists: {to.ToLinkPath()}");
+        EnsurePortable(to);
 
         var fromFile = ResolveFile(from);
         var toFile = ResolveFile(to);
+
+        // On a case-insensitive filesystem /Foo -> /foo "exists" already, but
+        // it is the page being moved — the rename that fixes a link which
+        // 404s on a case-sensitive host.
+        var caseOnlyRename =
+            string.Equals(from.ToLinkPath(), to.ToLinkPath(), StringComparison.OrdinalIgnoreCase)
+            && !PathCase.ExistsExact(toFile);
+        if (Exists(to) && !caseOnlyRename)
+            throw new InvalidOperationException($"Destination exists: {to.ToLinkPath()}");
         Directory.CreateDirectory(System.IO.Path.GetDirectoryName(toFile)!);
         File.Move(fromFile, toFile);
 
@@ -153,7 +180,7 @@ public sealed class WikiRepository
     {
         var file = ResolveFile(page);
         var content = File.ReadAllText(file);
-        File.WriteAllText(file, NormalizeNewlines(Breadcrumb.Inject(this, page, content)));
+        LineEndings.WriteFile(file, EnsureTrailingNewline(Breadcrumb.Inject(this, page, content)), NewFileEnding());
     }
 
     public IReadOnlyList<PagePath> ListChildren(PagePath parent)
@@ -214,7 +241,7 @@ public sealed class WikiRepository
         if (content.Length == 0 && File.Exists(path))
             File.Delete(path);
         else
-            File.WriteAllText(path, content);
+            LineEndings.WriteFile(path, content, NewFileEnding());
         JekyllNavigation.RefreshIfEnabled(this);
     }
 
@@ -238,6 +265,11 @@ public sealed class WikiRepository
         WriteOrder(parent, entries);
     }
 
+    private static void EnsurePortable(PagePath path)
+    {
+        foreach (var segment in path.Segments) segment.EnsurePortable();
+    }
+
     private string ResolveFile(PagePath path) =>
         System.IO.Path.Combine(RootPath, path.ToFilePath());
 
@@ -249,9 +281,6 @@ public sealed class WikiRepository
             ? System.IO.Path.Combine(RootPath, OrderFile.FileName)
             : System.IO.Path.Combine(ResolveFolder(folder), OrderFile.FileName);
 
-    private static string NormalizeNewlines(string text)
-    {
-        var lf = text.Replace("\r\n", "\n").Replace('\r', '\n');
-        return lf.EndsWith('\n') ? lf : lf + "\n";
-    }
+    private static string EnsureTrailingNewline(string text) =>
+        text.EndsWith('\n') ? text : text + "\n";
 }

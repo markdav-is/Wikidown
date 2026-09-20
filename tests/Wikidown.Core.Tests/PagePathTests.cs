@@ -10,6 +10,7 @@ public class PagePathTests
     {
         Assert.True(PagePath.Parse("/").IsRoot);
         Assert.True(PagePath.Parse("").IsRoot);
+        Assert.True(PagePath.Parse(".").IsRoot);
     }
 
     [Fact]

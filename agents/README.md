@@ -5,7 +5,7 @@ wiki through the `wikidown` CLI.
 
 The fastest install is the CLI scaffolder — from your repo root:
 
-```bash
+```
 dotnet tool install -g Wikidown.Cli
 wikidown init --agents all
 ```
@@ -13,8 +13,9 @@ wikidown init --agents all
 No .NET on the machine? The wikidown.org install script drops a
 self-contained `wikidown` binary instead — `init` works identically:
 
-```bash
-curl -fsSL https://wikidown.org/install.sh | sh   # Windows: irm https://wikidown.org/install.ps1 | iex
+```
+irm https://wikidown.org/install.ps1 | iex          # Windows (PowerShell)
+curl -fsSL https://wikidown.org/install.sh | sh     # macOS / Linux
 wikidown init --agents all
 ```
 

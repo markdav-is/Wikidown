@@ -34,11 +34,13 @@ cannot run either, follow "Last resort: no CLI".
 
 ## Command cheat sheet
 
-Install once (either form; the second needs no .NET):
+Install once — as a .NET tool on any platform, or with the standalone
+installer (no .NET needed):
 
-```sh
+```
 dotnet tool install -g Wikidown.Cli
-curl -fsSL https://wikidown.org/install.sh | sh   # Windows: irm https://wikidown.org/install.ps1 | iex
+irm https://wikidown.org/install.ps1 | iex          # Windows (PowerShell)
+curl -fsSL https://wikidown.org/install.sh | sh     # macOS / Linux
 ```
 
 Default root is `./docs`; add `--root <path>` to every command otherwise.
@@ -60,9 +62,9 @@ Default root is `./docs`; add `--root <path>` to every command otherwise.
 | Re-sort a folder        | `wikidown reorder --folder P --names a,b,c`                              |
 | Audit links and `.order`| `wikidown check-links`                                                   |
 
-Every command prints `--help`. Multi-line bodies go through `--stdin` (a
-heredoc) or `--file`; write the text to a temp file when quoting gets
-awkward.
+Every command prints `--help`. For multi-line bodies, write the text to a
+temp file and pass `--file` — it works the same in every shell. `--stdin`
+also works (pipe a PowerShell here-string, or use a bash heredoc).
 
 ## Exporting
 
@@ -135,7 +137,9 @@ handles. Work through this checklist for each change:
    page, write/regenerate this line; never duplicate it.
 
 2. **`.order` bookkeeping.** Each folder's `.order` lists page base names
-   (no `.md`), one per line, LF endings. On create: append the new page's
+   (no `.md`), one per line. Line endings don't matter: CRLF and LF both
+   read fine and the CLI keeps whatever a file already uses — never warn
+   about or "fix" them. On create: append the new page's
    base name to its folder's `.order` (create the file if missing). On
    delete: remove the entry. On move: remove from the old folder's file,
    add to the new one's. Unlisted pages sort last alphabetically, so a

@@ -103,7 +103,7 @@ public static class CommandRunner
         w.WriteLine("  walk     [--path /Link/Path]                 list every page in .order order (or a subtree)");
         w.WriteLine("  read     --path /Link/Path [--section H]     print page markdown (or one section) to stdout");
         w.WriteLine("  write    --path /Link/Path [--file F | --stdin]  write/overwrite a page");
-        w.WriteLine("  edit     --path /P (--old T | --old-file F) (--new T | --new-file F | --stdin) [--all]");
+        w.WriteLine("  edit     --path /P (--old T | --old-file F) (--new T | --new-file F | --stdin | --delete) [--all]");
         w.WriteLine("           replace exact text in a page, leaving the rest untouched");
         w.WriteLine("  write-section --path /P --section H [--file F | --stdin] [--create]");
         w.WriteLine("           replace the body under one heading, keeping the rest of the page");
@@ -136,6 +136,10 @@ public static class CommandRunner
         w.WriteLine();
         w.WriteLine("Global:");
         w.WriteLine("  --root <path>   path to docs folder (default: ./docs)");
+        w.WriteLine();
+        w.WriteLine("Page paths: the leading / is optional (--path Getting-Started/Format). Leave it");
+        w.WriteLine("off under Git Bash, which rewrites /Foo arguments into C:/Program Files/Git/Foo.");
+        w.WriteLine("Multi-line text: --file works the same in every shell; --stdin reads UTF-8.");
     }
 
     private static readonly Dictionary<string, string> CommandHelp = new(StringComparer.Ordinal)
@@ -221,7 +225,7 @@ public static class CommandRunner
 
             Examples:
               wikidown write --path /Getting-Started --file getting-started.md
-              cat page.md | wikidown write --path /Getting-Started --stdin
+              <any command> | wikidown write --path /Getting-Started --stdin
 
             """,
 
@@ -229,7 +233,7 @@ public static class CommandRunner
             """
             Usage:
               wikidown edit --path /Link/Path (--old <text> | --old-file <path>)
-                            (--new <text> | --new-file <path> | --stdin) [--all] [--root <path>]
+                            (--new <text> | --new-file <path> | --stdin | --delete) [--all] [--root <path>]
 
             Replace an exact substring of a page in place, leaving the rest of
             the page untouched — the small-change alternative to `write`. The
@@ -243,9 +247,10 @@ public static class CommandRunner
               --path       Required title-form wiki path
               --old        Text to replace (use --old-file for multi-line text)
               --old-file   Read the text to replace from a file
-              --new        Replacement text (an empty string deletes)
+              --new        Replacement text
               --new-file   Read the replacement text from a file
               --stdin      Read the replacement text from standard input
+              --delete     Remove the matched text instead of replacing it
               --all        Replace every occurrence instead of failing on ambiguity
               --root       Path to the docs folder (default: ./docs)
               -h, --help
@@ -254,6 +259,7 @@ public static class CommandRunner
               wikidown edit --path /Home --old "coming soon" --new "shipped in 0.6"
               wikidown edit --path /CLI --old-file before.txt --new-file after.txt
               wikidown edit --path /Home --old colour --new color --all
+              wikidown edit --path /Home --old " (beta)" --delete
 
             """,
 
@@ -283,7 +289,7 @@ public static class CommandRunner
 
             Examples:
               wikidown write-section --path /CLI --section "Wiki root" --file root.md
-              cat notes.md | wikidown write-section --path /Home --section Notes --stdin --create
+              wikidown write-section --path /Home --section Notes --file notes.md --create
 
             """,
 
@@ -311,8 +317,8 @@ public static class CommandRunner
               -h, --help
 
             Examples:
-              echo "- Ship 0.7" | wikidown append --path /Home --after "Open concerns" --stdin
               wikidown append --path /Changelog --file entry.md
+              wikidown append --path /Home --after "Open concerns" --file concern.md
 
             """,
 
@@ -334,7 +340,6 @@ public static class CommandRunner
 
             Examples:
               wikidown new --path /Specifications/Photo-Upload --file photo-upload.md
-              cat photo-upload.md | wikidown new --path /Specifications/Photo-Upload --stdin
               wikidown new --path /FAQ --title "Frequently Asked Questions"
 
             """,

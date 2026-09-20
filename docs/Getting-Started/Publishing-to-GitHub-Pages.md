@@ -19,7 +19,9 @@ published: it *is* this wiki, exported by CI on every change.
 
 ```sh
 wikidown pages            # run from the repo root; --root docs is the default
-git add docs && git commit -m "Publish wiki with GitHub Pages" && git push
+git add docs
+git commit -m "Publish wiki with GitHub Pages"
+git push
 ```
 
 Then in GitHub: **Settings → Pages → Source** "Deploy from a branch", branch

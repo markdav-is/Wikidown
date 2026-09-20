@@ -726,6 +726,32 @@ Blazor WASM PWA editor + marketing site hosted on GitHub Pages.
       uninstall -g Wikidown.Mcp`, delete the two mcp.json files, re-run
       `wikidown init --agents all --force`.
 
+26. **Windows-first pass — stop assuming Unix.** *(shipped)*
+    - Trigger (2026-09-20): an agent warned a Windows user that CRLF
+      `.order` files were a problem because the skill said "LF endings".
+      They never were (`OrderFile.Parse` trims `\r`), but the CLI did force
+      LF into everything it wrote. Most users are on Windows; a sweep found
+      the rest of this list. Rule now in `CLAUDE.md`: stay platform
+      agnostic.
+    - Line endings: `LineEndings.WriteFile` — a rewrite keeps the file's own
+      endings and UTF-8 BOM, a new file takes `WikiRepository.NewFileEnding()`
+      (root `.order`, else a root page, else `Environment.NewLine`; tests pin
+      it via the new ctor argument). Used by `Write`, breadcrumb refresh,
+      `.order`, `navigation.yml`, `init`, `pages`. VSIX mirrors it
+      (`FolderLineEnding`).
+    - `Program.cs` sets console in/out to UTF-8 (restored on exit); stdin
+      strips a BOM. `PageName.EnsurePortable` refuses Windows-illegal
+      characters, trailing dot/space and device names on create/move, on
+      every platform. `Move` allows case-only renames; `PathCase` +
+      `LinkIssueKind.CaseMismatch` make `check-links` case-exact everywhere.
+      `edit --delete` replaces `--new ""`. `.` parses as the root.
+      `export-html --clean` empties rather than deletes the folder. VSIX
+      quotes CLI arguments by `CommandLineToArgvW` rules and reads UTF-8.
+    - Help, README, wiki and agent configs use shell-neutral forms (`--file`,
+      slash-less paths) with PowerShell alongside bash. `ci.yml` gains a
+      `windows-latest` test job. VSIX 1.5.4 ships it (1.5.3 was never
+      tagged); the NuGet CLI picks it up at the next `VersionPrefix` bump.
+
 ## Open questions / parking lot
 - `[[_TOC_]]`, mermaid, `:::` callouts rendering in WASM preview.
 - `/.attachments` upload from browser (REST base64 -> Contents API).

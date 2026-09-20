@@ -45,5 +45,28 @@ public readonly record struct PageName
         return new PageName(title, normalized);
     }
 
+    // Checked when a page is created, on every platform: a wiki authored on
+    // Linux still has to check out on Windows, where these names either fail
+    // or silently go somewhere else ("a:b.md" is an alternate data stream on
+    // "a"; "CON.md" is the console device).
+    public void EnsurePortable()
+    {
+        if (FileBase.IndexOfAny(ForbiddenChars) >= 0 || FileBase.Any(char.IsControl))
+            throw new ArgumentException(
+                $"Page name '{FileBase}' contains a character that is not allowed in a page name ({string.Join(' ', ForbiddenChars)}).");
+        if (FileBase.EndsWith('.') || FileBase.EndsWith(' '))
+            throw new ArgumentException($"Page name '{FileBase}' cannot end with a dot or a space.");
+
+        var device = FileBase.Split('.')[0].TrimEnd(' ');
+        if (ReservedDeviceNames.Contains(device))
+            throw new ArgumentException(
+                $"Page name '{FileBase}' is a reserved device name on Windows ({device}); pick another name.");
+    }
+
+    private static readonly HashSet<string> ReservedDeviceNames = new(
+        new[] { "CON", "PRN", "AUX", "NUL" }
+            .Concat(Enumerable.Range(1, 9).SelectMany(i => new[] { $"COM{i}", $"LPT{i}" })),
+        StringComparer.OrdinalIgnoreCase);
+
     public override string ToString() => Title;
 }

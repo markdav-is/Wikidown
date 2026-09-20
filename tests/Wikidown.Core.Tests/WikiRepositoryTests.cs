@@ -12,7 +12,7 @@ public class WikiRepositoryTests : IDisposable
     {
         _root = Path.Combine(Path.GetTempPath(), "wikidown-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(_root);
-        _repo = new WikiRepository(_root);
+        _repo = new WikiRepository(_root, LineEndings.Lf);
     }
 
     public void Dispose()
@@ -32,6 +32,116 @@ public class WikiRepositoryTests : IDisposable
 
         var order = File.ReadAllText(Path.Combine(_root, ".order"));
         Assert.Contains("Getting-Started", order);
+    }
+
+    [Theory]
+    [InlineData("\n")]
+    [InlineData("\r\n")]
+    public void NewWiki_UsesTheGivenEnding_ForPagesAndOrder(string ending)
+    {
+        var repo = new WikiRepository(_root, ending);
+        repo.Write(new WikiPage(PagePath.Parse("/One"), "# One\n\nBody.\n"));
+        repo.Write(new WikiPage(PagePath.Parse("/Two"), "# Two\n"));
+
+        Assert.Equal($"# One{ending}{ending}Body.{ending}", File.ReadAllText(Path.Combine(_root, "One.md")));
+        Assert.Equal($"One{ending}Two{ending}", File.ReadAllText(Path.Combine(_root, ".order")));
+    }
+
+    [Fact]
+    public void CrlfWiki_StaysCrlf_WhateverThePlatformOrInputUses()
+    {
+        File.WriteAllText(Path.Combine(_root, "Home.md"), "# Home\r\n");
+        File.WriteAllText(Path.Combine(_root, ".order"), "Home\r\n");
+
+        _repo.Write(new WikiPage(PagePath.Parse("/Home"), "# Home\n\nRewritten.\n"));
+        _repo.Write(new WikiPage(PagePath.Parse("/Guide"), "# Guide\n"));
+        _repo.Write(new WikiPage(PagePath.Parse("/Guide/Sub"), "# Sub\n"));
+        _repo.Move(PagePath.Parse("/Guide/Sub"), PagePath.Parse("/Sub"));
+
+        foreach (var file in Directory.EnumerateFiles(_root, "*", SearchOption.AllDirectories))
+        {
+            var text = File.ReadAllText(file);
+            Assert.DoesNotContain("\n", text.Replace("\r\n", ""));
+        }
+        Assert.Equal("Home\r\nGuide\r\nSub\r\n", File.ReadAllText(Path.Combine(_root, ".order")));
+    }
+
+    [Fact]
+    public void LfWiki_StaysLf_EvenWhenInputIsCrlf()
+    {
+        _repo.Write(new WikiPage(PagePath.Parse("/Home"), "# Home\n"));
+        _repo.Write(new WikiPage(PagePath.Parse("/Guide"), "# Guide\r\n\r\nBody.\r\n"));
+
+        Assert.DoesNotContain("\r", File.ReadAllText(Path.Combine(_root, "Guide.md")));
+        Assert.DoesNotContain("\r", File.ReadAllText(Path.Combine(_root, ".order")));
+    }
+
+    [Theory]
+    [InlineData("/Report: Q1")]
+    [InlineData("/What?")]
+    [InlineData("/a*b")]
+    [InlineData("/Parent/x|y")]
+    [InlineData("/CON")]
+    [InlineData("/nul")]
+    [InlineData("/Parent/COM1")]
+    [InlineData("/LPT9.notes")]
+    [InlineData("/Trailing.")]
+    public void Write_RefusesNamesThatCannotExistOnWindows_OnEveryPlatform(string path)
+    {
+        var ex = Assert.Throws<ArgumentException>(
+            () => _repo.Write(new WikiPage(PagePath.Parse(path), "# x\n")));
+        Assert.Contains("Page name", ex.Message);
+        Assert.Empty(Directory.EnumerateFileSystemEntries(_root));
+    }
+
+    [Fact]
+    public void Move_RefusesNonPortableDestination()
+    {
+        _repo.Write(new WikiPage(PagePath.Parse("/Notes"), "# Notes\n"));
+
+        Assert.Throws<ArgumentException>(() => _repo.Move(PagePath.Parse("/Notes"), PagePath.Parse("/AUX")));
+        Assert.True(_repo.Exists(PagePath.Parse("/Notes")));
+    }
+
+    [Fact]
+    public void Move_CaseOnlyRename_Works_IncludingSubpageFolder()
+    {
+        _repo.Write(new WikiPage(PagePath.Parse("/guide"), "# guide\n"));
+        _repo.Write(new WikiPage(PagePath.Parse("/guide/Sub"), "# Sub\n"));
+
+        _repo.Move(PagePath.Parse("/guide"), PagePath.Parse("/Guide"));
+
+        Assert.Contains("Guide.md", Directory.EnumerateFiles(_root).Select(Path.GetFileName));
+        Assert.Contains("Guide", Directory.EnumerateDirectories(_root).Select(Path.GetFileName));
+        Assert.DoesNotContain("guide.md", Directory.EnumerateFiles(_root).Select(Path.GetFileName));
+        Assert.Equal(new[] { "Guide" }, _repo.ReadOrder(PagePath.Root));
+        Assert.True(_repo.Exists(PagePath.Parse("/Guide/Sub")));
+    }
+
+    [Fact]
+    public void Move_OntoADifferentExistingPage_StillRefused()
+    {
+        _repo.Write(new WikiPage(PagePath.Parse("/A"), "# A\n"));
+        _repo.Write(new WikiPage(PagePath.Parse("/B"), "# B\n"));
+
+        Assert.Throws<InvalidOperationException>(() => _repo.Move(PagePath.Parse("/A"), PagePath.Parse("/B")));
+    }
+
+    [Fact]
+    public void Writes_KeepAUtf8Bom_AndNeverAddOne()
+    {
+        var bom = new byte[] { 0xEF, 0xBB, 0xBF };
+        var withBom = Path.Combine(_root, "WithBom.md");
+        File.WriteAllBytes(withBom, bom.Concat("# WithBom\n\nold\n"u8.ToArray()).ToArray());
+        _repo.Write(new WikiPage(PagePath.Parse("/Plain"), "# Plain\n\nold\n"));
+
+        _repo.Edit(PagePath.Parse("/WithBom"), "old", "new");
+        _repo.Write(new WikiPage(PagePath.Parse("/WithBom"), "# WithBom\n\nrewritten\n"));
+        _repo.Edit(PagePath.Parse("/Plain"), "old", "new");
+
+        Assert.Equal(bom, File.ReadAllBytes(withBom).Take(3));
+        Assert.NotEqual(bom, File.ReadAllBytes(Path.Combine(_root, "Plain.md")).Take(3));
+        Assert.Contains("rewritten", File.ReadAllText(withBom));
     }
 
     [Fact]
