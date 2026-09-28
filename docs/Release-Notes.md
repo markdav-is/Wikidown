@@ -6,7 +6,42 @@ What changed in each Wikidown release, and where to get it. Newest first.
 For how to update an existing install, see
 [Updating](Getting-Started/Updating.md).
 
+## 0.9.0 and Visual Studio extension 1.6.0 — 27 September 2026
+
+Kanban boards made of ordinary wiki pages, a `check-links` that passes on
+real wikis, and PDF exports that no longer drop content from lists. This CLI
+release also carries the Windows fixes that shipped in extension 1.5.4.
+
+### Where to get it
+
+| Component | Link |
+|---|---|
+| `wikidown` CLI (NuGet global tool) | [Wikidown.Cli 0.9.0](https://www.nuget.org/packages/Wikidown.Cli/0.9.0) — `dotnet tool update -g Wikidown.Cli` |
+| `Wikidown.Core` library | [Wikidown.Core 0.9.0](https://www.nuget.org/packages/Wikidown.Core/0.9.0) |
+| Self-contained CLI binaries (no .NET needed) | [GitHub Release cli-v0.9.0](https://github.com/markdav-is/Wikidown/releases/tag/cli-v0.9.0) — win/linux/osx, x64 and arm64; or re-run the [install script](CLI.md) |
+| Visual Studio extension | [Wikidown Wiki Project on the Marketplace](https://marketplace.visualstudio.com/items?itemName=MarkDavis.wikidown) — or let Visual Studio auto-update |
+| VSIX download | [GitHub Release vsix-v1.6.0](https://github.com/markdav-is/Wikidown/releases/tag/vsix-v1.6.0) |
+
+### What changed
+
+- **Kanban.** `wikidown kanban init` creates a dashboard page with To Do,
+  Doing and Done sub-pages; each item is a sub-page of one of them, and
+  moving an item is an ordinary `wikidown move`. See
+  [Kanban](Getting-Started/Kanban.md).
+- **Headings written as links can be addressed by their text.**
+  `--section "To Do"` and `--after "To Do"` find `## [To Do](...)`.
+- **`check-links` ignores links inside code blocks and inline code.**
+  Example links in documentation no longer count as broken, and no longer
+  count as a parent page linking its children.
+- **PDF export keeps everything in a list item.** A second paragraph, a
+  code block, a quote or a table inside a list item used to be left out of
+  the PDF without a word; it now appears under its bullet.
+- **Windows fixes from extension 1.5.4** (line endings left alone, UTF-8
+  console, portable page names, case-only renames, `edit --delete`) now
+  reach the NuGet tool and the standalone binaries.
+
 ## Visual Studio extension 1.5.4 — 20 September 2026
+
 
 A Windows-first pass. Most Wikidown users are on Windows, and a sweep of the
 code turned up several places that quietly assumed Unix. They are fixed in
