@@ -215,8 +215,8 @@ public static class MigraDocRenderer
         {
             case IrHeading h: RenderHeading(section, h, extraAnchor: null, h.Level, h.Level + headingOffset); break;
             case IrParagraph p: RenderRuns(section.AddParagraph(), p.Runs); break;
-            case IrList l: RenderList(section, l, depth); break;
-            case IrCodeBlock c: RenderCodeBlock(section, c); break;
+            case IrList l: RenderList(section, l, depth, headingOffset); break;
+            case IrCodeBlock c: RenderCodeBlock(section, c, depth); break;
             case IrBlockQuote bq: RenderBlockQuote(section, bq, depth, headingOffset); break;
             case IrTable t: RenderTable(section, t); break;
             case IrImage img: RenderImage(section, img); break;
@@ -261,7 +261,10 @@ public static class MigraDocRenderer
 
     private static OutlineLevel OutlineLevelFor(int depth) => OutlineLevels[Math.Clamp(depth, 1, 9) - 1];
 
-    private static void RenderList(Section section, IrList list, int depth)
+    // An item's later blocks sit under its bullet line: continuation
+    // paragraphs and code align with the item text, nested lists and quotes
+    // step one level deeper.
+    private static void RenderList(Section section, IrList list, int depth, int headingOffset)
     {
         var index = 1;
         foreach (var item in list.Items)
@@ -272,14 +275,28 @@ public static class MigraDocRenderer
             var marker = list.Ordered ? $"{index}. " : "• ";
             paragraph.AddFormattedText(marker);
             RenderRuns(paragraph, item.Runs);
-            if (item.Nested is not null) RenderList(section, item.Nested, depth + 1);
+            foreach (var block in item.Blocks)
+            {
+                if (block is IrParagraph p)
+                {
+                    var continuation = section.AddParagraph();
+                    continuation.Format.LeftIndent = Unit.FromCentimeter(0.6 * (depth + 1));
+                    continuation.Format.SpaceAfter = Unit.FromPoint(2);
+                    RenderRuns(continuation, p.Runs);
+                }
+                else
+                {
+                    RenderBlock(section, block, depth + 1, headingOffset);
+                }
+            }
             index++;
         }
     }
 
-    private static void RenderCodeBlock(Section section, IrCodeBlock code)
+    private static void RenderCodeBlock(Section section, IrCodeBlock code, int depth)
     {
         var paragraph = section.AddParagraph();
+        paragraph.Format.LeftIndent = Unit.FromCentimeter(0.6 * depth);
         paragraph.Format.Font.Name = MonospaceFont;
         paragraph.Format.Shading.Color = Color.FromRgb(0xEE, 0xEE, 0xEE);
         paragraph.Format.Borders.Width = Unit.FromPoint(0.5);

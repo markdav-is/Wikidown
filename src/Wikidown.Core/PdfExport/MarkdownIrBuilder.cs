@@ -34,7 +34,7 @@ public static class MarkdownIrBuilder
 
     private sealed record BuildContext(PagePath Page, IPdfPageSource Source, bool AllowHtmlSkip, List<PdfExportWarning> Warnings);
 
-    private static IReadOnlyList<IrBlock> BuildBlocks(ContainerBlock container, BuildContext ctx)
+    private static IReadOnlyList<IrBlock> BuildBlocks(IEnumerable<Block> container, BuildContext ctx)
     {
         var result = new List<IrBlock>();
         foreach (var block in container)
@@ -117,21 +117,14 @@ public static class MarkdownIrBuilder
         var items = new List<IrListItem>();
         foreach (var itemBlock in list)
         {
+            var children = ((ListItemBlock)itemBlock).ToList();
             IReadOnlyList<IrRun> runs = Array.Empty<IrRun>();
-            IrList? nested = null;
-            foreach (var child in (ListItemBlock)itemBlock)
+            if (children.FirstOrDefault() is ParagraphBlock first)
             {
-                switch (child)
-                {
-                    case ParagraphBlock p when runs.Count == 0:
-                        runs = BuildInlines(p.Inline, ctx);
-                        break;
-                    case ListBlock nestedList:
-                        nested = BuildList(nestedList, ctx);
-                        break;
-                }
+                runs = BuildInlines(first.Inline, ctx);
+                children.RemoveAt(0);
             }
-            items.Add(new IrListItem(runs, nested));
+            items.Add(new IrListItem(runs, BuildBlocks(children, ctx)));
         }
         return new IrList(list.IsOrdered, items);
     }

@@ -51,8 +51,37 @@ public class MarkdownIrBuilderTests : IDisposable
         Assert.False(list.Ordered);
         var item = Assert.Single(list.Items);
         Assert.Equal("Top", Assert.IsType<IrText>(Assert.Single(item.Runs)).Text);
-        var nestedItem = Assert.Single(item.Nested!.Items);
+        var nested = Assert.IsType<IrList>(Assert.Single(item.Blocks));
+        var nestedItem = Assert.Single(nested.Items);
         Assert.Equal("Nested", Assert.IsType<IrText>(Assert.Single(nestedItem.Runs)).Text);
+    }
+
+    [Fact]
+    public void ListItem_KeepsEveryBlockAfterItsFirstLine()
+    {
+        const string markdown =
+            "- First\n\n  Second paragraph.\n\n  ```sh\n  run me\n  ```\n\n  > quoted\n\n  - nested\n\n  | A |\n  | - |\n  | 1 |\n";
+
+        var blocks = MarkdownIrBuilder.Build(markdown, PagePath.Parse("/A"), _repo);
+
+        var item = Assert.Single(Assert.IsType<IrList>(Assert.Single(blocks)).Items);
+        Assert.Equal("First", Assert.IsType<IrText>(Assert.Single(item.Runs)).Text);
+        Assert.Collection(item.Blocks,
+            b => Assert.Equal("Second paragraph.", Assert.IsType<IrText>(Assert.Single(Assert.IsType<IrParagraph>(b).Runs)).Text),
+            b => Assert.Equal("run me", Assert.IsType<IrCodeBlock>(b).Code.TrimEnd()),
+            b => Assert.IsType<IrBlockQuote>(b),
+            b => Assert.IsType<IrList>(b),
+            b => Assert.IsType<IrTable>(b));
+    }
+
+    [Fact]
+    public void ListItem_StartingWithCode_KeepsTheCode()
+    {
+        var blocks = MarkdownIrBuilder.Build("- ```\n  code\n  ```\n", PagePath.Parse("/A"), _repo);
+
+        var item = Assert.Single(Assert.IsType<IrList>(Assert.Single(blocks)).Items);
+        Assert.Empty(item.Runs);
+        Assert.IsType<IrCodeBlock>(Assert.Single(item.Blocks));
     }
 
     [Fact]

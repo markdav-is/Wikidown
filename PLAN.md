@@ -764,6 +764,10 @@ Blazor WASM PWA editor + marketing site hosted on GitHub Pages.
       `--after "To Do"` finds `## [To Do](Kanban/To-Do.md)`.
     - `check-links` (and the index audit) skip links inside fenced code
       and inline code spans — examples, not links — so `/docs` passes clean.
+    - `export-pdf`: list items keep every block after their first line
+      (paragraphs, code, quotes, tables — previously dropped silently);
+      `ExportPdfBlockTests` exports one page per risky construct plus this
+      repo's own `/docs`.
     - Web UI board view deferred.
 
 ## Open questions / parking lot

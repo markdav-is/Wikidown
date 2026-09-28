@@ -28,7 +28,9 @@ public sealed record IrHeading(int Level, IReadOnlyList<IrRun> Runs, string Anch
 
 public sealed record IrParagraph(IReadOnlyList<IrRun> Runs) : IrBlock;
 
-public sealed record IrListItem(IReadOnlyList<IrRun> Runs, IrList? Nested);
+// Runs is the item's first paragraph (the bullet line); Blocks is everything
+// after it in order — more paragraphs, code, nested lists, quotes, tables.
+public sealed record IrListItem(IReadOnlyList<IrRun> Runs, IReadOnlyList<IrBlock> Blocks);
 
 public sealed record IrList(bool Ordered, IReadOnlyList<IrListItem> Items) : IrBlock;
 
