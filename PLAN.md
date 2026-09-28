@@ -752,7 +752,20 @@ Blazor WASM PWA editor + marketing site hosted on GitHub Pages.
       `windows-latest` test job. VSIX 1.5.4 ships it (1.5.3 was never
       tagged); the NuGet CLI picks it up at the next `VersionPrefix` bump.
 
+27. **Kanban — ordinary pages plus a skill.** *(shipped)*
+    - A kanban is a dashboard page with To Do / Doing / Done sub-pages;
+      each item is a sub-page of one of those. The dashboard has one `##`
+      section per sub-page (heading links it) listing its items. Nothing is
+      generated or tracked — same rules as any page.
+    - `wikidown kanban init [--path /Kanban]` scaffolds it (`ParsedArgs`
+      accepts the `kanban <sub>` form). Adding/moving items is documented
+      in the wikidown skill using `new`, `append --after`, `move`, `edit`.
+    - `MarkdownHeadings.Find` also matches a linked heading by its text, so
+      `--after "To Do"` finds `## [To Do](Kanban/To-Do.md)`.
+    - Web UI board view deferred.
+
 ## Open questions / parking lot
+- Kanban board view (columns, drag to move) in the web editor.
 - `[[_TOC_]]`, mermaid, `:::` callouts rendering in WASM preview.
 - `/.attachments` upload from browser (REST base64 -> Contents API).
 - Conflict resolution UX when remote HEAD moves during edit.

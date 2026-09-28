@@ -119,6 +119,30 @@ public static class Commands
         return 0;
     }
 
+    private static readonly string[] KanbanSections = ["To Do", "Doing", "Done"];
+
+    public static int KanbanInit(WikiRepository repo, ParsedArgs args, TextWriter w)
+    {
+        var board = PagePath.Parse(args.Optional("path") ?? "/Kanban");
+        var sections = KanbanSections.Select(s => board.Append(PageName.FromTitle(s))).ToList();
+        foreach (var page in sections.Prepend(board))
+        {
+            if (repo.Exists(page))
+                throw new CliUsageException($"page already exists: {page.ToLinkPath()}");
+        }
+
+        var dashboard = new System.Text.StringBuilder($"# {board.Name.Title}\n");
+        foreach (var section in sections)
+            dashboard.Append($"\n## [{section.Name.Title}]({board.Name.FileBase}/{section.Name.FileName})\n");
+        repo.Write(new WikiPage(board, dashboard.ToString()));
+        foreach (var section in sections)
+            repo.Write(new WikiPage(section, $"# {section.Name.Title}\n"));
+
+        w.WriteLine($"created {board.ToLinkPath()}");
+        foreach (var section in sections) w.WriteLine($"created {section.ToLinkPath()}");
+        return 0;
+    }
+
     public static int Move(WikiRepository repo, ParsedArgs args, TextWriter w)
     {
         var from = PagePath.Parse(args.Require("from"));

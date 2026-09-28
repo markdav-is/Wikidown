@@ -49,6 +49,8 @@ public static class CommandRunner
                 "init" => InitCommand.Run(repo, parsed, stdout),
                 "pages" => PagesCommand.Run(repo, parsed, stdout),
                 "export-html" => ExportHtmlCommand.Run(repo, parsed, stdout),
+                "kanban init" => Commands.KanbanInit(repo, parsed, stdout),
+                "kanban" => throw new CliUsageException("kanban needs a subcommand: wikidown kanban init"),
                 _ => Unknown(parsed.Command, stderr),
             };
         }
@@ -133,6 +135,9 @@ public static class CommandRunner
         w.WriteLine("  export-html --output <dir> [--base-url /prefix] [--title T] [--clean]");
         w.WriteLine("           render the wiki to a static HTML site with the same theme, no");
         w.WriteLine("           Jekyll/Ruby needed — for GitLab Pages, any static host, or local preview");
+        w.WriteLine("  kanban init [--path /Kanban]");
+        w.WriteLine("           create a kanban: a dashboard page with To Do, Doing and Done");
+        w.WriteLine("           sub-pages; items are sub-pages of those");
         w.WriteLine();
         w.WriteLine("Global:");
         w.WriteLine("  --root <path>   path to docs folder (default: ./docs)");
@@ -551,6 +556,30 @@ public static class CommandRunner
             Examples:
               wikidown export-html --output ./dist
               wikidown export-html --output ./dist --base-url /wikidown --clean
+
+            """,
+
+        ["kanban"] =
+            """
+            Usage:
+              wikidown kanban init [--path /Link/Path] [--root <path>]
+
+            Create a kanban: a dashboard page with To Do, Doing and Done
+            sub-pages, and one section on the dashboard linking each of them.
+            Every item is an ordinary sub-page of To Do, Doing or Done. Add
+            one with `new`, then list it under its section on the dashboard
+            (`append --after "To Do"`) and on its sub-page (`append`). To
+            advance it, `move` it to another section — that rewrites both
+            links — then move those two list lines to the new section.
+
+            Options:
+              --path    Title-form wiki path of the dashboard (default: /Kanban)
+              --root    Path to the docs folder (default: ./docs)
+              -h, --help
+
+            Examples:
+              wikidown kanban init
+              wikidown kanban init --path /Home-Projects
 
             """,
     };

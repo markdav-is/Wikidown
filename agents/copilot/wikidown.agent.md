@@ -34,6 +34,7 @@ prints `--help`.
 | Rename or move          | `wikidown move --from A --to B [--dry-run]`                              |
 | Delete (with subpages)  | `wikidown delete --path P [--recursive]`                                 |
 | Re-sort a folder        | `wikidown reorder --folder P --names a,b,c`                              |
+| Start a kanban          | `wikidown kanban init [--path P]` (see `wikidown kanban --help`)         |
 
 For multi-line bodies, write the text to a temp file and pass `--file` — it
 works the same in every shell. `--stdin` also works (pipe a PowerShell

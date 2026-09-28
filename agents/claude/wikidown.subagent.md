@@ -28,6 +28,7 @@ prints `--help`.
 | Rename or move          | `wikidown move --from A --to B [--dry-run]`                              |
 | Delete (with subpages)  | `wikidown delete --path P [--recursive]`                                 |
 | Re-sort a folder        | `wikidown reorder --folder P --names a,b,c`                              |
+| Start a kanban          | `wikidown kanban init [--path P]` (see `wikidown kanban --help`)         |
 | Export                  | `wikidown export-pdf --output <path> [--from P] [--title T]`             |
 
 For multi-line bodies, write the text to a temp file and pass `--file` — it

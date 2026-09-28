@@ -18,6 +18,8 @@
       url: "/Getting-Started/Publishing-to-GitLab-Pages.html"
     - title: "Customizing the Theme"
       url: "/Getting-Started/Customizing-the-Theme.html"
+    - title: "Kanban"
+      url: "/Getting-Started/Kanban.html"
 - title: "CLI"
   url: "/CLI.html"
 - title: "Editor"

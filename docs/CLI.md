@@ -94,7 +94,10 @@ The CLI behaves the same on Windows, macOS, and Linux:
   heading plus everything below it up to the next heading of the same or
   higher level (a `##` section includes its `###` children; headings inside
   code fences don't count). A miss lists the page's headings; if several
-  headings match, the first is printed with a trailing note.
+  headings match, the first is printed with a trailing note. A heading
+  written as a link matches by its visible text, so `--section "To Do"`
+  finds a heading that links the To Do page; the same goes for `--after` on
+  `append` and `--section` on `write-section`.
   `wikidown read --path /Getting-Started` ·
   `wikidown read --path /CLI --section "Wiki root"`
 - `write --path /P [--file F | --stdin]` — overwrite a page. Auto-injects or
@@ -143,6 +146,12 @@ The CLI behaves the same on Windows, macOS, and Linux:
   `../../.attachments/x.png`), and regenerates the breadcrumb for the moved
   page and every moved descendant. Reports a count and a per-link list of
   what changed. `--dry-run` previews the rewrite without touching any files.
+- `kanban init [--path /Kanban]` — create a simple to-do board: a
+  dashboard page (default `/Kanban`) with To Do, Doing and Done sub-pages
+  and one `##` section per sub-page, each heading linking its sub-page.
+  Items are ordinary sub-pages added with `new` and moved with `move`.
+  See [Kanban](Getting-Started/Kanban.md).
+  `wikidown kanban init` · `wikidown kanban init --path /Home-Projects`
 - `delete --path /P [--recursive]` — delete a page (and optionally its subpages).
 - `reorder --folder /P --names a,b,c` — rewrite `.order` for a folder.
 - `search --query <text>` — full-text search across page bodies.

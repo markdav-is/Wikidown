@@ -48,10 +48,17 @@ public static partial class MarkdownHeadings
         return result;
     }
 
+    [GeneratedRegex(@"\[([^\]]*)\]\([^)]*\)")]
+    private static partial Regex InlineLink();
+
+    // A heading that is (or contains) a link also matches by its visible
+    // text, so "## [To Do](Kanban/To-Do.md)" is found as "To Do".
     public static IReadOnlyList<HeadingInfo> Find(IReadOnlyList<HeadingInfo> headings, string section)
     {
         var wanted = Normalize(section);
-        return headings.Where(h => string.Equals(h.Text, wanted, StringComparison.OrdinalIgnoreCase)).ToList();
+        return headings.Where(h =>
+            string.Equals(h.Text, wanted, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(InlineLink().Replace(h.Text, "$1"), wanted, StringComparison.OrdinalIgnoreCase)).ToList();
     }
 
     // 1-based line just past the section: the next heading of the same or

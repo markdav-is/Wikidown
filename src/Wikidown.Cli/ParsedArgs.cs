@@ -26,9 +26,16 @@ public sealed class ParsedArgs
     public static ParsedArgs Parse(string[] args)
     {
         if (args.Length == 0) throw new CliUsageException("no command given");
-        var result = new ParsedArgs { Command = args[0] };
+        var command = args[0];
+        var first = 1;
+        if (command == "kanban" && args.Length > 1 && !args[1].StartsWith("--", StringComparison.Ordinal))
+        {
+            command += " " + args[1];
+            first = 2;
+        }
+        var result = new ParsedArgs { Command = command };
 
-        for (var i = 1; i < args.Length; i++)
+        for (var i = first; i < args.Length; i++)
         {
             var token = args[i];
             if (!token.StartsWith("--", StringComparison.Ordinal))

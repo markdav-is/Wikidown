@@ -61,6 +61,7 @@ Default root is `./docs`; add `--root <path>` to every command otherwise.
 | Delete (with subpages)  | `wikidown delete --path P [--recursive]`                                 |
 | Re-sort a folder        | `wikidown reorder --folder P --names a,b,c`                              |
 | Audit links and `.order`| `wikidown check-links`                                                   |
+| Start a kanban          | `wikidown kanban init [--path P]` (see "Kanban" below)                   |
 
 Every command prints `--help`. For multi-line bodies, write the text to a
 temp file and pass `--file` — it works the same in every shell. `--stdin`
@@ -107,6 +108,49 @@ also works (pipe a PowerShell here-string, or use a bash heredoc).
    their new depth, and reports what it changed. Run `wikidown search`
    afterwards only if you suspect a link the tool couldn't resolve (e.g. one
    already broken).
+
+## Kanban
+
+A kanban is ordinary pages, nothing more:
+
+- `/Kanban` is the dashboard, with one `##` section per sub-page, and each
+  section heading links that sub-page: `## [To Do](Kanban/To-Do.md)`.
+- `/Kanban/To-Do`, `/Kanban/Doing` and `/Kanban/Done` are the sub-pages.
+- Every item is a sub-page of one of them, e.g. `/Kanban/To-Do/Buy-Paint`.
+
+`wikidown kanban init` creates the dashboard and the three sub-pages
+(`--path` puts it somewhere other than `/Kanban`). Everything after that
+uses the normal commands. An item is listed twice: once under its section on
+the dashboard, and once on its sub-page, just as every page links its
+children. The examples below use `/Kanban`; for another `--path`, adjust the
+link prefixes to match.
+
+- **Add an item** — create it, then list it in both places:
+  1. `wikidown new --path Kanban/To-Do/Buy-Paint --title "Buy paint"`
+  2. `wikidown append --path Kanban --after "To Do"` with the line
+     `- [Buy paint](Kanban/To-Do/Buy-Paint.md)`
+  3. `wikidown append --path Kanban/To-Do` with the line
+     `- [Buy paint](To-Do/Buy-Paint.md)`
+
+  `--after` matches a linked heading by its text, so `"To Do"` finds
+  `## [To Do](Kanban/To-Do.md)`.
+- **Move an item** (e.g. To Do → Doing):
+  1. `wikidown move --from Kanban/To-Do/Buy-Paint --to Kanban/Doing/Buy-Paint`.
+     This rewrites both links, which now point at `Doing`, but leaves them
+     where they were.
+  2. On the dashboard, remove the line with `wikidown edit --delete` and
+     `append --after "Doing"` the same line.
+  3. Remove the line from `/Kanban/To-Do` and `append` the same line to
+     `/Kanban/Doing`.
+- **Update an item** — it is a normal page, so use `edit`, `write-section`
+  or `append`.
+- **Remove an item** — `wikidown delete`, then delete its two list lines.
+- **Add a section** — `wikidown new --path Kanban/Waiting`, then
+  `wikidown append --path Kanban` with `## [Waiting](Kanban/Waiting.md)`,
+  and `wikidown reorder --folder Kanban` if it belongs between existing ones.
+- **Keep the order in step** — list items on the dashboard in the same
+  order as on their sub-page. Run `wikidown check-links` afterwards; it
+  flags any item that isn't linked from its sub-page.
 
 ## No shell: suggest commands
 
