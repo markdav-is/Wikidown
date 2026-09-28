@@ -438,7 +438,8 @@ public static class CommandRunner
             Validate that relative links/images resolve, that page bodies
             don't use absolute title-path links (they 404 on github.com), and
             that every subpage folder has an index page linking each child.
-            Exits non-zero if any issues are found.
+            Links inside code blocks and inline code are examples, so they
+            are skipped. Exits non-zero if any issues are found.
 
             Options:
               --no-absolute-check   Skip the absolute title-path link check

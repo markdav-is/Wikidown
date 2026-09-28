@@ -34,6 +34,20 @@ public class LinkCheckerTests : IDisposable
     }
 
     [Fact]
+    public void Check_IgnoresLinksInsideCode()
+    {
+        _repo.Write(new WikiPage(PagePath.Parse("/A"),
+            "Write `[x](Missing.md)` or ``[y](/Abs) `tick` ``.\r\n\r\n" +
+            "```markdown\r\n[z](Gone.md)\r\n~~~\r\n[still](Fenced.md)\r\n```\r\n\r\n" +
+            "~~~\r\n![img](nope.png)\r\n~~~\r\n\r\n" +
+            "After `code` a real [broken](Real.md) link.\r\n"));
+
+        var issue = Assert.Single(LinkChecker.Check(_repo));
+        Assert.Equal("Real.md", issue.Target);
+        Assert.Equal(13, issue.LineNumber);
+    }
+
+    [Fact]
     public void Check_AllowsResolvingRelativeLink()
     {
         _repo.Write(new WikiPage(PagePath.Parse("/A"), "a"));

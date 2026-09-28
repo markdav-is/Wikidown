@@ -762,6 +762,8 @@ Blazor WASM PWA editor + marketing site hosted on GitHub Pages.
       in the wikidown skill using `new`, `append --after`, `move`, `edit`.
     - `MarkdownHeadings.Find` also matches a linked heading by its text, so
       `--after "To Do"` finds `## [To Do](Kanban/To-Do.md)`.
+    - `check-links` (and the index audit) skip links inside fenced code
+      and inline code spans — examples, not links — so `/docs` passes clean.
     - Web UI board view deferred.
 
 ## Open questions / parking lot

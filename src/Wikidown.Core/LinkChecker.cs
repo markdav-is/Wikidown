@@ -18,19 +18,47 @@ public static partial class LinkChecker
     {
         foreach (var path in repo.Walk())
         {
-            var page = repo.Read(path);
-            var lines = page.Markdown.Split('\n');
-            for (var i = 0; i < lines.Length; i++)
+            foreach (var (line, target) in LinkTargets(repo.Read(path).Markdown))
             {
-                foreach (Match match in LinkTarget().Matches(lines[i]))
-                {
-                    var target = match.Groups[1].Value.Trim();
-                    var issue = Classify(repo, path, i + 1, target, flagAbsolutePaths);
-                    if (issue is not null) yield return issue;
-                }
+                var issue = Classify(repo, path, line, target.Trim(), flagAbsolutePaths);
+                if (issue is not null) yield return issue;
             }
         }
     }
+
+    // Link/image targets with their 1-based line, skipping fenced code
+    // blocks and inline code spans — those are examples, not links.
+    internal static IEnumerable<(int Line, string Target)> LinkTargets(string markdown)
+    {
+        var lines = markdown.Split('\n');
+        string? fence = null;
+        for (var i = 0; i < lines.Length; i++)
+        {
+            var trimmed = lines[i].TrimStart();
+            var opener = FenceOpener().Match(trimmed);
+            if (fence is null && opener.Success)
+            {
+                fence = opener.Value;
+                continue;
+            }
+            if (fence is not null)
+            {
+                if (trimmed.TrimEnd().Length >= fence.Length
+                    && trimmed.TrimEnd().All(c => c == fence[0]))
+                    fence = null;
+                continue;
+            }
+
+            foreach (Match match in LinkTarget().Matches(CodeSpan().Replace(lines[i], "")))
+                yield return (i + 1, match.Groups[1].Value);
+        }
+    }
+
+    [GeneratedRegex(@"^(`{3,}|~{3,})")]
+    private static partial Regex FenceOpener();
+
+    [GeneratedRegex(@"(?<!`)(`+)(?!`).+?(?<!`)\1(?!`)")]
+    private static partial Regex CodeSpan();
 
     private static LinkIssue? Classify(
         WikiRepository repo, PagePath page, int lineNumber, string target, bool flagAbsolutePaths)

@@ -83,9 +83,9 @@ public static class IndexChecker
     {
         var markdown = repo.Read(page).Markdown;
         var files = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (System.Text.RegularExpressions.Match match in LinkChecker.LinkTarget().Matches(markdown))
+        foreach (var (_, target) in LinkChecker.LinkTargets(markdown))
         {
-            var file = ResolveTargetFile(repo, page, match.Groups[1].Value);
+            var file = ResolveTargetFile(repo, page, target);
             if (file is not null) files.Add(file);
         }
         return files;

@@ -158,7 +158,8 @@ The CLI behaves the same on Windows, macOS, and Linux:
 - `check-links [--no-absolute-check] [--no-index-check]` — walk every page
   and validate that relative markdown links (`[x](../Foo/Bar.md)`) and image
   references (`![x](../.attachments/pic.png)`) resolve to real files
-  relative to the linking page's folder. The match is case-exact on every
+  relative to the linking page's folder (links inside code blocks and inline
+  code are examples and are skipped). The match is case-exact on every
   platform, so a link that only resolves because Windows or macOS ignores
   case is reported before it 404s on a case-sensitive host such as GitHub
   Pages. By default also:
