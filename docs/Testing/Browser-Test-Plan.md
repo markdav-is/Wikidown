@@ -151,7 +151,7 @@ With throwaway credentials:
   immediately cleaned up by `history.replaceState` (inspect the address
   bar — no `#gh_token=` left behind after first paint).
 - The app auto-navigates to `/browse` and the snackbar reads
-  "Connected to <owner>/<repo>".
+  "Connected to `<owner>/<repo>`".
 - DevTools → Application → Local Storage has key
   `wikidown.connection.v1` with a JSON value that includes `token`
   (the access token) and `provider: "GitHub"`.
