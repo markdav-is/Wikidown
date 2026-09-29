@@ -6,6 +6,32 @@ What changed in each Wikidown release, and where to get it. Newest first.
 For how to update an existing install, see
 [Updating](Getting-Started/Updating.md).
 
+## 0.10.0 — 29 September 2026
+
+PDF exports are set in Atkinson Hyperlegible, a typeface designed by the
+Braille Institute for readers with low vision.
+
+### Where to get it
+
+| Component | Link |
+|---|---|
+| `wikidown` CLI (NuGet global tool) | [Wikidown.Cli 0.10.0](https://www.nuget.org/packages/Wikidown.Cli/0.10.0) — `dotnet tool update -g Wikidown.Cli` |
+| `Wikidown.Core` library | [Wikidown.Core 0.10.0](https://www.nuget.org/packages/Wikidown.Core/0.10.0) |
+| Self-contained CLI binaries (no .NET needed) | [GitHub Release cli-v0.10.0](https://github.com/markdav-is/Wikidown/releases/tag/cli-v0.10.0) — win/linux/osx, x64 and arm64; or re-run the [install script](CLI.md) |
+| Web editor | Updated in place; its **Export PDF** uses the same fonts |
+
+The Visual Studio extension is unchanged at 1.6.0.
+
+### What changed
+
+- **New PDF fonts.** `wikidown export-pdf` and the web editor's PDF export
+  set body text in Atkinson Hyperlegible Next and code in Atkinson
+  Hyperlegible Mono (SIL Open Font License 1.1), both built into the tool
+  as before.
+- **Characters those fonts lack still print.** Arrows, box-drawing lines,
+  Greek and Cyrillic fall back to the DejaVu fonts the export used before,
+  character by character, instead of coming out blank.
+
 ## 0.9.0 and Visual Studio extension 1.6.0 — 27 September 2026
 
 Kanban boards made of ordinary wiki pages, a `check-links` that passes on
