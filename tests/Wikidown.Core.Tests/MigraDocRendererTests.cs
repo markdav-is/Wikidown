@@ -62,6 +62,36 @@ public class MigraDocRendererTests : IDisposable
         Assert.Equal("%PDF-", System.Text.Encoding.ASCII.GetString(bytes, 0, 5));
     }
 
+    [Fact]
+    public void Render_SetsBodyInAtkinsonNextAndCodeInAtkinsonMono()
+    {
+        var pdf = RenderToText("# Fonts\n\nPlain **bold** *italic* and `inline code`.\n\n```\nvar x = 1;\n```\n");
+
+        Assert.Contains("+Atkinson#20Hyperlegible#20Next", pdf);
+        Assert.Contains("+Atkinson#20Hyperlegible#20Mono", pdf);
+        Assert.DoesNotContain("DejaVu", pdf);
+    }
+
+    [Fact]
+    public void Render_CharactersAtkinsonLacks_FallBackToDejaVu()
+    {
+        var pdf = RenderToText("# Arrows\n\nStep one → step two.\n\n```\n├── `ticks`\n```\n");
+
+        Assert.Contains("+DejaVu#20Sans/", pdf);
+        Assert.Contains("+DejaVu#20Sans#20Mono/", pdf);
+    }
+
+    private string RenderToText(string markdown)
+    {
+        var path = PagePath.Parse("/A");
+        _repo.Write(new WikiPage(path, markdown));
+        var blocks = MarkdownIrBuilder.Build(_repo.Read(path).Markdown, path, _repo);
+
+        using var stream = new MemoryStream();
+        MigraDocRenderer.Render(new PageIr(path, "A", blocks), stream);
+        return System.Text.Encoding.Latin1.GetString(stream.ToArray());
+    }
+
     // A minimal valid 1x1 transparent PNG — exercises the real AddImage
     // codepath (not just the "not found" placeholder), since MigraDoc's
     // image loading turned out to be one more thing worth verifying at

@@ -10,12 +10,13 @@ namespace Wikidown.Pdf.PdfExport;
 // the browser (Blazor WASM) and the CLI.
 public static class TableColumnLayout
 {
-    // DejaVu Sans at the 10pt body size averages a little under 0.6em per
-    // character across mixed prose; rounding up leaves slack so a cell
-    // judged to fit on one line actually does.
+    // Atkinson Hyperlegible Next at the 10pt body size averages about 0.45em
+    // per character across mixed prose (bold ~0.48em); rounding up leaves
+    // slack so a cell judged to fit on one line actually does. Atkinson
+    // Hyperlegible Mono is a fixed 0.632em, hence the code factor.
     private const double CharWidthPt = 6.0;
     private const double BoldWidthFactor = 1.1;
-    private const double CodeWidthFactor = 1.05;
+    private const double CodeWidthFactor = 1.06;
 
     // MigraDoc's default left + right cell padding plus a hair of slack.
     private const double CellPaddingPt = 9.0;

@@ -213,10 +213,12 @@ The CLI behaves the same on Windows, macOS, and Linux:
   For example: `wikidown export-pdf --output wiki.pdf`.
 
   PDF font resolution is cross-platform: an embedded `EmbeddedFontResolver`
-  ships DejaVu Sans and DejaVu Sans Mono TrueType fonts inside the
-  Wikidown.Pdf assembly (Bitstream Vera License, redistribution permitted)
-  instead of resolving fonts from the host OS. `export-pdf` works
-  identically on Windows, Linux, and macOS.
+  ships Atkinson Hyperlegible Next (body text) and Atkinson Hyperlegible
+  Mono (code) TrueType fonts inside the Wikidown.Pdf assembly instead of
+  resolving fonts from the host OS (SIL Open Font License 1.1). Characters
+  those fonts lack (arrows, box drawing, Greek, Cyrillic) are set in the
+  also-embedded DejaVu Sans / DejaVu Sans Mono instead of printing blank.
+  `export-pdf` works identically on Windows, Linux, and macOS.
 - `pages [--title T] [--force]` — scaffold everything GitHub Pages' built-in
   Jekyll needs to publish the wiki as a static site, straight from the repo
   with no build pipeline: `_config.yml`, a starter theme (top bar, collapsible

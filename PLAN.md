@@ -770,6 +770,17 @@ Blazor WASM PWA editor + marketing site hosted on GitHub Pages.
       repo's own `/docs`.
     - Web UI board view deferred.
 
+28. **PDF fonts — Atkinson Hyperlegible.** *(shipped, 0.10.0)*
+    - `EmbeddedFontResolver` serves Atkinson Hyperlegible Next (body) and
+      Mono (code), Regular/Bold/Italic/BoldItalic, from the Google Fonts
+      OFL 1.1 builds (`Fonts/OFL-*.txt`; googlefonts repos at
+      `7925f50` / `154d503`).
+    - They cover ~360 characters, so DejaVu stays embedded as a
+      per-character fallback: `CmapCoverage` reads the format-4 cmap and
+      `MigraDocRenderer.AddText` puts uncovered stretches in a nested
+      DejaVu run (arrows, box drawing, Greek, Cyrillic).
+    - `TableColumnLayout.CodeWidthFactor` 1.05 → 1.06 for Mono's 0.632em.
+
 ## Open questions / parking lot
 - Kanban board view (columns, drag to move) in the web editor.
 - `[[_TOC_]]`, mermaid, `:::` callouts rendering in WASM preview.

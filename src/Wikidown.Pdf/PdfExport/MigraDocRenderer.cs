@@ -18,6 +18,8 @@ public static class MigraDocRenderer
 
     private const string BodyFont = EmbeddedFontResolver.BodyFamily;
     private const string MonospaceFont = EmbeddedFontResolver.MonospaceFamily;
+    private const string FallbackBodyFont = EmbeddedFontResolver.FallbackBodyFamily;
+    private const string FallbackMonospaceFont = EmbeddedFontResolver.FallbackMonospaceFamily;
     private static readonly Color LinkColor = Color.FromRgb(0x05, 0x63, 0xC1);
 
     // Renders a whole wiki (or the subtree WikiPdfContent.BuildAll was
@@ -57,7 +59,8 @@ public static class MigraDocRenderer
     {
         var section = AddSection(document);
 
-        var titleParagraph = section.AddParagraph(title);
+        var titleParagraph = section.AddParagraph();
+        AddText(titleParagraph, title);
         titleParagraph.Format.Font.Size = 28;
         titleParagraph.Format.Font.Bold = true;
         titleParagraph.Format.Alignment = ParagraphAlignment.Center;
@@ -115,13 +118,13 @@ public static class MigraDocRenderer
         if (node.IsPage)
         {
             var anchor = PdfAnchors.PageAnchor(node.Path);
-            StyleAsLink(paragraph.AddHyperlink(anchor, HyperlinkType.Bookmark).AddFormattedText(node.Title));
+            StyleAsLink(AddText(paragraph.AddHyperlink(anchor, HyperlinkType.Bookmark).AddFormattedText(), node.Title));
             paragraph.AddTab();
             paragraph.AddPageRefField(anchor);
         }
         else
         {
-            paragraph.AddFormattedText(node.Title).Font.Bold = true;
+            AddText(paragraph, node.Title).Font.Bold = true;
         }
 
         foreach (var child in node.Children) RenderTocNode(section, child, depth + 1);
@@ -130,9 +133,9 @@ public static class MigraDocRenderer
     // The PDFsharp-MigraDoc package is platform-agnostic and has no font
     // resolver wired up by default (unlike its -GDI/-WPF Windows-only
     // siblings), so document/error fonts can't be created at all without
-    // one. EmbeddedFontResolver serves DejaVu Sans/DejaVu Sans Mono from
-    // TTF files embedded in this assembly, so rendering works identically
-    // on any OS — no dependency on what's installed on the host (an
+    // one. EmbeddedFontResolver serves Atkinson Hyperlegible (plus DejaVu as
+    // a glyph fallback) from TTF files embedded in this assembly, so
+    // rendering works identically on any OS — no dependency on what's installed on the host (an
     // earlier Windows-only approach broke both this repo's own Linux CI
     // and any future non-Windows host). May only be set once per process,
     // before any font operation — guard against a second Render call
@@ -202,7 +205,8 @@ public static class MigraDocRenderer
         }
         else
         {
-            var heading = section.AddParagraph(page.Title);
+            var heading = section.AddParagraph();
+            AddText(heading, page.Title);
             ApplyHeadingFormat(heading, semanticLevel: 1, outlineDepth: pageLevel);
             heading.AddBookmark(pageAnchor);
             foreach (var block in page.Blocks) RenderBlock(section, block, depth: 0, headingOffset: pageLevel - 1);
@@ -308,7 +312,7 @@ public static class MigraDocRenderer
         for (var i = 0; i < lines.Length; i++)
         {
             if (i > 0) paragraph.AddLineBreak();
-            paragraph.AddText(lines[i]);
+            AddText(paragraph, lines[i], monospace: true);
         }
     }
 
@@ -381,7 +385,8 @@ public static class MigraDocRenderer
         }
         else
         {
-            var placeholder = section.AddParagraph($"[image not found: {image.RawTarget}]");
+            var placeholder = section.AddParagraph();
+            AddText(placeholder, $"[image not found: {image.RawTarget}]");
             placeholder.Format.Font.Italic = true;
             placeholder.Format.Borders.Width = Unit.FromPoint(0.5);
         }
@@ -413,18 +418,18 @@ public static class MigraDocRenderer
             switch (run)
             {
                 case IrText t:
-                    var formatted = paragraph.AddFormattedText(t.Text);
+                    var formatted = AddText(paragraph, t.Text, t.Code);
                     formatted.Font.Bold = t.Bold;
                     formatted.Font.Italic = t.Italic;
                     if (t.Code) formatted.Font.Name = MonospaceFont;
                     break;
 
                 case IrLink link:
-                    StyleAsLink(paragraph.AddHyperlink(link.AnchorId, HyperlinkType.Bookmark).AddFormattedText(PlainText(link.Content)));
+                    StyleAsLink(AddText(paragraph.AddHyperlink(link.AnchorId, HyperlinkType.Bookmark).AddFormattedText(), PlainText(link.Content)));
                     break;
 
                 case IrExternalLink ext:
-                    StyleAsLink(paragraph.AddHyperlink(ext.Url, HyperlinkType.Web).AddFormattedText(PlainText(ext.Content)));
+                    StyleAsLink(AddText(paragraph.AddHyperlink(ext.Url, HyperlinkType.Web).AddFormattedText(), PlainText(ext.Content)));
                     break;
 
                 case IrInlineImage img when img.ResolvedPath is not null:
@@ -432,10 +437,36 @@ public static class MigraDocRenderer
                     break;
 
                 case IrInlineImage img:
-                    paragraph.AddFormattedText($"[image not found: {img.RawTarget}]").Font.Italic = true;
+                    AddText(paragraph, $"[image not found: {img.RawTarget}]").Font.Italic = true;
                     break;
             }
         }
+    }
+
+    private static FormattedText AddText(Paragraph paragraph, string text, bool monospace = false) =>
+        AddText(paragraph.AddFormattedText(), text, monospace);
+
+    // Atkinson Hyperlegible has no glyph for many characters wiki pages use
+    // (arrows, box drawing, Greek, Cyrillic), which PDFsharp would
+    // print as blanks. Each uncovered stretch goes into a nested run set in
+    // DejaVu instead; nested runs inherit the parent's bold/italic/link style.
+    private static FormattedText AddText(FormattedText target, string text, bool monospace = false)
+    {
+        bool Covered(char c) => c < ' ' || EmbeddedFontResolver.IsCovered(c, monospace);
+
+        var start = 0;
+        while (start < text.Length)
+        {
+            var covered = Covered(text[start]);
+            var end = start + 1;
+            while (end < text.Length && Covered(text[end]) == covered) end++;
+
+            var segment = text[start..end];
+            if (covered) target.AddText(segment);
+            else target.AddFormattedText(segment).Font.Name = monospace ? FallbackMonospaceFont : FallbackBodyFont;
+            start = end;
+        }
+        return target;
     }
 
     private static void StyleAsLink(FormattedText text)
