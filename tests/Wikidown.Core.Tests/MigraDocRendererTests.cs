@@ -95,8 +95,8 @@ public class MigraDocRendererTests : IDisposable
     // A minimal valid 1x1 transparent PNG — exercises the real AddImage
     // codepath (not just the "not found" placeholder), since MigraDoc's
     // image loading turned out to be one more thing worth verifying at
-    // runtime rather than assuming from the API shape (see the font
-    // resolver surprise in the single-page render chunk).
+    // runtime rather than assuming from the API shape (font resolution
+    // was a similar surprise).
     private static readonly byte[] MinimalPng = Convert.FromBase64String(
         "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=");
 

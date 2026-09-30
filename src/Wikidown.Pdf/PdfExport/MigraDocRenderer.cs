@@ -50,7 +50,7 @@ public static class MigraDocRenderer
     public static void Render(PdfExportContent content, Stream output) =>
         Render(content, output, new PdfExportOptions(Title: "", IncludeCover: false, IncludeToc: true));
 
-    // Kept for the chunk-3 render spike / single-page tests: wraps one page
+    // Kept for single-page tests: wraps one page
     // as a single-item PdfExportContent with no nav (so no TOC section).
     public static void Render(PageIr page, Stream output) =>
         Render(new PdfExportContent(new[] { page }, Array.Empty<NavNode>(), Array.Empty<PdfExportWarning>()), output);

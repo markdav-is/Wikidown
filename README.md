@@ -137,4 +137,4 @@ Full spec: [`docs/Getting-Started/Format.md`](./docs/Getting-Started/Format.md).
 
 ## Status
 
-Work in progress — see [`PLAN.md`](./PLAN.md) for chunk-by-chunk progress.
+Work in progress — planned work is tracked in [GitHub issues](https://github.com/markdav-is/Wikidown/issues).

@@ -218,7 +218,7 @@ The CLI behaves the same on Windows, macOS, and Linux:
   [Format § Fixing check-links failures](Getting-Started/Format.md) for how
   to resolve each kind of reported issue.
 - `backfill-breadcrumbs [--dry-run]` — one-time catch-up for a wiki that
-  predates breadcrumb navigation (chunk 11): re-saves every page that has
+  predates breadcrumb navigation: re-saves every page that has
   an ancestor but is missing its breadcrumb line, so it picks one up. Only
   needed once per existing wiki — `write`, `new`, and `move` all maintain
   breadcrumbs automatically going forward, so a wiki that's always been

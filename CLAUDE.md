@@ -1,8 +1,9 @@
 # Wikidown — agent guidance
 
 This repo builds Wikidown itself: a `/docs` wiki + CLI + WASM editor +
-product site. See [`PLAN.md`](./PLAN.md) for the build plan and
-chunk-by-chunk progress.
+product site. GitHub and Jekyll (GitHub Pages) compatibility come first;
+the format started from Azure DevOps wiki conventions but ADO is not the
+reference point. Planned work lives in GitHub issues.
 
 ## Build, test, package
 
@@ -22,7 +23,8 @@ pack on every push/PR.
 - `src/Wikidown.Core/` — page model, `.order`, repo, search.
 - `src/Wikidown.Cli/` — `wikidown` command-line tool.
 - `src/Wikidown.Html/` — Jekyll-compatible starter theme + `export-html` (Markdig + Fluid).
-- `src/Wikidown.Web/` — Blazor WASM editor PWA *(coming in chunk 4)*.
+- `src/Wikidown.Pdf/` — `export-pdf` rendering (PDFsharp/MigraDoc).
+- `src/Wikidown.Web/` — Blazor WASM editor PWA (GitHub and Azure DevOps backends).
 - *(no separate marketing site)* — wikidown.org is `/docs` + its `index.html`, published by `pages.yml` via `wikidown export-html`.
 - `tests/Wikidown.Core.Tests/` — xUnit tests.
 - `agents/` — drop-in agent configs for downstream repos.
@@ -30,8 +32,8 @@ pack on every push/PR.
 
 ## Conventions
 
-- Keep changes scoped to a single chunk per commit. Update `PLAN.md` when a
-  chunk ships.
+- Put the *why* of a change in its commit message; there is no separate
+  plan or changelog file to keep in sync.
 - No comments unless the *why* is non-obvious.
 - Don't add backwards-compat shims — this is pre-1.0.
 - Stay platform agnostic; most users are on Windows. Never hard-code `"\n"`
@@ -42,7 +44,8 @@ pack on every push/PR.
 ## Documentation lives in `/docs` (Wikidown wiki)
 
 - `/docs` is a Wikidown wiki — structured markdown with `.order` navigation
-  files. Page links use title form: `/Getting-Started/Format`.
+  files. CLI page paths use title form (`--path Getting-Started/Format`);
+  links inside page bodies are relative `.md` paths (`../Getting-Started/Format.md`).
 - A `wikidown-editor` subagent and a `wikidown` skill are configured in
   `.claude/`. Use them for ANY read/write of `/docs/*.md`.
 - Never edit `/docs/*.md` directly with `Write`/`Edit`. Use the `wikidown`
