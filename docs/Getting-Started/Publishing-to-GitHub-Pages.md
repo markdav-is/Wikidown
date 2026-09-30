@@ -102,6 +102,11 @@ links from published pages yourself.
   is already final HTML.)
 - **Keep `_data/navigation.yml` committed.** If it's missing the layout
   falls back to a flat alphabetical page list.
+- **Only files inside the wiki folder publish.** An image or file linked
+  from elsewhere in the repo (`../../assets/x.png`, `/assets/x.png`) 404s
+  on the site. `wikidown check-links` flags these, and
+  `wikidown check-links --fix` copies them into
+  `.attachments/from-repo/` and relinks them.
 
 ## Any other host: `export-html`
 

@@ -61,6 +61,7 @@ Default root is `./docs`; add `--root <path>` to every command otherwise.
 | Delete (with subpages)  | `wikidown delete --path P [--recursive]`                                 |
 | Re-sort a folder        | `wikidown reorder --folder P --names a,b,c`                              |
 | Audit links and `.order`| `wikidown check-links`                                                   |
+| Fix outside images/files| `wikidown check-links --fix` — copies them into `.attachments/from-repo` and relinks |
 | Start a kanban          | `wikidown kanban init [--path P]` (see "Kanban" below)                   |
 
 Every command prints `--help`. For multi-line bodies, write the text to a

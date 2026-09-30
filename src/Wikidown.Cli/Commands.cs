@@ -206,15 +206,27 @@ public static class Commands
         var checkIndex = !args.Flag("no-index-check");
         var issues = 0;
 
+        if (args.Flag("fix")) FixLinks(repo, args.Flag("dry-run"), w);
+
         foreach (var issue in LinkChecker.Check(repo, flagAbsolute))
         {
             var reason = issue.Kind switch
             {
                 LinkIssueKind.AbsoluteTitlePath => "absolute title-path link (404s on GitHub)",
                 LinkIssueKind.CaseMismatch => "upper/lower case differs from the file on disk (404s once published)",
+                LinkIssueKind.OutsideWiki => "outside the wiki; run check-links --fix",
                 _ => "broken link",
             };
             w.WriteLine($"{issue.Page.ToLinkPath()}:{issue.LineNumber} -> {issue.Target}  ({reason})");
+            issues++;
+        }
+
+        foreach (var issue in LinkFixer.CheckCopies(repo))
+        {
+            var reason = issue.Kind == CopyIssueKind.Stale
+                ? "copy differs from its source; run check-links --fix"
+                : "copy no page references; run check-links --fix";
+            w.WriteLine($"{issue.Path}  ({reason})");
             issues++;
         }
 
@@ -231,6 +243,26 @@ public static class Commands
         }
 
         return issues > 0 ? 1 : 0;
+    }
+
+    private static void FixLinks(WikiRepository repo, bool dryRun, TextWriter w)
+    {
+        var result = LinkFixer.Fix(repo, dryRun);
+        var would = dryRun ? "would " : "";
+        foreach (var rewrite in result.Rewrites)
+            w.WriteLine($"{would}relink {rewrite.Page.ToLinkPath()}:{rewrite.LineNumber}  {rewrite.OldTarget} -> {rewrite.NewTarget}");
+        foreach (var copy in result.Copies)
+        {
+            var verb = copy.Kind switch
+            {
+                CopyActionKind.Created => "copy",
+                CopyActionKind.Updated => "refresh",
+                _ => "delete",
+            };
+            w.WriteLine($"{would}{verb} {copy.Path}");
+        }
+        foreach (var warning in result.Warnings.Distinct())
+            w.WriteLine($"warning: {warning}");
     }
 
     public static int BackfillBreadcrumbs(WikiRepository repo, ParsedArgs args, TextWriter w)

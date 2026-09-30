@@ -155,9 +155,10 @@ The CLI behaves the same on Windows, macOS, and Linux:
 - `delete --path /P [--recursive]` — delete a page (and optionally its subpages).
 - `reorder --folder /P --names a,b,c` — rewrite `.order` for a folder.
 - `search --query <text>` — full-text search across page bodies.
-- `check-links [--no-absolute-check] [--no-index-check]` — walk every page
-  and validate that relative markdown links (`[x](../Foo/Bar.md)`) and image
-  references (`![x](../.attachments/pic.png)`) resolve to real files
+- `check-links [--no-absolute-check] [--no-index-check] [--fix [--dry-run]]` — walk every page
+  and validate that relative markdown links (`[x](../Foo/Bar.md)`), image
+  references (`![x](../.attachments/pic.png)`, raw `<img src="...">`, and
+  both targets of a click-through `[![alt](img.png)](full.png)`) resolve to real files
   relative to the linking page's folder (links inside code blocks and inline
   code are examples and are skipped). The match is case-exact on every
   platform, so a link that only resolves because Windows or macOS ignores
@@ -172,6 +173,34 @@ The CLI behaves the same on Windows, macOS, and Linux:
     orphaning the subtree from `wikidown list` / `wikidown search` / the rest
     of `check-links` itself (`--no-index-check` to skip). See
     [Format § Index Pages](Getting-Started/Format.md).
+
+  Always (even with `--no-absolute-check`) it also reports:
+  - links and images whose target is a file **outside the wiki root**
+    (`../../assets/x.png`, or `/assets/x.png` resolving to the Git repo
+    root), as `(outside the wiki; run check-links --fix)` — no publishing
+    route (Jekyll branch deploy, `export-html`, `export-pdf`) ships files
+    outside the wiki. Links to `.md` files outside the wiki are not
+    flagged. A target starting with `/` resolves against the wiki root if
+    the file exists there (the Azure DevOps `/.attachments/x.png`
+    convention), otherwise against the project root (the Git repo root, or
+    the wiki's parent folder when there's no Git repo);
+  - managed copies under `.attachments/from-repo/` that are stale
+    (`<path>  (copy differs from its source; run check-links --fix)`) or
+    unused (`<path>  (copy no page references; run check-links --fix)`).
+
+  `--fix` resolves those: it copies each outside file byte-for-byte into
+  `.attachments/from-repo/`, mirroring its path from the repo root
+  (`/assets/cards/duck.png` → `.attachments/from-repo/assets/cards/duck.png`),
+  and rewrites only the link target to the page-relative path of the copy
+  (fragments such as `#page=2` and line endings are kept; no resizing).
+  Files outside the repo entirely (`C:\art\x.png`, a `file:` URI) go to
+  `.attachments/from-external/` with a warning and are never refreshed.
+  `--fix` also refreshes stale copies, deletes unused ones (they're
+  Git-tracked, so review the diff), and keeps a copy whose source was
+  deleted, with a warning. It prints `relink page:line old -> new`, then
+  `copy|refresh|delete <path>` lines; `--fix --dry-run` prints the same
+  prefixed with "would" and writes nothing.
+  `wikidown check-links --fix --dry-run` · `wikidown check-links --fix`
 
   Prints one line per issue as `page:line -> target  (reason)` (link
   issues) or `folder -> detail  (reason)` (index issues), and exits
@@ -209,7 +238,12 @@ The CLI behaves the same on Windows, macOS, and Linux:
   warnings (0 otherwise). Raw HTML in a page's markdown (e.g. a `<div>`)
   is unsupported and fails the whole export by default — pass
   `--allow-html-skip` to instead render a
-  `[unsupported HTML block omitted]` placeholder and continue.
+  `[unsupported HTML block omitted]` placeholder and continue. An image
+  or link pointing at a file outside the wiki prints
+  `warning: {page}: outside the wiki: {target} (run check-links --fix)`
+  and also makes the command exit 1; nothing is rewritten. A target
+  starting with `/` follows the same rule as `check-links` (wiki root if
+  the file is there, else the repo root — never the drive root).
   For example: `wikidown export-pdf --output wiki.pdf`.
 
   PDF font resolution is cross-platform: an embedded `EmbeddedFontResolver`
@@ -243,7 +277,10 @@ The CLI behaves the same on Windows, macOS, and Linux:
   the wiki root when present (so customizations apply) and the built-in
   copy otherwise — running `pages` first is optional. `--base-url` prefixes
   theme links for sites served under a path (GitLab project sites);
-  `--clean` empties the output folder first. This is the path for GitLab
+  `--clean` empties the output folder first. Each reference to a file
+  outside the wiki prints
+  `warning: {page}: outside the wiki: {target} (run check-links --fix)`
+  and the command exits 1; it never rewrites anything. This is the path for GitLab
   Pages, Azure Static Web Apps, any static host, and local preview — see
   [Publishing to GitHub Pages § Any other host](Getting-Started/Publishing-to-GitHub-Pages.md).
 

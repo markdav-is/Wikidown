@@ -13,7 +13,10 @@ public static class ExportHtmlCommand
             BaseUrl: args.Optional("base-url"),
             Clean: args.Flag("clean")));
 
+        foreach (var issue in result.OutsideWiki)
+            w.WriteLine($"warning: {issue.Page.ToLinkPath()}: outside the wiki: {issue.Target} (run check-links --fix)");
+
         w.WriteLine($"exported {result.PageCount} page(s) to {result.OutputDirectory}");
-        return 0;
+        return result.OutsideWiki.Count > 0 ? 1 : 0;
     }
 }

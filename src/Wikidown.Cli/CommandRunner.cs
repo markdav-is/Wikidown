@@ -117,9 +117,11 @@ public static class CommandRunner
         w.WriteLine("  delete   --path /P [--recursive]             delete a page (and optionally subpages)");
         w.WriteLine("  reorder  --folder /P --names a,b,c           rewrite .order for a folder");
         w.WriteLine("  search   --query <text> [--case-sensitive]   search all page bodies");
-        w.WriteLine("  check-links  [--no-absolute-check] [--no-index-check]  validate relative");
-        w.WriteLine("               links/images; also flags absolute title-path body links and");
-        w.WriteLine("               folders with a missing or under-linking index page, unless disabled");
+        w.WriteLine("  check-links  [--no-absolute-check] [--no-index-check] [--fix [--dry-run]]");
+        w.WriteLine("               validate relative links/images; also flags files outside the wiki,");
+        w.WriteLine("               absolute title-path body links, and folders with a missing or");
+        w.WriteLine("               under-linking index page. --fix copies outside files into");
+        w.WriteLine("               .attachments/from-repo and points the links at the copies");
         w.WriteLine("  backfill-breadcrumbs [--dry-run]             add/refresh the breadcrumb line");
         w.WriteLine("               on every existing page that predates it (write/move do this");
         w.WriteLine("               automatically going forward; this is a one-time catch-up)");
@@ -434,22 +436,34 @@ public static class CommandRunner
             """
             Usage:
               wikidown check-links [--no-absolute-check] [--no-index-check] [--root <path>]
+              wikidown check-links --fix [--dry-run] [--root <path>]
 
-            Validate that relative links/images resolve, that page bodies
-            don't use absolute title-path links (they 404 on github.com), and
-            that every subpage folder has an index page linking each child.
-            Links inside code blocks and inline code are examples, so they
-            are skipped. Exits non-zero if any issues are found.
+            Validate that relative links/images resolve, that none point at
+            files outside the wiki (no publishing route ships those), that
+            page bodies don't use absolute title-path links (they 404 on
+            github.com), and that every subpage folder has an index page
+            linking each child. Links inside code blocks and inline code are
+            examples, so they are skipped. Exits non-zero if any issues are
+            found.
+
+            --fix copies each image or file a page references from outside
+            the wiki into .attachments/from-repo/, mirroring its path from the
+            Git repo root, and rewrites the link to point at the copy. It
+            also refreshes copies whose source changed and deletes copies no
+            page references. Review the result like any other edit.
 
             Options:
               --no-absolute-check   Skip the absolute title-path link check
               --no-index-check      Skip the index-page audit
+              --fix                 Copy outside files in and relink them
+              --dry-run             With --fix, print what would change and write nothing
               --root                Path to the docs folder (default: ./docs)
               -h, --help
 
             Examples:
               wikidown check-links
               wikidown check-links --no-index-check
+              wikidown check-links --fix --dry-run
 
             """,
 

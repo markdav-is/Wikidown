@@ -781,6 +781,111 @@ Blazor WASM PWA editor + marketing site hosted on GitHub Pages.
       DejaVu run (arrows, box drawing, Greek, Cyrillic).
     - `TableColumnLayout.CodeWidthFactor` 1.05 → 1.06 for Mono's 0.632em.
 
+29. **`check-links --fix`: copy images and files from outside the wiki into it.** *(shipped)*
+    - Trigger (2026-09-29): a wiki's card gallery linked `![Duck](/assets/cards/duck.png)`
+      at full-size art outside the wiki root. No publishing route could
+      ship that file:
+      - `export-html` and Jekyll branch deploy only publish what's under
+        the wiki root;
+      - `export-pdf` mis-resolved the path (see below).
+      `check-links` didn't report it either. A relative path that climbs
+      out (`../../assets/x.png`) passed because the file exists.
+    - Approach: the fix lives in `check-links`, because a reference outside
+      the wiki is a broken link on every publishing route.
+      - Plain `check-links` stays read-only and CI-safe, and reports the
+        new issues below.
+      - `check-links --fix [--dry-run]` copies each outside target into
+        the wiki's `.attachments/` and rewrites the link in the markdown
+        to point at the copy. `--dry-run` prints the same lines with
+        "would" and writes nothing.
+      - The copies are ordinary committed files inside the wiki, so
+        every route works: Jekyll branch deploy (`_config.yml` already
+        has `include: [.attachments]`), `export-html`, `export-pdf`,
+        github.com, and the web editor.
+      - Jekyll stays a supported route (decided 2026-09-30); sites like
+        OpenEugene/art-hop depend on real Jekyll features.
+      - Exports never rewrite anything. They warn instead.
+      - Copies are byte-for-byte, with no resizing (decided 2026-09-30).
+        See the parking lot.
+    - `TargetResolver` is the one place a target becomes a disk path, used
+      by `check-links`, `--fix`, and `export-pdf`.
+      - Relative paths resolve from the page's folder.
+      - A leading `/` resolves against the wiki root if the file is there
+        (the Azure DevOps `/.attachments` convention), else against the
+        project root (how GitHub reads it). The project root is the Git
+        work tree holding the wiki (`.git` directory or file), else the
+        wiki's parent folder.
+      - Filesystem paths (`C:\art\x.png`) and `file:` URIs resolve as is.
+      - `http(s):`, `mailto:`, protocol-relative `//`, `data:`, and
+        anchors are not files. `IsExternal` now covers `//`.
+      - A target is "outside" when it exists and isn't under the wiki
+        root. Links to `.md` are other documents, not files to copy, so
+        they are never `OutsideWiki`.
+    - Discovery is `LinkChecker`'s existing line scan (fenced code and
+      code spans skipped), not a Markdig walk, because it gives line
+      numbers and exact spans for the rewrite. Two changes:
+      - `LinkTarget` anchors on `](` instead of `[text](`, so
+        `[![alt](img.png)](full.png)` yields both targets. Before, the
+        click-through link was invisible to `check-links` and `move`.
+      - Raw `<img src="…">` values are now checked too.
+    - New issues:
+      - `LinkIssueKind.OutsideWiki`:
+        `page:line -> target  (outside the wiki; run check-links --fix)`.
+        It is reported even with `--no-absolute-check`. A leading `/`
+        target that exists inside the wiki is still
+        `AbsoluteTitlePath`, as before.
+      - `LinkFixer.CheckCopies` returns a `CopyIssue` of kind `Stale` (a
+        copy that differs byte-for-byte from its source) or `Unused` (no
+        page references it). This is a byte comparison only, so it's
+        cheap enough for plain `check-links`.
+    - Naming: a copy mirrors its source's path from the project root:
+      `/assets/cards/duck.png` becomes `.attachments/from-repo/assets/cards/duck.png`.
+      - The path is the provenance: no comment or manifest.
+      - The folder name marks the copy as managed, so `--fix` never
+        touches the wiki's own `.attachments` files.
+      - The folder was first planned as `_repo`. The end-to-end run
+        showed that `export-html` (and Jekyll) drop `_`-prefixed folders,
+        so it is `from-repo`.
+      - Sources outside the project go to `.attachments/from-external/`
+        with the drive letter dropped, plus a warning. They are never
+        refreshed, because the source can't be found from the name.
+    - `--fix` details:
+      - Only the target span is replaced, with the page-relative path
+        (`../.attachments/from-repo/…`). Any `#fragment` is kept. The
+        page is written through `repo.Write`, so line endings and BOM
+        survive.
+      - One `relink page:line old -> new` line per change, then
+        `copy`/`refresh`/`delete` per file. Unchanged copies aren't
+        rewritten, so there's no Git churn.
+      - Stale copies are refreshed. Unused copies are deleted, and empty
+        folders are removed. A copy whose source is gone is kept, with a
+        warning.
+    - Exports: `export-html` (via `HtmlExportResult.OutsideWiki`) and
+      `export-pdf` print
+      `warning: {page}: outside the wiki: {target} (run check-links --fix)`
+      and exit 1.
+    - `export-pdf` bug fixed: `RepositoryPdfPageSource.ResolveImage` went
+      through `LinkChecker.ResolveFullPath`, whose `Path.Combine` treats a
+      leading `/` as absolute. `/assets/x.png` became `C:\assets\x.png`.
+      It now uses `TargetResolver`.
+    - Tests: `LinkFixerTests` (14 tests) cover:
+      - outside detection per form, including `<img>`, `.md`, `http`, and
+        code spans;
+      - the leading-`/` wiki-first rule;
+      - relinking in a table cell, with a fragment;
+      - the image-plus-click-through case;
+      - CRLF kept and code untouched;
+      - the same name in two folders;
+      - idempotence, stale refresh, unused delete, and a gone source;
+      - dry run;
+      - `from-external` via a `file:` URI;
+      - the HTML export warning, and the PDF resolver.
+      Verified end to end on a gallery wiki (fix, then `export-html`
+      ships the copies) and against this repo's `/docs` and
+      OpenEugene/art-hop: no new issues on either.
+    - Docs: `CLI.md` (`check-links`, `--fix`, and the export warnings),
+      `Format.md` (fixing outside references), and the wikidown skill.
+
 ## Open questions / parking lot
 - Kanban board view (columns, drag to move) in the web editor.
 - `[[_TOC_]]`, mermaid, `:::` callouts rendering in WASM preview.
@@ -791,3 +896,9 @@ Blazor WASM PWA editor + marketing site hosted on GitHub Pages.
   an "Export to PDF" VS command is ever wanted — `Wikidown.Vs` can't
   reference either project until then.
 - `export-pdf`: a `/docs` page documenting the command (via `wikidown-editor`).
+- Resize oversized images copied by `check-links --fix` (chunk 29), only
+  if page weight becomes a real problem. Research done: SkiaSharp (MIT)
+  over ImageSharp, because ImageSharp 4 requires a build-time licence key
+  that a public repo can't commit. The costs: native library shipped next
+  to the executable (not self-extract), `install.sh` must move it, a Linux
+  NoDependencies package, EXIF rotation by hand, and no Alpine.

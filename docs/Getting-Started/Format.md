@@ -70,7 +70,10 @@ depth, and include the `.md` extension:
 *   **Incorrect:** `[Read the Data Model](/Architecture/Data-Model)`
 
 Images and other repo assets follow the same rule, e.g.
-`![map](../.attachments/map.png)`.
+`![map](../.attachments/map.png)`. Keep them **inside** the wiki folder:
+a file elsewhere in the repo (`../../assets/x.png`, or `/assets/x.png`)
+isn't published by any route. `wikidown check-links --fix` copies such
+files into `.attachments/from-repo/` and relinks them for you.
 
 Run `wikidown check-links` (see [CLI](../CLI.md)) to walk every page and
 verify that relative links and image references resolve to real files; by
@@ -116,6 +119,17 @@ What to do depends on the `(reason)`:
     `.md`/`.attachments` spelling; fix the path to match the real file. If
     the target page genuinely no longer exists, either remove the link or
     point it at wherever that content now lives.
+
+*   **`(outside the wiki; run check-links --fix)`** — the link or image
+    points at a file outside the wiki folder (e.g. `../../assets/x.png`,
+    or `/assets/x.png` resolving to the repo root), which no publishing
+    route ships. Run `wikidown check-links --fix` (add `--dry-run` to
+    preview): it copies the file byte-for-byte into
+    `.attachments/from-repo/`, mirroring its path from the repo root, and
+    rewrites the link to point at the copy. Later reports that a copy
+    **differs from its source** or that **no page references** it are
+    handled the same way — re-run `--fix` to refresh or delete it (the
+    copies are Git-tracked, so review the diff).
 
 *   **A link that broke because a page moved** — `wikidown move` (see
     [CLI](../CLI.md)) automatically rewrites inbound links and

@@ -10,7 +10,9 @@ public sealed record HtmlExportOptions(
     string? BaseUrl = null,
     bool Clean = false);
 
-public sealed record HtmlExportResult(int PageCount, string OutputDirectory);
+// OutsideWiki: references to files outside the wiki root, which the export
+// can't ship (check-links --fix copies them in).
+public sealed record HtmlExportResult(int PageCount, string OutputDirectory, IReadOnlyList<LinkIssue> OutsideWiki);
 
 // Renders the wiki to a static site with the same theme, layout, and nav
 // data GitHub Pages' Jekyll would use — so the output is host-agnostic
@@ -112,7 +114,10 @@ public static class HtmlExporter
 
         CopyStaticFiles(repo.RootPath, output);
 
-        return new HtmlExportResult(pages.Count, output);
+        var outside = LinkChecker.Check(repo, pages, flagAbsolutePaths: false)
+            .Where(i => i.Kind == LinkIssueKind.OutsideWiki)
+            .ToList();
+        return new HtmlExportResult(pages.Count, output, outside);
     }
 
     // Everything else in the wiki root ships verbatim, mirroring Jekyll's

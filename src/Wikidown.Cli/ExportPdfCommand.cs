@@ -23,7 +23,13 @@ public static class ExportPdfCommand
         foreach (var warning in content.Warnings)
             w.WriteLine($"warning: {warning.Page.ToLinkPath()}: image not found: {warning.Target}");
 
+        var outside = LinkChecker.Check(repo, WikiPdfContent.ScopePaths(repo, from), flagAbsolutePaths: false)
+            .Where(i => i.Kind == LinkIssueKind.OutsideWiki)
+            .ToList();
+        foreach (var issue in outside)
+            w.WriteLine($"warning: {issue.Page.ToLinkPath()}: outside the wiki: {issue.Target} (run check-links --fix)");
+
         w.WriteLine($"wrote {outputPath} ({content.Pages.Count} page(s))");
-        return content.Warnings.Count > 0 ? 1 : 0;
+        return content.Warnings.Count > 0 || outside.Count > 0 ? 1 : 0;
     }
 }

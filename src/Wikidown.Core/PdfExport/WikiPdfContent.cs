@@ -9,7 +9,14 @@ public sealed record PdfExportContent(
 
 public static class WikiPdfContent
 {
-    public static PdfExportContent BuildAll(WikiRepository repo, PagePath? from = null, bool allowHtmlSkip = false)
+    public static PdfExportContent BuildAll(WikiRepository repo, PagePath? from = null, bool allowHtmlSkip = false) =>
+        Build(
+            ScopePaths(repo, from).Select(path => (path, repo.Read(path).Markdown)).ToList(),
+            repo.ReadOrder,
+            new RepositoryPdfPageSource(repo),
+            allowHtmlSkip);
+
+    public static IReadOnlyList<PagePath> ScopePaths(WikiRepository repo, PagePath? from)
     {
         // Walk(from) yields from's descendants only, not from itself — a
         // scoped export needs the page it's scoped to as well, so the
@@ -18,12 +25,7 @@ public static class WikiPdfContent
         if (from is { IsRoot: false } start && repo.Exists(start))
             paths.Add(start);
         paths.AddRange(repo.Walk(from));
-
-        return Build(
-            paths.Select(path => (path, repo.Read(path).Markdown)).ToList(),
-            repo.ReadOrder,
-            new RepositoryPdfPageSource(repo),
-            allowHtmlSkip);
+        return paths;
     }
 
     /// <summary>Builds export content from pages already in memory (the web editor's path).</summary>

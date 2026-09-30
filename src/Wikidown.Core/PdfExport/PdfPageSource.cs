@@ -18,6 +18,8 @@ public interface IPdfPageSource
 
 public sealed class RepositoryPdfPageSource(WikiRepository repo) : IPdfPageSource
 {
+    private readonly TargetResolver _resolver = new(repo);
+
     public bool Exists(PagePath page) => repo.Exists(page);
 
     public PagePath? ResolveRelativePage(PagePath from, string relativeTarget)
@@ -26,11 +28,8 @@ public sealed class RepositoryPdfPageSource(WikiRepository repo) : IPdfPageSourc
         return File.Exists(full) ? FilePathToPagePath(full) : null;
     }
 
-    public string? ResolveImage(PagePath from, string target)
-    {
-        var full = LinkChecker.ResolveFullPath(repo, from, target);
-        return File.Exists(full) ? full : null;
-    }
+    public string? ResolveImage(PagePath from, string target) =>
+        _resolver.Resolve(from, target) is { Exists: true } resolved ? resolved.FullPath : null;
 
     private PagePath? FilePathToPagePath(string fullPath)
     {
