@@ -80,7 +80,9 @@ links from published pages yourself.
 - Relative `.md` links (including the auto breadcrumb) are rewritten to the
   generated `.html` URLs by `jekyll-relative-links`.
 - Page titles come from the first `# Heading`, so pages need no YAML front
-  matter.
+  matter. The sidebar nav (`_data/navigation.yml`) uses the same title, so a
+  page `Attacks-Defense.md` headed `# Attacks & Defense` shows as
+  "Attacks & Defense".
 - `.order` files are dotfiles, so Jekyll ignores them; the nav tree reads
   them via `_data/navigation.yml` instead, because GitHub's Pages builder
   can't run custom plugins.

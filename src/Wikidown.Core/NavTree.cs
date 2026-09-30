@@ -30,7 +30,8 @@ public static class NavTree
     /// </summary>
     public static IReadOnlyList<NavNode> Build(
         IReadOnlyList<PagePath> pages,
-        Func<PagePath, IReadOnlyList<string>> orderForFolder)
+        Func<PagePath, IReadOnlyList<string>> orderForFolder,
+        Func<PagePath, string>? titleFor = null)
     {
         var pagesByParent = new Dictionary<string, List<PagePath>>(StringComparer.OrdinalIgnoreCase);
         var foldersByParent = new Dictionary<string, Dictionary<string, PagePath>>(StringComparer.OrdinalIgnoreCase);
@@ -54,14 +55,16 @@ public static class NavTree
                 RecordFolder(folder);
         }
 
-        return BuildChildren(PagePath.Root, pagesByParent, foldersByParent, orderForFolder);
+        return BuildChildren(PagePath.Root, pagesByParent, foldersByParent, orderForFolder,
+            titleFor ?? (page => page.Name.Title));
     }
 
     private static IReadOnlyList<NavNode> BuildChildren(
         PagePath folder,
         Dictionary<string, List<PagePath>> pagesByParent,
         Dictionary<string, Dictionary<string, PagePath>> foldersByParent,
-        Func<PagePath, IReadOnlyList<string>> orderForFolder)
+        Func<PagePath, IReadOnlyList<string>> orderForFolder,
+        Func<PagePath, string> titleFor)
     {
         var link = folder.ToLinkPath();
         pagesByParent.TryGetValue(link, out var pages);
@@ -81,15 +84,15 @@ public static class NavTree
                 // A page with a same-named sibling folder absorbs it: one
                 // node, expandable into the folder's children.
                 var children = remainingFolders.Remove(page.ToLinkPath())
-                    ? BuildChildren(page, pagesByParent, foldersByParent, orderForFolder)
+                    ? BuildChildren(page, pagesByParent, foldersByParent, orderForFolder, titleFor)
                     : Array.Empty<NavNode>();
-                nodes.Add((new NavNode(page, page.Name.Title, IsPage: true, children), page.Name.FileBase));
+                nodes.Add((new NavNode(page, titleFor(page), IsPage: true, children), page.Name.FileBase));
             }
         }
 
         foreach (var bare in remainingFolders.Values)
         {
-            var children = BuildChildren(bare, pagesByParent, foldersByParent, orderForFolder);
+            var children = BuildChildren(bare, pagesByParent, foldersByParent, orderForFolder, titleFor);
             nodes.Add((new NavNode(bare, bare.Name.Title, IsPage: false, children), bare.Name.FileBase));
         }
 

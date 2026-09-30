@@ -47,7 +47,7 @@ public static class HtmlExporter
             ["image"] = config.Image,
             ["data"] = new Dictionary<string, object?>
             {
-                ["navigation"] = NavData(NavTree.Build(pages, repo.ReadOrder)),
+                ["navigation"] = NavData(NavTree.Build(pages, repo.ReadOrder, p => rendered[p.ToLinkPath()].Title)),
             },
             ["pages"] = pages.Select(p => (object?)new Dictionary<string, object?>
             {

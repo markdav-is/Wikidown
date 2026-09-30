@@ -3,6 +3,7 @@ using Markdig.Extensions.AutoIdentifiers;
 using Markdig.Renderers;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
+using Wikidown.Core;
 
 namespace Wikidown.Html;
 
@@ -30,10 +31,7 @@ public static class MarkdownPageRenderer
             link.Url = RewriteMarkdownLink(link.Url);
         }
 
-        var title = document.Descendants<HeadingBlock>()
-            .Where(h => h.Level == 1)
-            .Select(InlineText)
-            .FirstOrDefault(t => t.Length > 0) ?? fallbackTitle;
+        var title = PageTitle.FromMarkdown(markdown) ?? fallbackTitle;
 
         using var writer = new StringWriter();
         var renderer = new HtmlRenderer(writer);
@@ -56,11 +54,5 @@ public static class MarkdownPageRenderer
         var fragment = hash < 0 ? "" : url[hash..];
         if (!path.EndsWith(".md", StringComparison.OrdinalIgnoreCase)) return url;
         return path[..^3] + ".html" + fragment;
-    }
-
-    private static string InlineText(HeadingBlock heading)
-    {
-        if (heading.Inline is null) return "";
-        return string.Concat(heading.Inline.Descendants<LiteralInline>().Select(l => l.Content.ToString())).Trim();
     }
 }

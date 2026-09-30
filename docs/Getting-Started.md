@@ -6,7 +6,8 @@ Welcome to Wikidown. This folder is itself a Wikidown-format wiki.
 
 ## Format quick reference
 
-- Page file on disk: `Getting-Started.md`; rendered title: `Getting Started`.
+- Page file on disk: `Getting-Started.md`; rendered title: `Getting Started`,
+  from the page's first `# Heading` (the file name is the fallback).
 - Subpages go in a folder with the same base name next to the page file.
 - Ordering lives in `.order` — one page base-name per line.
 - Body links are relative file paths (with the `.md` extension), not

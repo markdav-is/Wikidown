@@ -10,12 +10,17 @@ The format is built first for GitHub and Jekyll (GitHub Pages): a project wiki t
 
 ## 1. Page Files and Titles
 
-Every page in the wiki is a standard Markdown file (`.md`). The title of the page is derived directly from its filename by replacing hyphens with spaces.
+Every page in the wiki is a standard Markdown file (`.md`). A page's title is its first `# Heading`, as plain text (link, code, and emphasis markup is stripped). That's the title readers and tools see: the site nav (in `export-html` and Jekyll's generated `_data/navigation.yml`), the `export-pdf` table of contents and bookmarks, and the title column of `wikidown list` and `wikidown walk`.
+
+The file name is the page's path and URL: the title with spaces written as hyphens.
 
 *   **File on disk:** `Release-Notes.md`
+*   **Heading:** `# Release Notes`
 *   **Rendered title:** `Release Notes`
 
-The reverse is also true: when creating a page titled "Getting Started", the file must be named `Getting-Started.md`.
+So when you create a page titled "Getting Started", the file is named `Getting-Started.md` (`wikidown new --title "Getting Started"` does this and writes the `# Getting Started` heading for you).
+
+Every page should start with a `# Heading`. Because the title comes from the heading rather than the file name, it can contain characters a file name can't show: a page `Attacks-Defense.md` headed `# Attacks & Defense` is titled "Attacks & Defense", and `# Move-1` keeps its hyphen. If a page has no `# Heading`, the file name is the fallback title, with hyphens shown as spaces. A folder with no page of its own shows its folder name.
 
 ## 2. Subpages and Hierarchy
 
@@ -257,4 +262,4 @@ Key behavior:
 
 ## 7. Markdown Dialect
 
-Wikidown relies on standard CommonMark. There are no proprietary macros or shortcodes required to render the core text. An MVP renderer only needs a standard markdown parser plus the filename↔title mapping logic described above.
+Wikidown relies on standard CommonMark. There are no proprietary macros or shortcodes required to render the core text. An MVP renderer only needs a standard markdown parser plus the title and file-name rules described above.

@@ -42,10 +42,11 @@ public static class WikiPdfContent
             var markdown = Breadcrumb.Strip(p.Markdown);
             var blocks = MarkdownIrBuilder.Build(markdown, p.Path, source, allowHtmlSkip, out var pageWarnings);
             warnings.AddRange(pageWarnings);
-            return new PageIr(p.Path, p.Path.Name.Title, blocks);
+            return new PageIr(p.Path, PageTitle.For(p.Path, p.Markdown), blocks);
         }).ToList();
 
-        var nav = NavTree.Build(pages.Select(p => p.Path).ToList(), orderFor);
+        var titles = pageIrs.ToDictionary(p => p.Path.ToLinkPath(), p => p.Title);
+        var nav = NavTree.Build(pages.Select(p => p.Path).ToList(), orderFor, p => titles[p.ToLinkPath()]);
         return new PdfExportContent(pageIrs, nav, warnings);
     }
 }

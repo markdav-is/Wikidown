@@ -83,9 +83,12 @@ The CLI behaves the same on Windows, macOS, and Linux:
   + GitHub Copilot) into the folder containing the wiki root. See
   [Agents](Agents.md). Re-run with `--force` to pick up updated agent configs
   in an existing repo — see [Updating](Getting-Started/Updating.md).
-- `list [--path /P]` — list children of a page (or root). `wikidown list`
+- `list [--path /P]` — list children of a page (or root), one per line as
+  `path<TAB>title`, where the title is the page's first `# Heading` (the
+  file name, hyphens as spaces, when it has none). `wikidown list`
 - `walk [--path /P]` — list every page in the wiki, depth-first in `.order`
-  order, one per line as `path<TAB>title`; with `--path`, only that page's
+  order, one per line as `path<TAB>title` (title from the page's first
+  `# Heading`, file name as fallback); with `--path`, only that page's
   descendants. The one-call way for an agent to orient itself before
   editing. `wikidown walk` · `wikidown walk --path /Getting-Started`
 - `read --path /P [--section "<heading>"]` — print page markdown to stdout,

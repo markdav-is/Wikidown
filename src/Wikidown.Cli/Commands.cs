@@ -8,9 +8,12 @@ public static class Commands
     {
         var parent = PagePath.Parse(args.Optional("path") ?? "/");
         foreach (var child in repo.ListChildren(parent))
-            w.WriteLine($"{child.ToLinkPath()}\t{child.Name.Title}");
+            w.WriteLine($"{child.ToLinkPath()}\t{Title(repo, child)}");
         return 0;
     }
+
+    private static string Title(WikiRepository repo, PagePath page) =>
+        repo.Exists(page) ? PageTitle.For(page, repo.Read(page).Markdown) : page.Name.Title;
 
     public static int Walk(WikiRepository repo, ParsedArgs args, TextWriter w)
     {
@@ -18,7 +21,7 @@ public static class Commands
         var any = false;
         foreach (var page in repo.Walk(from))
         {
-            w.WriteLine($"{page.ToLinkPath()}	{page.Name.Title}");
+            w.WriteLine($"{page.ToLinkPath()}	{Title(repo, page)}");
             any = true;
         }
         if (!any) w.WriteLine("(empty wiki)");
