@@ -11,6 +11,10 @@ description: ""
 # repository_url: https://github.com/<owner>/<repo>
 # Uncomment to set a favicon (path relative to the wiki root):
 # favicon: /favicon.ico
+# Uncomment for link previews (Slack, Teams, social): the site's public
+# address and an image path relative to the wiki root.
+# url: https://<owner>.github.io
+# image: /images/logo.png
 
 # Subtrees to leave out of the published site (nav and pages). Publishing
 # only — the pages stay first-class for the CLI and editor.

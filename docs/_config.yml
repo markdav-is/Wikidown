@@ -9,6 +9,9 @@ title: "Wikidown"
 description: "An opinionated, tool-supported wiki that lives in /docs of any code repo."
 repository_url: https://github.com/markdav-is/Wikidown
 favicon: /favicon.ico
+# Link previews (Slack, Teams, social): absolute site address + preview image.
+url: https://wikidown.org
+image: /images/wikidown-icon-512.png
 
 # Publishing only — these stay first-class in the repo, the CLI, and the
 # editor; they just don't ship to wikidown.org.

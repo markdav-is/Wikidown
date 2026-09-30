@@ -41,6 +41,8 @@ public static class HtmlExporter
             ["repository_url"] = config.RepositoryUrl,
             ["baseurl"] = baseUrl,
             ["favicon"] = config.Favicon,
+            ["url"] = config.Url,
+            ["image"] = config.Image,
             ["data"] = new Dictionary<string, object?>
             {
                 ["navigation"] = NavData(NavTree.Build(pages, repo.ReadOrder)),

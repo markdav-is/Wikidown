@@ -9,6 +9,8 @@ public sealed record SiteConfig(
     string? RepositoryUrl,
     string? BaseUrl,
     string? Favicon,
+    string? Url,
+    string? Image,
     IReadOnlyList<string> ExcludeFromSite)
 {
     public static SiteConfig Parse(string yaml)
@@ -33,6 +35,8 @@ public sealed record SiteConfig(
             Get(values, "repository_url"),
             Get(values, "baseurl"),
             Get(values, "favicon"),
+            Get(values, "url")?.TrimEnd('/'),
+            Get(values, "image"),
             Core.PublishExclusions.Parse(yaml));
     }
 

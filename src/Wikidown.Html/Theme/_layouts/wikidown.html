@@ -6,6 +6,13 @@
   <title>{% if page.title %}{{ page.title }} · {% endif %}{{ site.title }}</title>
   {% if site.description %}<meta name="description" content="{{ site.description | escape }}">{% endif %}
   {% if site.favicon %}<link rel="icon" href="{{ site.favicon | relative_url }}">{% endif %}
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="{{ site.title | escape }}">
+  <meta property="og:title" content="{% if page.title %}{{ page.title | escape }}{% else %}{{ site.title | escape }}{% endif %}">
+  {% if site.description %}<meta property="og:description" content="{{ site.description | escape }}">{% endif %}
+  {% if site.url %}<meta property="og:url" content="{{ site.url }}{{ page.url | relative_url }}">{% endif %}
+  {% if site.url and site.image %}<meta property="og:image" content="{{ site.url }}{{ site.image | relative_url }}">
+  <meta name="twitter:card" content="summary">{% endif %}
   <link rel="stylesheet" href="{{ '/assets/wikidown.css' | relative_url }}">
 </head>
 <body>

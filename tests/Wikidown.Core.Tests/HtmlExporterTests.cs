@@ -206,6 +206,34 @@ public class HtmlExporterTests : IDisposable
     }
 
     [Fact]
+    public void Export_WithUrlAndImage_EmitsAbsoluteLinkPreviewTags()
+    {
+        Seed();
+        File.WriteAllText(Path.Combine(_wikiRoot, "_config.yml"),
+            "title: T\ndescription: D\nurl: https://example.org/\nimage: /images/logo.png\n");
+        HtmlExporter.Export(_repo, new HtmlExportOptions(_output, BaseUrl: "/wiki", Clean: true));
+
+        var page = ReadOut("Guides/Install.html");
+        Assert.Contains("<meta property=\"og:title\" content=\"Install\">", page);
+        Assert.Contains("<meta property=\"og:url\" content=\"https://example.org/wiki/Guides/Install.html\">", page);
+        Assert.Contains("<meta property=\"og:image\" content=\"https://example.org/wiki/images/logo.png\">", page);
+        Assert.Contains("twitter:card", page);
+    }
+
+    [Fact]
+    public void Export_WithoutUrl_OmitsAbsoluteLinkPreviewTags()
+    {
+        Seed();
+        File.WriteAllText(Path.Combine(_wikiRoot, "_config.yml"), "title: T\nimage: /images/logo.png\n");
+        HtmlExporter.Export(_repo, new HtmlExportOptions(_output, Clean: true));
+
+        var page = ReadOut("Home.html");
+        Assert.Contains("og:title", page);
+        Assert.DoesNotContain("og:image", page);
+        Assert.DoesNotContain("og:url", page);
+    }
+
+    [Fact]
     public void Export_NavTreeLinksHomeToSiteRoot_AndMarksItActive()
     {
         Seed();
