@@ -58,12 +58,18 @@
       <p class="section-lead">Add Wikidown to any repo in two commands — no .NET installation required either way.</p>
       <div class="gs-grid">
         <div class="gs-lane gs-lane-agent">
-          <span class="card-kicker">Using an AI coding agent</span>
+          <span class="card-kicker">Using Claude Code</span>
           <h3>Just ask it</h3>
-          <p>Paste this into Claude Code, Copilot, or any agent with terminal access:</p>
-          <blockquote class="prompt">Install Wikidown from wikidown.org and run <code>wikidown init</code> in this repo.</blockquote>
-          <p class="gs-note">It picks the right install path itself, drops in a wiki skill/subagent (Claude Code) or agent/chat-mode (Copilot), and seeds <code>docs/Home.md</code> — nothing to configure by hand.</p>
-          <p class="gs-note">Details for developers: <a href="Getting-Started/Claude-Code-Integration.html">Claude Code</a> · <a href="Getting-Started/GitHub-Copilot-Integration.html">GitHub Copilot</a>.</p>
+          <p>Paste this into Claude Code at the root of your repo:</p>
+          <blockquote class="prompt">Install Wikidown from wikidown.org and run <code>wikidown init --agents claude</code> in this repo.</blockquote>
+          <p class="gs-note">It installs the CLI, seeds <code>docs/Home.md</code>, and adds a <code>wikidown</code> skill, a <code>wikidown-editor</code> subagent, and a wiki section in <code>CLAUDE.md</code>. See <a href="Getting-Started/Claude-Code-Integration.html">Claude Code Integration</a>.</p>
+        </div>
+        <div class="gs-lane gs-lane-agent">
+          <span class="card-kicker">Using GitHub Copilot</span>
+          <h3>Just ask it</h3>
+          <p>Paste this into Copilot agent mode in VS Code:</p>
+          <blockquote class="prompt">Install Wikidown from wikidown.org and run <code>wikidown init --agents copilot</code> in this repo.</blockquote>
+          <p class="gs-note">It installs the CLI, seeds <code>docs/Home.md</code>, and adds repo instructions, a <code>wikidown</code> custom agent, and a chat mode — also used by the coding agent on github.com. See <a href="Getting-Started/GitHub-Copilot-Integration.html">GitHub Copilot Integration</a>.</p>
         </div>
         <div class="gs-lane">
           <span class="card-kicker">Using Muse</span>
@@ -74,11 +80,14 @@
           <blockquote class="prompt">Clone https://github.com/you/your-repo using that SSH key. From now on, whenever a decision, preference, or fact worth keeping comes up while we work, write it to the wiki in that repo's <code>docs</code> folder using wikidown, then commit and push the change.</blockquote>
           <p class="gs-note">Two Muse accounts can share one wiki, too — see <a href="Getting-Started/Muse-Integration.html">Muse Integration</a>.</p>
         </div>
-        <div class="gs-lane gs-lane-wide">
+        <div class="gs-lane">
           <span class="card-kicker">From a terminal</span>
           <h3>Two commands</h3>
           <pre><code># Installs a self-contained CLI, no .NET required:
-curl -fsSL https://wikidown.org/install.sh | sh      # Windows: irm https://wikidown.org/install.ps1 | iex
+curl -fsSL https://wikidown.org/install.sh | sh
+wikidown init</code></pre>
+          <pre><code># Windows (PowerShell):
+irm https://wikidown.org/install.ps1 | iex
 wikidown init</code></pre>
           <pre><code># Or, if you have the .NET SDK installed:
 dotnet tool install -g Wikidown.Cli

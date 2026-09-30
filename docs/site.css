@@ -222,7 +222,6 @@ pre code {
     padding: 1.5rem;
     box-shadow: var(--shadow);
 }
-.gs-lane-wide { grid-column: 1 / -1; }
 .gs-lane h3 { margin: 0.1rem 0 0.75rem; font-size: 1.2rem; }
 .gs-lane p { color: var(--c-muted); margin: 0 0 0.85rem; }
 .gs-lane-agent {
