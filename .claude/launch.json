@@ -24,6 +24,18 @@
         "publish/web/wwwroot"
       ],
       "port": 5242
+    },
+    {
+      "name": "site",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "5243",
+        "--directory",
+        "docs"
+      ],
+      "port": 5243
     }
   ]
 }

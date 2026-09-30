@@ -65,13 +65,21 @@
           <p class="gs-note">It picks the right install path itself, drops in a wiki skill/subagent (Claude Code) or agent/chat-mode (Copilot), and seeds <code>docs/Home.md</code> — nothing to configure by hand.</p>
         </div>
         <div class="gs-lane">
+          <span class="card-kicker">Using Muse</span>
+          <h3>Give it a wiki to remember in</h3>
+          <p>Paste this into a new Muse side chat:</p>
+          <blockquote class="prompt">Install wikidown from wikidown.org using their install script: <code>curl -fsSL https://wikidown.org/install.sh | sh</code> (Windows: <code>irm https://wikidown.org/install.ps1 | iex</code>). Then generate a new SSH keypair and show me the public key.</blockquote>
+          <p>Add that public key as a deploy key on the repo (Settings → Deploy keys, with write access), then tell your Muse to clone the repo. One last sentence sets the standing rule:</p>
+          <blockquote class="prompt">Durable things that come up while working — decisions, preferences, facts worth keeping — go in the wiki, then commit and push.</blockquote>
+        </div>
+        <div class="gs-lane gs-lane-wide">
           <span class="card-kicker">From a terminal</span>
           <h3>Two commands</h3>
-          <pre><code># If you have dotnet installed:
-dotnet tool install -g Wikidown.Cli
-wikidown init</code></pre>
-          <pre><code># If not — installs a self-contained CLI, no .NET required:
+          <pre><code># Installs a self-contained CLI, no .NET required:
 curl -fsSL https://wikidown.org/install.sh | sh      # Windows: irm https://wikidown.org/install.ps1 | iex
+wikidown init</code></pre>
+          <pre><code># Or, if you have the .NET SDK installed:
+dotnet tool install -g Wikidown.Cli
 wikidown init</code></pre>
           <p class="gs-note">Either way the binary is <code>wikidown</code> and <code>init</code> behaves identically.</p>
         </div>
@@ -130,7 +138,7 @@ git add docs &amp;&amp; git commit -m "Publish wiki" &amp;&amp; git push
             <p>Reads, writes, moves, reorders, and searches pages while keeping <code>.order</code> consistent. The install script auto-detects .NET — no runtime required either way.</p>
             <pre><code>curl -fsSL https://wikidown.org/install.sh | sh
 wikidown list
-wikidown new "/Getting Started/Format"</code></pre>
+wikidown new --path Getting-Started/Format</code></pre>
           </div>
           <div class="card card-agent">
             <div class="card-head">
