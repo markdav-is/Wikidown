@@ -20,6 +20,8 @@
       url: "/Getting-Started/Customizing-the-Theme.html"
     - title: "Kanban"
       url: "/Getting-Started/Kanban.html"
+    - title: "Muse Integration"
+      url: "/Getting-Started/Muse-Integration.html"
 - title: "CLI"
   url: "/CLI.html"
 - title: "Editor"

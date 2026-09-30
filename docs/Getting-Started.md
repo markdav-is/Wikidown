@@ -22,6 +22,7 @@ Welcome to Wikidown. This folder is itself a Wikidown-format wiki.
 - [Publishing to GitLab Pages](Getting-Started/Publishing-to-GitLab-Pages.md) — one CI job running `wikidown export-html`, no Jekyll or Ruby
 - [Customizing the Theme](Getting-Started/Customizing-the-Theme.md) — swap the wiki page layout or replace the root `index.html` with a hand-authored landing page
 - [Kanban](Getting-Started/Kanban.md) — keep a simple To Do / Doing / Done board in your wiki with `wikidown kanban init`
+- [Muse Integration](Getting-Started/Muse-Integration.md) — connect two Muse accounts to one shared wiki so they remember the same things
 - [CLI](CLI.md) — `wikidown` dotnet tool
 - [Editor](Editor.md) — Blazor WASM browser editor
 - [Agents](Agents.md) — drop-in Claude + Copilot configs
