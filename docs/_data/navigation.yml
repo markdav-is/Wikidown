@@ -8,6 +8,8 @@
   children:
     - title: "Format"
       url: "/Getting-Started/Format.html"
+    - title: "Muse Integration"
+      url: "/Getting-Started/Muse-Integration.html"
     - title: "Visual Studio Extension"
       url: "/Getting-Started/Visual-Studio-Extension.html"
     - title: "Updating"
@@ -20,8 +22,6 @@
       url: "/Getting-Started/Customizing-the-Theme.html"
     - title: "Kanban"
       url: "/Getting-Started/Kanban.html"
-    - title: "Muse Integration"
-      url: "/Getting-Started/Muse-Integration.html"
 - title: "CLI"
   url: "/CLI.html"
 - title: "Editor"

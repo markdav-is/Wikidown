@@ -16,13 +16,13 @@ Welcome to Wikidown. This folder is itself a Wikidown-format wiki.
 ## Next
 
 - [Format](Getting-Started/Format.md) — full on-disk format reference
+- [Muse Integration](Getting-Started/Muse-Integration.md) — connect two Muse accounts to one shared wiki so they remember the same things
 - [Visual Studio Extension](Getting-Started/Visual-Studio-Extension.md) — add a Wikidown project in VS 2022+
 - [Updating](Getting-Started/Updating.md) — how downstream repos pick up new CLI releases, agent config changes, and VS extension updates
 - [Publishing to GitHub Pages](Getting-Started/Publishing-to-GitHub-Pages.md) — publish the wiki as a static site with `wikidown pages` and GitHub's built-in Jekyll, or anywhere via `wikidown export-html`
 - [Publishing to GitLab Pages](Getting-Started/Publishing-to-GitLab-Pages.md) — one CI job running `wikidown export-html`, no Jekyll or Ruby
 - [Customizing the Theme](Getting-Started/Customizing-the-Theme.md) — swap the wiki page layout or replace the root `index.html` with a hand-authored landing page
 - [Kanban](Getting-Started/Kanban.md) — keep a simple To Do / Doing / Done board in your wiki with `wikidown kanban init`
-- [Muse Integration](Getting-Started/Muse-Integration.md) — connect two Muse accounts to one shared wiki so they remember the same things
 - [CLI](CLI.md) — `wikidown` dotnet tool
 - [Editor](Editor.md) — Blazor WASM browser editor
 - [Agents](Agents.md) — drop-in Claude + Copilot configs
