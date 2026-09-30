@@ -6,7 +6,51 @@ What changed in each Wikidown release, and where to get it. Newest first.
 For how to update an existing install, see
 [Updating](Getting-Started/Updating.md).
 
+## 0.11.0 — 30 September 2026
+
+`check-links --fix` now pulls images and files from outside the wiki into it
+and makes "/"-rooted links relative, and page titles come from each page's
+`# Heading` instead of its file name.
+
+### Where to get it
+
+| Component | Link |
+|---|---|
+| `wikidown` CLI (NuGet global tool) | [Wikidown.Cli 0.11.0](https://www.nuget.org/packages/Wikidown.Cli/0.11.0) — `dotnet tool update -g Wikidown.Cli` |
+| `Wikidown.Core` library | [Wikidown.Core 0.11.0](https://www.nuget.org/packages/Wikidown.Core/0.11.0) |
+| Self-contained CLI binaries (no .NET needed) | [GitHub Release cli-v0.11.0](https://github.com/markdav-is/Wikidown/releases/tag/cli-v0.11.0) — win/linux/osx, x64 and arm64; or re-run the [install script](CLI.md) |
+| Web editor | Updated in place; its **Export PDF** table of contents uses page headings |
+
+The Visual Studio extension is unchanged at 1.6.0.
+
+### What changed
+
+- **Images and files outside the wiki.** `wikidown check-links` now reports
+  links and images that point at files outside the wiki folder (such as
+  `/assets/cards/duck.png` or `../../assets/x.png`), which no publishing
+  route ships. `wikidown check-links --fix` copies them into
+  `.attachments/from-repo/`, mirroring their path from the repo root, and
+  relinks them; re-running it refreshes copies whose source changed and
+  removes copies no page uses. `--fix --dry-run` previews the changes. Raw
+  `<img src>` tags and click-through links around images
+  (`[![alt](img)](full)`) are now checked too.
+- **"/"-rooted links become relative.** Links like `/Cards/Movement` or
+  `/.attachments/map.png` 404 on github.com and on GitHub Pages project
+  sites; `check-links` flags them and `--fix` rewrites them relative to the
+  page (`../Cards/Movement.md`).
+- **Titles come from the page's `# Heading`.** The site nav (Jekyll and
+  `export-html`), the PDF table of contents and bookmarks, and
+  `wikidown list`/`walk` now show each page's first `# Heading`, so titles
+  can contain `&`, hyphens and other characters a file name can't show. The
+  file name is the fallback when a page has no heading. Jekyll sites:
+  `_data/navigation.yml` picks up the new titles when you re-run
+  `wikidown pages` (theme files you've edited are left alone); commit it.
+- **Export warnings.** `export-html` and `export-pdf` warn about references
+  to files outside the wiki and exit 1. `export-pdf` no longer resolves
+  `/assets/x.png` to the root of the drive.
+
 ## 0.10.0 — 29 September 2026
+
 
 PDF exports are set in Atkinson Hyperlegible, a typeface designed by the
 Braille Institute for readers with low vision.
