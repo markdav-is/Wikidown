@@ -164,9 +164,16 @@ The CLI behaves the same on Windows, macOS, and Linux:
   platform, so a link that only resolves because Windows or macOS ignores
   case is reported before it 404s on a case-sensitive host such as GitHub
   Pages. By default also:
-  - flags absolute title-path links in page bodies (`[x](/Foo/Bar)`), since
-    GitHub resolves those against the repo root and they 404 when the wiki
-    is browsed on github.com (`--no-absolute-check` to skip);
+  - flags every "/"-rooted link in page bodies that names something in the
+    wiki — a title path like `[x](/Foo/Bar)` or a root path to a wiki file
+    like `![m](/.attachments/map.png)` or `[x](/Cards.md)` — as
+    `(absolute link (404s on github.com and Pages project sites; run check-links --fix))`,
+    since github.com resolves those against the repo root and a GitHub Pages
+    project site against the domain root (`--no-absolute-check` to skip).
+    `--fix` rewrites them relative to the linking page. A "/"-rooted link
+    that names nothing in the wiki (`/Nope`) is reported as a plain
+    `(broken link)` instead, even with `--no-absolute-check`; a bare `/`
+    link is ignored;
   - audits that every subpage folder has an index page and that the index
     page links every child in its body, since `WikiRepository.Write` can
     create a grandchild page without its parent ever existing, silently
@@ -181,9 +188,9 @@ The CLI behaves the same on Windows, macOS, and Linux:
     route (Jekyll branch deploy, `export-html`, `export-pdf`) ships files
     outside the wiki. Links to `.md` files outside the wiki are not
     flagged. A target starting with `/` resolves against the wiki root if
-    the file exists there (the Azure DevOps `/.attachments/x.png`
-    convention), otherwise against the project root (the Git repo root, or
-    the wiki's parent folder when there's no Git repo);
+    the file exists there (then it's an absolute link, above), otherwise
+    against the project root (the Git repo root, or the wiki's parent
+    folder when there's no Git repo);
   - managed copies under `.attachments/from-repo/` that are stale
     (`<path>  (copy differs from its source; run check-links --fix)`) or
     unused (`<path>  (copy no page references; run check-links --fix)`).
@@ -197,7 +204,10 @@ The CLI behaves the same on Windows, macOS, and Linux:
   `.attachments/from-external/` with a warning and are never refreshed.
   `--fix` also refreshes stale copies, deletes unused ones (they're
   Git-tracked, so review the diff), and keeps a copy whose source was
-  deleted, with a warning. It prints `relink page:line old -> new`, then
+  deleted, with a warning. It also makes "/"-rooted links relative to the
+  linking page, keeping any fragment — on page `/Cards/Movement`,
+  `/Rules#setup` → `../Rules.md#setup` and `/.attachments/map.png` →
+  `../.attachments/map.png`. It prints `relink page:line old -> new`, then
   `copy|refresh|delete <path>` lines; `--fix --dry-run` prints the same
   prefixed with "would" and writes nothing.
   `wikidown check-links --fix --dry-run` · `wikidown check-links --fix`

@@ -91,7 +91,7 @@ public class LinkCheckerTests : IDisposable
         _repo.Write(new WikiPage(PagePath.Parse("/B"), "b"));
 
         var issue = Assert.Single(LinkChecker.Check(_repo));
-        Assert.Equal(LinkIssueKind.AbsoluteTitlePath, issue.Kind);
+        Assert.Equal(LinkIssueKind.AbsolutePath, issue.Kind);
     }
 
     [Fact]

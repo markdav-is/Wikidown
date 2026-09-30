@@ -5,7 +5,9 @@ namespace Wikidown.Core;
 public enum LinkIssueKind
 {
     Broken,
-    AbsoluteTitlePath,
+    // A "/"-rooted link to a page or file in the wiki: works in an ADO wiki,
+    // 404s on github.com and on Pages project sites.
+    AbsolutePath,
     // Resolves on Windows/macOS, 404s once published to a case-sensitive host.
     CaseMismatch,
     // A file outside the wiki root: no publishing route ships it.
@@ -102,9 +104,14 @@ public static partial class LinkChecker
             return new LinkIssue(page, lineNumber, target, LinkIssueKind.OutsideWiki);
 
         if (target.StartsWith('/'))
+        {
+            if (target.Split('#')[0].Trim('/').Length == 0) return null;
+            if (resolver.ResolveRooted(target) is null && !resolved.Exists)
+                return new LinkIssue(page, lineNumber, target, LinkIssueKind.Broken);
             return flagAbsolutePaths
-                ? new LinkIssue(page, lineNumber, target, LinkIssueKind.AbsoluteTitlePath)
+                ? new LinkIssue(page, lineNumber, target, LinkIssueKind.AbsolutePath)
                 : null;
+        }
 
         if (!resolved.Exists)
             return new LinkIssue(page, lineNumber, target, LinkIssueKind.Broken);

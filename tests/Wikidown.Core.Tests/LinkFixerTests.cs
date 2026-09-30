@@ -71,7 +71,7 @@ public class LinkFixerTests : IDisposable
         WritePage("A.md", "![map](/.attachments/map.png)\n");
 
         var issue = Assert.Single(LinkChecker.Check(_repo));
-        Assert.Equal(LinkIssueKind.AbsoluteTitlePath, issue.Kind);
+        Assert.Equal(LinkIssueKind.AbsolutePath, issue.Kind);
         Assert.Empty(LinkChecker.Check(_repo, flagAbsolutePaths: false));
     }
 
@@ -105,6 +105,38 @@ public class LinkFixerTests : IDisposable
         Assert.Equal(
             "[![Duck](.attachments/from-repo/assets/cards/duck.png)](.attachments/from-repo/assets/cards/duck.png) **Duck**\n",
             ReadPage("A.md"));
+    }
+
+    [Fact]
+    public void Fix_MakesRootedLinksRelative()
+    {
+        Directory.CreateDirectory(Path.Combine(_docs, "Cards"));
+        Directory.CreateDirectory(Path.Combine(_docs, ".attachments"));
+        File.WriteAllText(Path.Combine(_docs, ".attachments", "map.png"), "map");
+        WritePage("Rules.md", "# Rules\n");
+        WritePage("Cards.md", "# Cards\n");
+        WritePage(Path.Combine("Cards", "Movement.md"),
+            "[rules](/Rules#setup) [cards](/Cards.md) ![map](/.attachments/map.png) [gone](/Nope)\n");
+
+        LinkFixer.Fix(_repo);
+
+        Assert.Contains(
+            "[rules](../Rules.md#setup) [cards](../Cards.md) ![map](../.attachments/map.png) [gone](/Nope)",
+            ReadPage(Path.Combine("Cards", "Movement.md")));
+        var issue = Assert.Single(LinkChecker.Check(_repo));
+        Assert.Equal(LinkIssueKind.Broken, issue.Kind);
+        Assert.Equal("/Nope", issue.Target);
+    }
+
+    [Fact]
+    public void Check_RootedLinkToAPageIsFixable()
+    {
+        WritePage("B.md", "# B\n");
+        WritePage("A.md", "[B](/B) [site](/)\n");
+
+        var issue = Assert.Single(LinkChecker.Check(_repo));
+        Assert.Equal(LinkIssueKind.AbsolutePath, issue.Kind);
+        Assert.Equal("/B", issue.Target);
     }
 
     [Fact]

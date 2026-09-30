@@ -10,7 +10,7 @@ Welcome to Wikidown. This folder is itself a Wikidown-format wiki.
 - Subpages go in a folder with the same base name next to the page file.
 - Ordering lives in `.order` — one page base-name per line.
 - Body links are relative file paths (with the `.md` extension), not
-  absolute title paths — see [Format](Getting-Started/Format.md) for the
+  "/"-rooted title paths — see [Format](Getting-Started/Format.md) for the
   full rule.
 
 ## Next

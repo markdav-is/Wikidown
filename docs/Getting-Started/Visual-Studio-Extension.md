@@ -43,7 +43,7 @@ file. Edit the file to point to a different location:
 
 ## Features
 
-- Presents the wiki the way Azure DevOps does: nodes show page **titles**
+- Presents the wiki as a page tree: nodes show page **titles**
   (dashes render as spaces, no `.md` extension), a page with a same-named
   subpage folder is a single expandable node, `.order` files are hidden, and
   pages sort by `.order` (listed entries first, then alphabetical).

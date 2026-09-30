@@ -54,6 +54,23 @@ public sealed class TargetResolver
             _repo.RootPath, pageDir, path.Replace('/', Path.DirectorySeparatorChar))));
     }
 
+    /// <summary>
+    /// The page file a "/"-rooted target names, either as a file inside the
+    /// wiki (/.attachments/x.png, /Cards/Movement.md) or as an ADO-style
+    /// title path (/Cards/Movement), or null.
+    /// </summary>
+    public string? ResolveRooted(string target)
+    {
+        var path = target.Split('#')[0].Trim();
+        if (!path.StartsWith('/') || path.StartsWith("//", StringComparison.Ordinal)) return null;
+        if (Resolve(PagePath.Root, path) is { Exists: true, InsideWiki: true } file) return file.FullPath;
+
+        var title = Uri.UnescapeDataString(path).Replace(' ', '-').Trim('/');
+        if (title.Length == 0 || title.IndexOfAny(['\\', ':', '*', '?', '"', '<', '>', '|']) >= 0) return null;
+        var page = PagePath.Parse(title);
+        return _repo.Exists(page) ? Path.GetFullPath(Path.Combine(_repo.RootPath, page.ToFilePath())) : null;
+    }
+
     public bool IsInsideWiki(string fullPath) => IsBelow(_repo.RootPath, fullPath);
 
     /// <summary>

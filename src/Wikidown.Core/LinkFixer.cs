@@ -22,8 +22,9 @@ public sealed record LinkFixResult(
 
 // check-links --fix: copies files that pages reference from outside the wiki
 // into .attachments/from-repo (or from-external) and points the links at the copies,
-// so every publishing route can ship them. Also keeps those managed copies
-// in step with their sources and removes the ones nothing references.
+// so every publishing route can ship them, and turns "/"-rooted links to
+// wiki pages and files into relative ones. Also keeps the managed copies in
+// step with their sources and removes the ones nothing references.
 public static class LinkFixer
 {
     public static LinkFixResult Fix(WikiRepository repo, bool dryRun = false)
@@ -45,17 +46,24 @@ public static class LinkFixer
                 foreach (var group in LinkChecker.TargetGroups(lines[i]).Reverse())
                 {
                     var target = group.Value.Trim();
-                    if (!LinkChecker.IsCopyable(target)) continue;
-                    var resolved = resolver.Resolve(page, target);
-                    if (resolved is not { Exists: true, InsideWiki: false }) continue;
-
-                    var copy = resolver.CopyPathFor(resolved.FullPath);
-                    copies[copy] = resolved.FullPath;
-                    if (copy.StartsWith(TargetResolver.ExternalCopies + "/", StringComparison.Ordinal))
-                        warnings.Add($"{page.ToLinkPath()}: {target} is outside the project; copied to {copy}, but it can't be refreshed from its source");
+                    string? destination;
+                    if (LinkChecker.IsCopyable(target)
+                        && resolver.Resolve(page, target) is { Exists: true, InsideWiki: false } outside)
+                    {
+                        var copy = resolver.CopyPathFor(outside.FullPath);
+                        copies[copy] = outside.FullPath;
+                        if (copy.StartsWith(TargetResolver.ExternalCopies + "/", StringComparison.Ordinal))
+                            warnings.Add($"{page.ToLinkPath()}: {target} is outside the project; copied to {copy}, but it can't be refreshed from its source");
+                        destination = CopyFullPath(repo, copy);
+                    }
+                    else
+                    {
+                        destination = resolver.ResolveRooted(target);
+                    }
+                    if (destination is null) continue;
 
                     var hash = target.IndexOf('#');
-                    var newTarget = RelativeFromPage(repo, page, copy) + (hash < 0 ? "" : target[hash..]);
+                    var newTarget = RelativeFromPage(repo, page, destination) + (hash < 0 ? "" : target[hash..]);
                     rewrites.Add(new LinkRewrite(page, i + 1, target, newTarget));
                     lines[i] = lines[i][..group.Index] + newTarget + lines[i][(group.Index + group.Length)..];
                     pageChanged = true;
@@ -165,10 +173,10 @@ public static class LinkFixer
         new FileInfo(a).Length == new FileInfo(b).Length
         && File.ReadAllBytes(a).AsSpan().SequenceEqual(File.ReadAllBytes(b));
 
-    private static string RelativeFromPage(WikiRepository repo, PagePath page, string copy)
+    private static string RelativeFromPage(WikiRepository repo, PagePath page, string fullPath)
     {
         var pageDir = Path.Combine(repo.RootPath, Path.GetDirectoryName(page.ToFilePath()) ?? "");
-        return Path.GetRelativePath(pageDir, CopyFullPath(repo, copy)).Replace(Path.DirectorySeparatorChar, '/');
+        return Path.GetRelativePath(pageDir, fullPath).Replace(Path.DirectorySeparatorChar, '/');
     }
 
     private static string CopyFullPath(WikiRepository repo, string wikiRelative) =>

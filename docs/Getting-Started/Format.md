@@ -6,6 +6,8 @@ Wikidown's on-disk format is deliberately minimal: markdown pages, folder-based 
 
 By enforcing these rules, Wikidown prevents the link rot and structural drift that typically plagues flat-file documentation.
 
+The format is built first for GitHub and Jekyll (GitHub Pages): a project wiki that people and different LLM tools share, which renders correctly on github.com and publishes as a static site. It started from Azure DevOps wiki conventions and stays readable by Azure DevOps wikis, but those are no longer the reference point.
+
 ## 1. Page Files and Titles
 
 Every page in the wiki is a standard Markdown file (`.md`). The title of the page is derived directly from its filename by replacing hyphens with spaces.
@@ -56,18 +58,20 @@ GitHub's raw file view, so it's never a substitute for real body links. See
 ## 4. Internal Links
 
 Internal links between wiki pages must be **relative file paths**, not
-absolute title paths. GitHub resolves an absolute path like
-`/Architecture/Data-Model` against the *repository* root, not the wiki root,
-so a link written that way 404s when the page is viewed directly on
-github.com. A relative path resolves correctly both on GitHub and in
-Wikidown-aware renderers.
+"/"-rooted ones. GitHub resolves a "/"-rooted path like
+`/Architecture/Data-Model` against the *repository* root, not the wiki root
+(and a GitHub Pages project site resolves it against the domain root), so a
+link written that way 404s when the page is viewed on github.com or the
+published site. A relative path resolves correctly on GitHub, on Pages, and
+in Wikidown-aware renderers.
 
 Write the link relative to the **linking page's own folder**, adjusted for
 depth, and include the `.md` extension:
 
 *   **Correct (sibling page):** `[Read the Data Model](Data-Model.md)`
 *   **Correct (page in a different folder):** `[Read the Data Model](../Architecture/Data-Model.md)`
-*   **Incorrect:** `[Read the Data Model](/Architecture/Data-Model)`
+*   **Incorrect:** `[Read the Data Model](/Architecture/Data-Model)` or
+    `[Read the Data Model](/Architecture/Data-Model.md)`
 
 Images and other repo assets follow the same rule, e.g.
 `![map](../.attachments/map.png)`. Keep them **inside** the wiki folder:
@@ -77,12 +81,15 @@ files into `.attachments/from-repo/` and relinks them for you.
 
 Run `wikidown check-links` (see [CLI](../CLI.md)) to walk every page and
 verify that relative links and image references resolve to real files; by
-default it also flags any absolute title-path links left in page bodies,
-and audits that every folder has a linked index page (§ Index pages).
+default it also flags any "/"-rooted link left in a page body that names
+something in the wiki — a title path like `/Architecture/Data-Model` or a
+root path to a file like `/.attachments/map.png` — and audits that every
+folder has a linked index page (§ Index pages). `wikidown check-links --fix`
+rewrites those "/"-rooted links relative to the linking page for you.
 
 This rule only applies to links **inside page bodies**. Addressing a page
 through the CLI — e.g. `wikidown read --path /Getting-Started/Format` —
-still uses the absolute title path, since that's a command argument rather
+still uses the title path, since that's a command argument rather
 than a rendered link.
 
 ### Fixing `check-links` failures
@@ -95,8 +102,14 @@ page:line -> target  (reason)
 
 What to do depends on the `(reason)`:
 
-*   **`(absolute title-path link (404s on GitHub))`** — the link uses a
-    `/Title/Path` form instead of a relative `.md` path. Rewrite it relative
+*   **`(absolute link (404s on github.com and Pages project sites; run check-links --fix))`** —
+    the link is "/"-rooted — a `/Title/Path` form, or a root path to a file
+    in the wiki such as `/.attachments/map.png` or `/Bar.md` — instead of a
+    relative path. Run `wikidown check-links --fix` (add `--dry-run` to
+    preview) to rewrite it relative to the linking page, keeping any
+    `#fragment`: on page `/Cards/Movement`, `/Rules#setup` becomes
+    `../Rules.md#setup` and `/.attachments/map.png` becomes
+    `../.attachments/map.png`. To fix it by hand, rewrite it relative
     to the *linking page's own folder*, with the `.md` extension. For
     example, if `/Foo.md` (at the wiki root) contains
     `[Bar](/Bar)` and `Bar.md` is also at the wiki root, change it to
@@ -112,8 +125,10 @@ What to do depends on the `(reason)`:
     with `wikidown move --from Format --to format` (case-only renames work
     on every platform).
 
-*   **`(broken link)`** — a relative link/image that doesn't resolve to a
-    real file. This is either a typo in the relative path or a stale link
+*   **`(broken link)`** — a "/"-rooted link that names nothing in the wiki
+    (`/Nope`; reported even with `--no-absolute-check`), or a relative
+    link/image that doesn't resolve to a real file. This is either a typo
+    in the relative path or a stale link
     left over from a page that moved or was deleted. Open the linking
     page's folder and confirm the target filename, hop count, and
     `.md`/`.attachments` spelling; fix the path to match the real file. If

@@ -212,7 +212,7 @@ public static class Commands
         {
             var reason = issue.Kind switch
             {
-                LinkIssueKind.AbsoluteTitlePath => "absolute title-path link (404s on GitHub)",
+                LinkIssueKind.AbsolutePath => "absolute link (404s on github.com and Pages project sites; run check-links --fix)",
                 LinkIssueKind.CaseMismatch => "upper/lower case differs from the file on disk (404s once published)",
                 LinkIssueKind.OutsideWiki => "outside the wiki; run check-links --fix",
                 _ => "broken link",
