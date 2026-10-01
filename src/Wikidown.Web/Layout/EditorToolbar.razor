@@ -1,0 +1,83 @@
+@using Wikidown.Core
+@using Wikidown.Web.Services
+
+<div class="wd-toolbar-group">
+    <MudTooltip Text="Bold (Ctrl+B)">
+        <MudIconButton Icon="@Icons.Material.Filled.FormatBold" Size="Size.Small" OnClick="@(() => Run(e => MarkdownCommands.Wrap(e, "**", "**", "bold text")))" />
+    </MudTooltip>
+    <MudTooltip Text="Italic (Ctrl+I)">
+        <MudIconButton Icon="@Icons.Material.Filled.FormatItalic" Size="Size.Small" OnClick="@(() => Run(e => MarkdownCommands.Wrap(e, "_", "_", "italic text")))" />
+    </MudTooltip>
+    <MudMenu Icon="@Icons.Material.Filled.Title" Size="Size.Small" Dense="true" title="Heading">
+        <MudMenuItem OnClick="@(() => Run(e => MarkdownCommands.ToggleLinePrefix(e, "## ")))">Heading 2</MudMenuItem>
+        <MudMenuItem OnClick="@(() => Run(e => MarkdownCommands.ToggleLinePrefix(e, "### ")))">Heading 3</MudMenuItem>
+        <MudMenuItem OnClick="@(() => Run(e => MarkdownCommands.ToggleLinePrefix(e, "#### ")))">Heading 4</MudMenuItem>
+    </MudMenu>
+</div>
+<div class="wd-toolbar-group">
+    <MudTooltip Text="Bulleted list">
+        <MudIconButton Icon="@Icons.Material.Filled.FormatListBulleted" Size="Size.Small" OnClick="@(() => Run(e => MarkdownCommands.ToggleLinePrefix(e, "- ")))" />
+    </MudTooltip>
+    <MudTooltip Text="Numbered list">
+        <MudIconButton Icon="@Icons.Material.Filled.FormatListNumbered" Size="Size.Small" OnClick="@(() => Run(e => MarkdownCommands.ToggleLinePrefix(e, "1. ")))" />
+    </MudTooltip>
+    <MudTooltip Text="Quote">
+        <MudIconButton Icon="@Icons.Material.Filled.FormatQuote" Size="Size.Small" OnClick="@(() => Run(e => MarkdownCommands.ToggleLinePrefix(e, "> ")))" />
+    </MudTooltip>
+</div>
+<div class="wd-toolbar-group">
+    <MudTooltip Text="Inline code">
+        <MudIconButton Icon="@Icons.Material.Filled.Code" Size="Size.Small" OnClick="@(() => Run(e => MarkdownCommands.Wrap(e, "`", "`", "code")))" />
+    </MudTooltip>
+    <MudTooltip Text="Code block">
+        <MudIconButton Icon="@Icons.Material.Filled.DataObject" Size="Size.Small" OnClick="@(() => Run(MarkdownCommands.CodeBlock))" />
+    </MudTooltip>
+    <MudMenu Icon="@Icons.Material.Filled.TableChart" Size="Size.Small" Dense="true" title="Table">
+        <MudMenuItem OnClick="@(() => Run(e => MarkdownCommands.InsertBlock(e, MarkdownCommands.Table(2, 2))))">2 × 2 table</MudMenuItem>
+        <MudMenuItem OnClick="@(() => Run(e => MarkdownCommands.InsertBlock(e, MarkdownCommands.Table(3, 3))))">3 × 3 table</MudMenuItem>
+        <MudMenuItem OnClick="@(() => Run(e => MarkdownCommands.InsertBlock(e, MarkdownCommands.Table(4, 3))))">4 × 3 table</MudMenuItem>
+    </MudMenu>
+</div>
+<MudAutocomplete T="NavNode" @ref="_pagePicker" Value="@_picked" ValueChanged="LinkTo"
+                 SearchFunc="SearchPages" ToStringFunc="@(n => n?.Title)"
+                 Placeholder="Link to page…" Dense="true" Margin="Margin.Dense"
+                 Variant="Variant.Outlined" AdornmentIcon="@Icons.Material.Filled.Link"
+                 ResetValueOnEmptyText="true" Class="wd-page-picker">
+    <ItemTemplate Context="node">
+        <MudText Typo="Typo.body2">@node.Title</MudText>
+        <MudText Typo="Typo.caption">@node.Path.ToLinkPath()</MudText>
+    </ItemTemplate>
+</MudAutocomplete>
+
+@code {
+    [Parameter] public StandaloneCodeEditor? Editor { get; set; }
+    [Parameter] public IReadOnlyList<NavNode> Pages { get; set; } = Array.Empty<NavNode>();
+    [Parameter] public PagePath? Current { get; set; }
+
+    private MudAutocomplete<NavNode>? _pagePicker;
+    private NavNode? _picked;
+
+    private Task Run(Func<StandaloneCodeEditor, Task> command) =>
+        Editor is null ? Task.CompletedTask : command(Editor);
+
+    private Task<IEnumerable<NavNode>> SearchPages(string? text, CancellationToken _)
+    {
+        var pages = Flatten(Pages).Where(n => n.IsPage && !Equals(n.Path, Current));
+        if (!string.IsNullOrWhiteSpace(text))
+            pages = pages.Where(n =>
+                n.Title.Contains(text, StringComparison.OrdinalIgnoreCase)
+                || n.Path.ToLinkPath().Contains(text, StringComparison.OrdinalIgnoreCase));
+        return Task.FromResult(pages.Take(30));
+    }
+
+    private async Task LinkTo(NavNode? node)
+    {
+        if (node is null || Editor is null || Current is null) return;
+        await MarkdownCommands.LinkToPage(Editor, Current, node.Path, node.Title);
+        _picked = null;
+        if (_pagePicker is not null) await _pagePicker.ClearAsync();
+    }
+
+    private static IEnumerable<NavNode> Flatten(IEnumerable<NavNode> nodes) =>
+        nodes.SelectMany(n => new[] { n }.Concat(Flatten(n.Children)));
+}

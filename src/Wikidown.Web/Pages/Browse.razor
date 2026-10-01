@@ -91,44 +91,53 @@ else
                                        OnClick="@(() => _treePinned = !_treePinned)" />
                     }
                     <MudStack Spacing="0">
-                        <MudText Typo="Typo.h4">@loaded.Path.Name.Title</MudText>
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                            <MudText Typo="Typo.h4">@Wikidown.Core.PageTitle.For(loaded.Path, _editMode ? _draft : loaded.Markdown)</MudText>
+                            @if (_editMode && HasChanges)
+                            {
+                                <MudChip T="string" Color="Color.Warning" Size="Size.Small" Variant="Variant.Outlined">
+                                    Unsaved changes
+                                </MudChip>
+                            }
+                        </MudStack>
                         <MudText Typo="Typo.caption" Color="Color.Default">@loaded.Path.ToLinkPath()</MudText>
                     </MudStack>
                     <MudSpacer />
-                    <MudToggleIconButton Toggled="@_editMode" ToggledChanged="@OnToggleEdit"
-                                         Icon="@Icons.Material.Filled.Edit" Color="@Color.Default"
-                                         ToggledIcon="@Icons.Material.Filled.Visibility"
-                                         ToggledColor="@Color.Primary"
-                                         title="Toggle edit mode" />
+                    @if (_editMode)
+                    {
+                        <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Visibility"
+                                   OnClick="@(() => OnToggleEdit(false))">
+                            Done
+                        </MudButton>
+                    }
+                    else
+                    {
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Edit"
+                                   OnClick="@(() => OnToggleEdit(true))">
+                            Edit
+                        </MudButton>
+                    }
                 </MudStack>
 
                 @if (_editMode)
                 {
-                    <SectionContent SectionName="appbar-actions">
+                    <MudPaper Outlined="true" Class="wd-toolbar mb-2">
+                        <EditorToolbar Editor="@_editor" Pages="@_tree" Current="@_currentPath" />
+                        <MudSpacer />
                         <MudTextField T="string" @bind-Value="_commitMessage"
                                       Variant="Variant.Outlined" Margin="Margin.Dense"
-                                      Placeholder="Commit message"
-                                      Class="wd-appbar-commit mr-2" />
-                        <MudButton Variant="Variant.Filled" Color="Color.Success"
+                                      Placeholder="Commit message" Class="wd-commit" />
+                        <MudButton Variant="Variant.Text" OnClick="DiscardDraft"
+                                   Disabled="@(!HasChanges || _saving)">
+                            Discard
+                        </MudButton>
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary"
                                    StartIcon="@Icons.Material.Filled.Save"
                                    Disabled="@(!HasChanges || _saving)"
                                    OnClick="SaveAsync">
                             @(_saving ? "Saving…" : "Save")
                         </MudButton>
-                        <MudButton Variant="Variant.Outlined" Color="Color.Inherit"
-                                   OnClick="DiscardDraft"
-                                   Disabled="@(!HasChanges || _saving)"
-                                   Class="ml-2">
-                            Reset
-                        </MudButton>
-                        @if (HasChanges)
-                        {
-                            <MudChip T="string" Color="Color.Warning" Size="Size.Small"
-                                     Icon="@Icons.Material.Filled.Edit" Class="ml-2">
-                                Unsaved
-                            </MudChip>
-                        }
-                    </SectionContent>
+                    </MudPaper>
                     <MudGrid Spacing="2">
                         @if (_draftRestored)
                         {
@@ -150,6 +159,7 @@ else
                             <MudPaper Outlined="true" Class="wd-editor-pane">
                                 <StandaloneCodeEditor @ref="_editor" Id="wd-markdown-editor" CssClass="wd-monaco"
                                                       ConstructionOptions="EditorOptions"
+                                                      OnDidInit="OnEditorReady"
                                                       OnDidChangeModelContent="OnEditorChanged" />
                             </MudPaper>
                         </MudItem>
@@ -313,6 +323,27 @@ else
         ScrollBeyondLastLine = false,
         FontSize = 14,
     };
+
+    private async Task OnEditorReady()
+    {
+        if (_editor is not { } editor) return;
+        var ctrl = (int)KeyMod.CtrlCmd;
+        await editor.AddCommand(ctrl | (int)KeyCode.KeyB,
+            args => { _ = InvokeAsync(() => MarkdownCommands.Wrap(editor, "**", "**", "bold text")); });
+        await editor.AddCommand(ctrl | (int)KeyCode.KeyI,
+            args => { _ = InvokeAsync(() => MarkdownCommands.Wrap(editor, "_", "_", "italic text")); });
+        await editor.AddCommand(ctrl | (int)KeyCode.KeyS, args => { _ = InvokeAsync(SaveFromEditor); });
+        StateHasChanged();
+    }
+
+    // Ctrl+S saves what's in the editor now, not what the debounce last saw.
+    private async Task SaveFromEditor()
+    {
+        _typing?.Cancel();
+        if (_editor is not null) await OnDraftChanged(await _editor.GetValue());
+        await SaveAsync();
+        StateHasChanged();
+    }
 
     // Re-render the preview and save the draft once typing pauses, as the
     // old text field's DebounceInterval did.

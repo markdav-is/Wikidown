@@ -102,30 +102,30 @@ html, body {
     gap: 0.5rem;
 }
 
-.wd-appbar-commit {
-    min-width: 18rem;
-    max-width: 28rem;
-    margin-top: 0;
-    margin-bottom: 0;
+.wd-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem 0.75rem;
+    padding: 0.25rem 0.5rem;
 }
 
-.wd-appbar-commit .mud-input-outlined .mud-input-slot {
-    color: #fff;
-    background-color: rgba(255, 255, 255, 0.08);
+.wd-toolbar-group {
+    display: flex;
+    align-items: center;
+    padding-right: 0.5rem;
+    border-right: 1px solid var(--mud-palette-lines-default);
 }
 
-.wd-appbar-commit .mud-input-outlined .mud-input-slot::placeholder {
-    color: rgba(255, 255, 255, 0.7);
-    opacity: 1;
+.wd-page-picker {
+    max-width: 16rem;
+    margin: 0;
 }
 
-.wd-appbar-commit .mud-input-outlined-border {
-    border-color: rgba(255, 255, 255, 0.4) !important;
-}
-
-.wd-appbar-commit:hover .mud-input-outlined-border,
-.wd-appbar-commit .mud-input.mud-focused .mud-input-outlined-border {
-    border-color: rgba(255, 255, 255, 0.85) !important;
+.wd-commit {
+    min-width: 14rem;
+    max-width: 24rem;
+    margin: 0;
 }
 
 #blazor-error-ui {
