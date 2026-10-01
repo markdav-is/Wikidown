@@ -15,6 +15,9 @@
       "allowedRoles": ["anonymous"]
     }
   ],
+  "platform": {
+    "apiRuntime": "dotnet-isolated:9.0"
+  },
   "mimeTypes": {
     ".webmanifest": "application/manifest+json",
     ".wasm": "application/wasm",
