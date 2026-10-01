@@ -125,7 +125,7 @@ public static partial class LinkChecker
     internal static bool IsCopyable(string target) =>
         !target.Split('#')[0].TrimEnd().EndsWith(".md", StringComparison.OrdinalIgnoreCase);
 
-    internal static bool IsExternal(string target) =>
+    public static bool IsExternal(string target) =>
         target.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
         target.StartsWith("https://", StringComparison.OrdinalIgnoreCase) ||
         target.StartsWith("mailto:", StringComparison.OrdinalIgnoreCase) ||

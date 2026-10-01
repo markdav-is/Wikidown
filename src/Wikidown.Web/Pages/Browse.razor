@@ -7,6 +7,7 @@
 @inject IDialogService Dialogs
 @inject DraftStore Drafts
 @inject PageImageResolver Images
+@inject PagePreview Preview
 @using Wikidown.Core
 @using Wikidown.Web.Services
 
@@ -146,18 +147,15 @@ else
                             </MudItem>
                         }
                         <MudItem xs="12" md="6">
-                            <MudPaper Outlined="true" Class="pa-2 wd-editor-pane">
-                                <MudTextField Value="@_draft" ValueChanged="OnDraftChanged"
-                                              T="string" Variant="Variant.Outlined"
-                                              Lines="20" FullWidth="true" AutoGrow="false"
-                                              Label="Markdown"
-                                              InputMode="@InputMode.text"
-                                              DebounceInterval="200" />
+                            <MudPaper Outlined="true" Class="wd-editor-pane">
+                                <StandaloneCodeEditor @ref="_editor" Id="wd-markdown-editor" CssClass="wd-monaco"
+                                                      ConstructionOptions="EditorOptions"
+                                                      OnDidChangeModelContent="OnEditorChanged" />
                             </MudPaper>
                         </MudItem>
                         <MudItem xs="12" md="6">
-                            <MudPaper Outlined="true" Class="pa-3 wd-preview-pane wd-page-md">
-                                <MudMarkdown Value="@_draft" Pipeline="@_pipeline" />
+                            <MudPaper Outlined="true" Class="pa-3 wd-preview-pane">
+                                <div class="wd-preview content">@Preview.Render(_conn!, _currentPath!, _draft)</div>
                             </MudPaper>
                         </MudItem>
                         @if (_conflictMessage is { } conflict)
@@ -180,8 +178,8 @@ else
                 }
                 else
                 {
-                    <MudPaper Outlined="true" Class="pa-4 wd-page-md">
-                        <MudMarkdown Value="@loaded.Markdown" Pipeline="@_pipeline" />
+                    <MudPaper Outlined="true" Class="pa-4">
+                        <div class="wd-preview content">@Preview.Render(_conn!, _currentPath!, loaded.Markdown)</div>
                     </MudPaper>
                 }
             }
@@ -205,8 +203,9 @@ else
 
     private bool _editMode;
     private bool _treePinned;
-    private Markdig.MarkdownPipeline? _pipeline;
     private string _draft = string.Empty;
+    private StandaloneCodeEditor? _editor;
+    private CancellationTokenSource? _typing;
     private string _commitMessage = string.Empty;
     private bool _saving;
     private string? _conflictMessage;
@@ -293,7 +292,6 @@ else
             }
             _commitMessage = $"Update {_currentPath.Name.Title}";
             await Images.PrefetchAsync(_conn, _currentPath, _draft);
-            _pipeline = Images.BuildPipeline(_conn, _currentPath);
         }
         catch (Exception ex)
         {
@@ -305,12 +303,33 @@ else
         }
     }
 
+    private StandaloneEditorConstructionOptions EditorOptions(StandaloneCodeEditor editor) => new()
+    {
+        Language = "markdown",
+        Value = _draft,
+        AutomaticLayout = true,
+        WordWrap = "on",
+        Minimap = new EditorMinimapOptions { Enabled = false },
+        ScrollBeyondLastLine = false,
+        FontSize = 14,
+    };
+
+    // Re-render the preview and save the draft once typing pauses, as the
+    // old text field's DebounceInterval did.
+    private async Task OnEditorChanged(ModelContentChangedEvent _)
+    {
+        _typing?.Cancel();
+        var typing = _typing = new CancellationTokenSource();
+        try { await Task.Delay(200, typing.Token); }
+        catch (TaskCanceledException) { return; }
+        if (_editor is not null) await OnDraftChanged(await _editor.GetValue());
+    }
+
     private async Task OnDraftChanged(string value)
     {
         _draft = value;
         if (_conn is null || _currentPath is null || _currentPage is null) return;
-        if (await Images.PrefetchAsync(_conn, _currentPath, _draft))
-            _pipeline = Images.BuildPipeline(_conn, _currentPath);
+        await Images.PrefetchAsync(_conn, _currentPath, _draft);
         if (string.Equals(_draft, _currentPage.Markdown, StringComparison.Ordinal))
         {
             await Drafts.ClearAsync(_conn, _currentPath);
@@ -336,6 +355,7 @@ else
     private async Task DiscardDraft()
     {
         if (_currentPage is { } p) _draft = p.Markdown;
+        if (_editor is not null) await _editor.SetValue(_draft);
         _conflictMessage = null;
         _draftRestored = false;
         if (_conn is not null && _currentPath is not null)

@@ -15,7 +15,14 @@ self.addEventListener('fetch', event => {
 const cacheNamePrefix = 'offline-cache-';
 const cacheName = `${cacheNamePrefix}${self.assetsManifest.version}`;
 const offlineAssetsInclude = [ /\.dll$/, /\.pdb$/, /\.wasm/, /\.html/, /\.js$/, /\.json$/, /\.css$/, /\.woff$/, /\.png$/, /\.jpe?g$/, /\.gif$/, /\.ico$/, /\.blat$/, /\.dat$/, /\.webmanifest$/ ];
-const offlineAssetsExclude = [ /^service-worker\.js$/ ];
+// Monaco ships language workers and UI translations a markdown editor never
+// loads (~11 MB, the TypeScript worker alone is 7 MB); leave them out of the
+// install-time cache. They're still deployed and load on demand if needed.
+const offlineAssetsExclude = [
+    /^service-worker\.js$/,
+    /^_content\/BlazorMonaco\/.*\/(ts|css|html|json)\.worker-/,
+    /^_content\/BlazorMonaco\/.*\/nls\.messages\.[a-z]{2}(-[a-z]{2})?\.js\.js$/,
+];
 
 // Replace with your base path if you are hosting on a subfolder. Ensure there is a trailing '/'.
 const base = "/";

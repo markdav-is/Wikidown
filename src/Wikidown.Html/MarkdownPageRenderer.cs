@@ -32,12 +32,22 @@ public static class MarkdownPageRenderer
         }
 
         var title = PageTitle.FromMarkdown(markdown) ?? fallbackTitle;
+        return new RenderedPage(title, ToHtml(document));
+    }
 
+    /// <summary>
+    /// The page body exactly as the site renders it, but with links left as
+    /// written, for hosts (the web editor) that map links themselves.
+    /// </summary>
+    public static string ToHtml(string markdown) => ToHtml(Markdown.Parse(markdown, Pipeline));
+
+    private static string ToHtml(MarkdownDocument document)
+    {
         using var writer = new StringWriter();
         var renderer = new HtmlRenderer(writer);
         Pipeline.Setup(renderer);
         renderer.Render(document);
-        return new RenderedPage(title, writer.ToString());
+        return writer.ToString();
     }
 
     // Only relative links to markdown files are touched, same as

@@ -1,8 +1,7 @@
 using Markdig;
-using Markdig.Renderers;
-using Markdig.Renderers.MudBlazor;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
+using System.Text.RegularExpressions;
 using Wikidown.Core;
 
 namespace Wikidown.Web.Services;
@@ -12,7 +11,7 @@ namespace Wikidown.Web.Services;
 /// so the browser never has to fetch from the repo host, which needs auth for private repos.
 /// Fetched bytes are cached per connection + docs-relative path for the session.
 /// </summary>
-public sealed class PageImageResolver(BackendResolver backends)
+public sealed partial class PageImageResolver(BackendResolver backends)
 {
     private readonly Dictionary<string, string?> _cache = new(StringComparer.Ordinal);
 
@@ -24,11 +23,14 @@ public sealed class PageImageResolver(BackendResolver backends)
         WikiConnection conn, PagePath page, string markdown, CancellationToken ct = default)
     {
         var doc = Markdown.Parse(markdown, ScanPipeline);
+        var targets = doc.Descendants<LinkInline>()
+            .Where(link => link.IsImage && link.Url is not null)
+            .Select(link => link.Url!)
+            .Concat(RawImgSrc().Matches(markdown).Select(m => m.Groups["src"].Value));
         var wanted = new List<(string Key, string Rel)>();
-        foreach (var link in doc.Descendants<LinkInline>())
+        foreach (var target in targets)
         {
-            if (!link.IsImage || link.Url is null) continue;
-            var rel = LinkChecker.ResolveDocsRelativePath(page, link.Url);
+            var rel = LinkChecker.ResolveDocsRelativePath(page, target);
             if (rel is null) continue;
             var key = CacheKey(conn, rel);
             if (_cache.ContainsKey(key) || wanted.Any(w => w.Key == key)) continue;
@@ -69,18 +71,6 @@ public sealed class PageImageResolver(BackendResolver backends)
         if (rel is not null) _cache[CacheKey(conn, rel)] = dataUrl;
     }
 
-    /// <summary>A render pipeline whose image URLs are rewritten from the cache. Build a fresh one after each prefetch.</summary>
-    public MarkdownPipeline BuildPipeline(WikiConnection conn, PagePath page) =>
-        new MarkdownPipelineBuilder()
-            .UseAdvancedExtensions()
-            .UseMudBlazor()
-            .Use(new ImageRewriteExtension(url =>
-            {
-                var rel = LinkChecker.ResolveDocsRelativePath(page, url);
-                return rel is not null && _cache.TryGetValue(CacheKey(conn, rel), out var data) ? data : null;
-            }))
-            .Build();
-
     private static string CacheKey(WikiConnection c, string rel) =>
         $"{c.Provider}|{c.Host}|{c.Owner}|{c.Project}|{c.Repo}|{c.Branch}|{c.DocsPath}|{rel}";
 
@@ -97,19 +87,6 @@ public sealed class PageImageResolver(BackendResolver backends)
         _ => "application/octet-stream",
     };
 
-    private sealed class ImageRewriteExtension(Func<string, string?> resolve) : IMarkdownExtension
-    {
-        public void Setup(MarkdownPipelineBuilder pipeline) =>
-            pipeline.DocumentProcessed += doc =>
-            {
-                foreach (var link in doc.Descendants<LinkInline>())
-                {
-                    if (!link.IsImage || link.Url is null) continue;
-                    var resolved = resolve(link.Url);
-                    if (resolved is not null) link.Url = resolved;
-                }
-            };
-
-        public void Setup(MarkdownPipeline pipeline, IMarkdownRenderer renderer) { }
-    }
+    [GeneratedRegex(@"<img\b[^>]*?\bsrc\s*=\s*(?:""(?<src>[^""]*)""|'(?<src>[^']*)')", RegexOptions.IgnoreCase)]
+    private static partial Regex RawImgSrc();
 }

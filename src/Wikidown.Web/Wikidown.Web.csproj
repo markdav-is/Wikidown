@@ -10,11 +10,13 @@
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" PrivateAssets="all" />
     <PackageReference Include="MudBlazor" />
-    <PackageReference Include="RamType0.Markdig.Renderers.MudBlazor" />
+    <PackageReference Include="BlazorMonaco" />
+    <PackageReference Include="HtmlSanitizer" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Wikidown.Core\Wikidown.Core.csproj" />
+    <ProjectReference Include="..\Wikidown.Html\Wikidown.Html.csproj" />
     <ProjectReference Include="..\Wikidown.Pdf\Wikidown.Pdf.csproj" />
   </ItemGroup>
 
