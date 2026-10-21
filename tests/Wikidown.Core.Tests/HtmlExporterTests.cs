@@ -74,6 +74,45 @@ public class HtmlExporterTests : IDisposable
     }
 
     [Fact]
+    public void Export_RewritesMarkdownLinksInRawHtmlAndSvg()
+    {
+        _repo.Write(new WikiPage(PagePath.Parse("/Wavir"),
+            "# Wavir\n\n" +
+            "<a href=\"Wavir/Balic.md\">Balic</a>\n\n" +
+            "<svg viewBox=\"0 0 10 10\" xmlns=\"http://www.w3.org/2000/svg\">\n" +
+            "  <image href=\".attachments/atlas.png\" width=\"10\" height=\"10\"/>\n" +
+            "  <a href=\"Wavir/Balic.md#pin\"><title>Balic</title><circle r=\"1\"/></a>\n" +
+            "  <a xlink:href='Wavir/Old.md'><circle r=\"1\"/></a>\n" +
+            "  <a href=\"https://x.y/z.md\"><circle r=\"1\"/></a>\n" +
+            "  <a href=\"mailto:a@b.md\"><circle r=\"1\"/></a>\n" +
+            "</svg>\n\n" +
+            "Write `<a href=\"Code.md\">` to link.\n"));
+
+        var html = MarkdownPageRenderer.Render(_repo.Read(PagePath.Parse("/Wavir")).Markdown, "Wavir").Html;
+
+        Assert.Contains("<a href=\"Wavir/Balic.html\">Balic</a>", html);
+        Assert.Contains("<a href=\"Wavir/Balic.html#pin\">", html);
+        Assert.Contains("<a xlink:href='Wavir/Old.html'>", html);
+        Assert.Contains("href=\"https://x.y/z.md\"", html);
+        Assert.Contains("href=\"mailto:a@b.md\"", html);
+        Assert.Contains("<image href=\".attachments/atlas.png\"", html);
+        Assert.Contains("&lt;a href=&quot;Code.md&quot;&gt;", html);
+    }
+
+    [Fact]
+    public void Render_KeepsSvgWithBlankLinesAsOneHtmlBlock()
+    {
+        var markdown = "# Map\r\n\r\n<svg viewBox=\"0 0 10 10\">\r\n  <image href=\"a.png\"/>\r\n\r\n" +
+            "  <a href=\"B.md\"><circle r=\"1\"/></a>\r\n   \r\n</svg>\r\n\r\n```html\r\n<svg>\r\n\r\n</svg>\r\n```\r\n";
+
+        var html = MarkdownPageRenderer.Render(markdown, "Map").Html;
+
+        Assert.DoesNotContain("<p>", html);
+        Assert.Contains("<a href=\"B.html\"><circle r=\"1\"/></a>", html);
+        Assert.Contains("&lt;svg&gt;\n\n&lt;/svg&gt;", html.Replace("\r", ""));
+    }
+
+    [Fact]
     public void Export_RendersNavTreeWithActiveAndOpenState()
     {
         Seed();

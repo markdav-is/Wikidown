@@ -141,7 +141,8 @@ install beyond the CLI.
   linger.
 
 Links, titles, and the nav tree match the Jekyll output: relative
-`.md`/`.md#anchor` links become `.html`, the title is the first `# Heading`,
+`.md`/`.md#anchor` links become `.html` (in raw HTML and inline SVG `href`s too
+— see [Format § Raw HTML and inline SVG](Format.md#raw-html-and-inline-svg)), the title is the first `# Heading`,
 and the sidebar is built from `.order` (live, not from
 `_data/navigation.yml`, so it's always current).
 

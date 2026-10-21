@@ -50,9 +50,8 @@ public static partial class MoveLinkRewriter
                     continue;
 
                 var lineNumber = i + 1;
-                lines[i] = LinkChecker.LinkTarget().Replace(lines[i], match =>
+                string Rewrite(Match match, Group group)
                 {
-                    var group = match.Groups[1];
                     var target = group.Value;
                     var replacement = ComputeReplacement(repo, from, to, movedPages, oldPage, newPage, target);
                     if (replacement is null || replacement == target) return match.Value;
@@ -61,7 +60,10 @@ public static partial class MoveLinkRewriter
                     rewrites.Add(new LinkRewrite(oldPage, lineNumber, target, replacement));
                     var offset = group.Index - match.Index;
                     return match.Value[..offset] + replacement + match.Value[(offset + group.Length)..];
-                });
+                }
+
+                lines[i] = LinkChecker.LinkTarget().Replace(lines[i], m => Rewrite(m, m.Groups[1]));
+                lines[i] = LinkChecker.HtmlHref().Replace(lines[i], m => Rewrite(m, m.Groups["href"]));
             }
 
             if (changed) newContent[oldPage] = string.Join('\n', lines);

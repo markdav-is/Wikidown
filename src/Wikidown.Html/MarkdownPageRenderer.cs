@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Markdig;
 using Markdig.Extensions.AutoIdentifiers;
 using Markdig.Renderers;
@@ -14,7 +15,7 @@ public sealed record RenderedPage(string Title, string Html);
 // (jekyll-relative-links) and the title comes from the first `# Heading`
 // (jekyll-titles-from-headings). The heading stays in the body, as it does
 // there with strip_title: false.
-public static class MarkdownPageRenderer
+public static partial class MarkdownPageRenderer
 {
     private static readonly MarkdownPipeline Pipeline = new MarkdownPipelineBuilder()
         .UseAdvancedExtensions()
@@ -23,7 +24,7 @@ public static class MarkdownPageRenderer
 
     public static RenderedPage Render(string markdown, string fallbackTitle)
     {
-        var document = Markdown.Parse(markdown, Pipeline);
+        var document = Parse(markdown);
 
         foreach (var link in document.Descendants<LinkInline>())
         {
@@ -31,15 +32,52 @@ public static class MarkdownPageRenderer
             link.Url = RewriteMarkdownLink(link.Url);
         }
 
+        // Raw HTML (an inline SVG map's <a> regions) isn't in the link tree.
+        // Code is HTML-escaped by now, so only real tags match.
+        var html = LinkChecker.HtmlHref().Replace(ToHtml(document), match =>
+        {
+            var href = match.Groups["href"];
+            var offset = href.Index - match.Index;
+            return match.Value[..offset] + RewriteMarkdownLink(href.Value) + match.Value[(offset + href.Length)..];
+        });
+
         var title = PageTitle.FromMarkdown(markdown) ?? fallbackTitle;
-        return new RenderedPage(title, ToHtml(document));
+        return new RenderedPage(title, html);
     }
 
     /// <summary>
     /// The page body exactly as the site renders it, but with links left as
     /// written, for hosts (the web editor) that map links themselves.
     /// </summary>
-    public static string ToHtml(string markdown) => ToHtml(Markdown.Parse(markdown, Pipeline));
+    public static string ToHtml(string markdown) => ToHtml(Parse(markdown));
+
+    private static MarkdownDocument Parse(string markdown) =>
+        Markdown.Parse(KeepSvgBlocksWhole(markdown), Pipeline);
+
+    // CommonMark ends a raw HTML block at the first blank line, so an inline
+    // SVG with one falls apart into paragraphs. Blank lines mean nothing in
+    // SVG markup; drop them between a line-opening <svg and its </svg>.
+    private static string KeepSvgBlocksWhole(string markdown)
+    {
+        if (markdown.IndexOf("<svg", StringComparison.OrdinalIgnoreCase) < 0) return markdown;
+
+        var lines = markdown.Split('\n');
+        var drop = new HashSet<int>();
+        var prose = LinkChecker.ProseLines(lines).ToHashSet();
+        for (var i = 0; i < lines.Length; i++)
+        {
+            if (!prose.Contains(i) || !SvgOpen().IsMatch(lines[i])) continue;
+            var close = Array.FindIndex(lines, i, l => l.Contains("</svg>", StringComparison.OrdinalIgnoreCase));
+            if (close < 0) break;
+            for (var j = i + 1; j < close; j++)
+                if (string.IsNullOrWhiteSpace(lines[j])) drop.Add(j);
+            i = close;
+        }
+        return drop.Count == 0 ? markdown : string.Join('\n', lines.Where((_, i) => !drop.Contains(i)));
+    }
+
+    [GeneratedRegex(@"^ {0,3}<svg[\s>]", RegexOptions.IgnoreCase)]
+    private static partial Regex SvgOpen();
 
     private static string ToHtml(MarkdownDocument document)
     {

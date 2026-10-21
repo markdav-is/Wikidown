@@ -48,7 +48,7 @@ public static partial class LinkChecker
     }
 
     // Indexes of lines outside fenced code blocks.
-    internal static IEnumerable<int> ProseLines(string[] lines)
+    public static IEnumerable<int> ProseLines(string[] lines)
     {
         string? fence = null;
         for (var i = 0; i < lines.Length; i++)
@@ -71,8 +71,9 @@ public static partial class LinkChecker
         }
     }
 
-    // The target of each markdown link/image and raw <img src> on one line,
-    // in order, except those inside inline code spans.
+    // The target of each markdown link/image, raw <img src>, and raw HTML or
+    // SVG <a>/<image> href on one line, in order, except those inside inline
+    // code spans.
     internal static IEnumerable<Group> TargetGroups(string line)
     {
         var code = CodeSpan().Matches(line).Select(m => (Start: m.Index, End: m.Index + m.Length)).ToList();
@@ -80,6 +81,7 @@ public static partial class LinkChecker
 
         return LinkTarget().Matches(line).Where(m => !InCode(m.Index)).Select(m => m.Groups[1])
             .Concat(ImgSrc().Matches(line).Where(m => !InCode(m.Index)).Select(m => m.Groups["src"]))
+            .Concat(HtmlHref().Matches(line).Where(m => !InCode(m.Index)).Select(m => m.Groups["href"]))
             .OrderBy(g => g.Index);
     }
 
@@ -91,6 +93,12 @@ public static partial class LinkChecker
 
     [GeneratedRegex(@"<img\b[^>]*?\bsrc\s*=\s*(?:""(?<src>[^""]*)""|'(?<src>[^']*)')", RegexOptions.IgnoreCase)]
     private static partial Regex ImgSrc();
+
+    // href (or SVG 1.1's xlink:href) on a raw HTML/SVG <a> or an SVG <image>,
+    // e.g. the clickable regions of an inline SVG map. The \s before the
+    // attribute keeps data-href and the like out.
+    [GeneratedRegex(@"<(?:a|image)\b[^>]*?\s(?:xlink:)?href\s*=\s*(?:""(?<href>[^""]*)""|'(?<href>[^']*)')", RegexOptions.IgnoreCase)]
+    public static partial Regex HtmlHref();
 
     private static LinkIssue? Classify(
         WikiRepository repo, TargetResolver resolver, PagePath page, int lineNumber, string target, bool flagAbsolutePaths)

@@ -146,7 +146,8 @@ The CLI behaves the same on Windows, macOS, and Linux:
   at the old path, rewrites the moved page's own relative links and images
   if the move changed its folder depth (e.g. moving `/Encounters/Foo` to
   `/Adventures/Bar/Foo` turns `../.attachments/x.png` into
-  `../../.attachments/x.png`), and regenerates the breadcrumb for the moved
+  `../../.attachments/x.png`), rewrites `href`s in raw HTML and inline SVG
+  (`<a href>`, `xlink:href`, `<image href>`) the same way, and regenerates the breadcrumb for the moved
   page and every moved descendant. Reports a count and a per-link list of
   what changed. `--dry-run` previews the rewrite without touching any files.
 - `kanban init [--path /Kanban]` — create a simple to-do board: a
@@ -161,7 +162,8 @@ The CLI behaves the same on Windows, macOS, and Linux:
 - `check-links [--no-absolute-check] [--no-index-check] [--fix [--dry-run]]` — walk every page
   and validate that relative markdown links (`[x](../Foo/Bar.md)`), image
   references (`![x](../.attachments/pic.png)`, raw `<img src="...">`, and
-  both targets of a click-through `[![alt](img.png)](full.png)`) resolve to real files
+  both targets of a click-through `[![alt](img.png)](full.png)`), and `href`s in
+  raw HTML and inline SVG (`<a href>`, `xlink:href`, `<image href>`) resolve to real files
   relative to the linking page's folder (links inside code blocks and inline
   code are examples and are skipped). The match is case-exact on every
   platform, so a link that only resolves because Windows or macOS ignores
@@ -284,7 +286,8 @@ The CLI behaves the same on Windows, macOS, and Linux:
   scaffolds, in-process (Markdig + Fluid) with no Jekyll or Ruby. One
   `.html` per page, `index.html` redirect, `assets/` and `.attachments/`
   copied through, along with every other root static file (images,
-  install scripts, favicons); relative `.md` links rewritten to `.html`,
+  install scripts, favicons); relative `.md` links rewritten to `.html` (including `href`s in raw HTML and
+  inline SVG; an inline `<svg>` block stays one HTML block across blank lines),
   titles from the first heading, nav built live from `.order`, and
   `_config.yml`'s `favicon` and `wikidown.exclude_from_site` honored. Uses theme files from
   the wiki root when present (so customizations apply) and the built-in

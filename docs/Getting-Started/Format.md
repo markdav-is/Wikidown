@@ -85,7 +85,8 @@ isn't published by any route. `wikidown check-links --fix` copies such
 files into `.attachments/from-repo/` and relinks them for you.
 
 Run `wikidown check-links` (see [CLI](../CLI.md)) to walk every page and
-verify that relative links and image references resolve to real files; by
+verify that relative links and image references — including `href`s in raw
+HTML and inline SVG (§ Raw HTML and inline SVG) — resolve to real files; by
 default it also flags any "/"-rooted link left in a page body that names
 something in the wiki — a title path like `/Architecture/Data-Model` or a
 root path to a file like `/.attachments/map.png` — and audits that every
@@ -263,3 +264,35 @@ Key behavior:
 ## 7. Markdown Dialect
 
 Wikidown relies on standard CommonMark. There are no proprietary macros or shortcodes required to render the core text. An MVP renderer only needs a standard markdown parser plus the title and file-name rules described above.
+
+### Raw HTML and inline SVG
+
+Raw HTML and inline SVG are allowed, and links inside them follow the same
+relative-`.md` rule as markdown links. Wikidown treats these as links:
+`href` on HTML `<a>` and SVG `<a>`, SVG 1.1 `xlink:href`, and `href` on SVG
+`<image>`. A clickable map, for example:
+
+```html
+<svg viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg">
+  <image href=".attachments/map.png" width="800" height="600"/>
+  <a href="Regions/North.md"><title>North</title><circle cx="400" cy="120" r="18"/></a>
+</svg>
+```
+
+*   **`export-html`** rewrites relative `.md` hrefs to `.html`, keeping any
+    `#fragment`, and leaves absolute URLs, "/"-rooted paths, `mailto:` and
+    the like alone — the same rules as markdown links. Code spans and
+    fenced code are untouched.
+*   **`check-links`** (and `check-links --fix`) checks these hrefs too, so a
+    renamed or deleted page linked from an SVG map region, or a missing
+    `<image href>` file, is reported.
+*   **`wikidown move`** rewrites them when the target page moves, as it does
+    for markdown links.
+*   **Keep `href` on the tag's first line.** `check-links` and `move` work
+    line by line, so put the `href` on the same line as the opening `<a` or
+    `<image`.
+*   **Avoid blank lines inside `<svg>`.** CommonMark ends a raw HTML block
+    at a blank line. `export-html` (and the web editor preview) keep an
+    `<svg>…</svg>` block that starts at the beginning of a line together
+    even if it contains blank lines, but GitHub's own rendering still
+    splits it there — so an SVG with no blank lines is the portable choice.

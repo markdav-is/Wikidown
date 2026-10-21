@@ -48,6 +48,30 @@ public class LinkCheckerTests : IDisposable
     }
 
     [Fact]
+    public void Check_ReportsBrokenHrefsInRawHtmlAndSvg()
+    {
+        _repo.Write(new WikiPage(PagePath.Parse("/Wavir/Balic"), "# Balic\n"));
+        Directory.CreateDirectory(Path.Combine(_root, ".attachments"));
+        File.WriteAllText(Path.Combine(_root, ".attachments", "atlas.png"), "png");
+        _repo.Write(new WikiPage(PagePath.Parse("/Wavir"),
+            "<a href=\"Wavir/Balic.md\">ok</a> <a data-href=\"Nope.md\" href=\"https://x.y/z.md\">ext</a>\n" +
+            "<svg viewBox=\"0 0 10 10\">\n" +
+            "  <image href=\".attachments/atlas.png\"/><image href=\".attachments/gone.png\"/>\n" +
+            "  <a href=\"Wavir/Balic.md#top\"><circle r=\"1\"/></a>\n" +
+            "  <a href=\"Wavir/Renamed.md\"><circle r=\"1\"/></a>\n" +
+            "  <a xlink:href='Old.md'><circle r=\"1\"/></a>\n" +
+            "</svg>\n" +
+            "`<a href=\"InCode.md\">`\n"));
+
+        var issues = LinkChecker.Check(_repo).ToList();
+
+        Assert.All(issues, i => Assert.Equal(LinkIssueKind.Broken, i.Kind));
+        Assert.Equal(
+            [(3, ".attachments/gone.png"), (5, "Wavir/Renamed.md"), (6, "Old.md")],
+            issues.Select(i => (i.LineNumber, i.Target)));
+    }
+
+    [Fact]
     public void Check_AllowsResolvingRelativeLink()
     {
         _repo.Write(new WikiPage(PagePath.Parse("/A"), "a"));

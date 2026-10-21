@@ -36,6 +36,25 @@ public class MoveLinkRewriterTests : IDisposable
     }
 
     [Fact]
+    public void MoveAndRewrite_RewritesHrefsInRawHtmlAndSvg()
+    {
+        _repo.Write(new WikiPage(PagePath.Parse("/Old"), "# Old\n"));
+        _repo.Write(new WikiPage(PagePath.Parse("/Other"),
+            "<a href=\"Old.md\">html</a>\n" +
+            "<svg><a href=\"Old.md#pin\"><circle/></a><a xlink:href='Old.md'><circle/></a>" +
+            "<a href=\"https://x.y/Old.md\"><circle/></a></svg>\n"));
+
+        var rewrites = MoveLinkRewriter.MoveAndRewrite(_repo, PagePath.Parse("/Old"), PagePath.Parse("/New"));
+
+        Assert.Equal(3, rewrites.Count);
+        var other = _repo.Read(PagePath.Parse("/Other")).Markdown;
+        Assert.Contains("<a href=\"New.md\">html</a>", other);
+        Assert.Contains("<a href=\"New.md#pin\">", other);
+        Assert.Contains("<a xlink:href='New.md'>", other);
+        Assert.Contains("https://x.y/Old.md", other);
+    }
+
+    [Fact]
     public void MoveAndRewrite_RewritesInboundAbsoluteTitlePathLink()
     {
         _repo.Write(new WikiPage(PagePath.Parse("/Old"), "# Old\n"));
