@@ -6,7 +6,37 @@ What changed in each Wikidown release, and where to get it. Newest first.
 For how to update an existing install, see
 [Updating](Getting-Started/Updating.md).
 
+## 0.12.0 — 21 October 2026
+
+Links inside raw HTML and inline SVG, such as the clickable regions of a
+map, now publish, get checked, and follow page moves like markdown links.
+
+### Where to get it
+
+| Component | Link |
+|---|---|
+| `wikidown` CLI (NuGet global tool) | [Wikidown.Cli 0.12.0](https://www.nuget.org/packages/Wikidown.Cli/0.12.0) — `dotnet tool update -g Wikidown.Cli` |
+| `Wikidown.Core` library | [Wikidown.Core 0.12.0](https://www.nuget.org/packages/Wikidown.Core/0.12.0) |
+| Self-contained CLI binaries (no .NET needed) | [GitHub Release cli-v0.12.0](https://github.com/markdav-is/Wikidown/releases/tag/cli-v0.12.0) — win/linux/osx, x64 and arm64; or re-run the [install script](CLI.md) |
+| Web editor | Updated in place; Monaco editor pane with a Markdown toolbar, and a preview that matches the published site |
+
+The Visual Studio extension is unchanged at 1.6.0.
+
+### What changed
+
+- **Links in raw HTML and inline SVG.** `href` on HTML and SVG `<a>`, SVG
+  1.1 `xlink:href`, and `href` on SVG `<image>` are now treated as links
+  (see [Format § Raw HTML and inline SVG](Getting-Started/Format.md#raw-html-and-inline-svg)).
+  `export-html` rewrites relative `.md` hrefs to `.html`, keeping any
+  `#fragment`; `check-links` (and `--fix`) reports broken ones, including a
+  missing `<image href>` file; and `wikidown move` rewrites them when the
+  page they point at moves.
+- **Inline SVG survives blank lines.** `export-html` keeps an
+  `<svg>…</svg>` block whole even when it contains blank lines, instead of
+  splitting the rest of the map into paragraphs.
+
 ## 0.11.0 — 30 September 2026
+
 
 `check-links --fix` now pulls images and files from outside the wiki into it
 and makes "/"-rooted links relative, and page titles come from each page's
