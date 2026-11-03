@@ -48,10 +48,11 @@ irm https://wikidown.org/install.ps1 | iex
 
 Native binaries are built by
 [`cli-native.yml`](https://github.com/markdav-is/Wikidown/blob/main/.github/workflows/cli-native.yml)
-when a maintainer pushes a `cli-v*` tag — a **separate release track** from
-NuGet, so the newest NuGet version and the newest native binary aren't
-necessarily the same; if the script reinstalls and a fix still isn't there,
-check whether a `cli-v*` tag has been cut since the fix merged.
+and attached to a `cli-v<version>` GitHub Release. The release is cut
+automatically from `main` the first time a `VersionPrefix` bump lands, the
+same push that publishes that version to NuGet, so the newest native binary
+follows the newest NuGet version. A maintainer can still push a `cli-v*` tag
+by hand to cut a release from a specific commit.
 
 ## Agent configs (`.claude/`, `.github/`, `CLAUDE.md`)
 
@@ -84,6 +85,6 @@ beyond letting Visual Studio check for extension updates as usual — see
 | Component | Trigger to publish | How consumers update |
 |---|---|---|
 | `Wikidown.Cli` (NuGet) | Push to `main` touching Core/CLI/`Directory.Build.props`, **and** a `VersionPrefix` bump | `dotnet tool update -g Wikidown.Cli` |
-| Self-contained CLI binary | Push of a `cli-v*` tag | Re-run the wikidown.org install script |
+| Self-contained CLI binary | Same `VersionPrefix` bump on `main` (cuts the `cli-v*` release), or a manual `cli-v*` tag push | Re-run the wikidown.org install script |
 | Agent configs | N/A — copied at `init` time | `wikidown init --agents all --force` |
 | VS extension (VSIX) | Push of a `vsix-v*` tag | Automatic via VS Marketplace update check |

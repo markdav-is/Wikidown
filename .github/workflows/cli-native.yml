@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
     paths:
+      - 'Directory.Build.props'
       - 'src/Wikidown.Cli/**'
       - 'src/Wikidown.Core/**'
       - 'src/Wikidown.Pdf/**'
@@ -16,6 +17,32 @@ permissions:
   contents: write   # needed to attach binaries to GitHub Releases
 
 jobs:
+  # NuGet publishes on every version bump, but the binaries only ship with a
+  # GitHub Release. Cut the cli-v<version> release from main as soon as the
+  # version has no tag yet, so a forgotten tag can't leave agents (which
+  # rarely have .NET) stuck on the previous binary. A tag created here with
+  # GITHUB_TOKEN doesn't trigger another run, so the release is made in this one.
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: tag
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/cli-v* ]]; then
+            echo "tag=$GITHUB_REF_NAME" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          [[ "$GITHUB_REF" == refs/heads/main ]] || exit 0
+          version=$(grep -oP '(?<=<VersionPrefix>)[^<]+' Directory.Build.props)
+          if git ls-remote --exit-code --tags origin "refs/tags/cli-v$version" > /dev/null; then
+            echo "cli-v$version already released"
+          else
+            echo "tag=cli-v$version" >> "$GITHUB_OUTPUT"
+          fi
+
   build:
     strategy:
       fail-fast: false
@@ -76,8 +103,8 @@ jobs:
           if-no-files-found: error
 
   release:
-    needs: build
-    if: startsWith(github.ref, 'refs/tags/cli-v')
+    needs: [version, build]
+    if: needs.version.outputs.tag != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
@@ -88,4 +115,6 @@ jobs:
 
       - uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ needs.version.outputs.tag }}
+          target_commitish: ${{ github.sha }}
           files: artifacts/*
