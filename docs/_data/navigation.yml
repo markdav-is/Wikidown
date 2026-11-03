@@ -6,7 +6,7 @@
   url: "/Getting-Started.html"
   prefix: "/Getting-Started/"
   children:
-    - title: "Format"
+    - title: "Format Specification"
       url: "/Getting-Started/Format.html"
     - title: "Muse Integration"
       url: "/Getting-Started/Muse-Integration.html"
@@ -26,6 +26,8 @@
       url: "/Getting-Started/Customizing-the-Theme.html"
     - title: "Kanban"
       url: "/Getting-Started/Kanban.html"
+    - title: "Clickable Maps with Inline SVG"
+      url: "/Getting-Started/Clickable-Maps.html"
 - title: "CLI"
   url: "/CLI.html"
 - title: "Editor"

@@ -296,3 +296,6 @@ relative-`.md` rule as markdown links. Wikidown treats these as links:
     `<svg>…</svg>` block that starts at the beginning of a line together
     even if it contains blank lines, but GitHub's own rendering still
     splits it there — so an SVG with no blank lines is the portable choice.
+
+For a full walkthrough with styling, accessibility and mobile tips, see
+[Clickable Maps with Inline SVG](Clickable-Maps.md).
