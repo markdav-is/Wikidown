@@ -13,6 +13,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write   # NuGet Trusted Publishing: OIDC token exchanged for a short-lived key
 
 jobs:
   publish:
@@ -32,18 +33,24 @@ jobs:
           dotnet pack src/Wikidown.Core/Wikidown.Core.csproj -c Release -o artifacts
           dotnet pack src/Wikidown.Cli/Wikidown.Cli.csproj -c Release -o artifacts
 
+      # Trusted Publishing instead of a stored API key, which expired and
+      # blocked the 0.13.0 publish. Needs a policy on nuget.org (owner
+      # markdav-is, repo Wikidown, workflow release.yml) and the nuget.org
+      # profile name in the NUGET_USER secret.
+      - name: NuGet login
+        id: nuget
+        uses: NuGet/login@v1
+        with:
+          user: ${{ secrets.NUGET_USER }}
+
       - name: Push to NuGet
         env:
-          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
-        run: |
-          if [ -z "$NUGET_API_KEY" ]; then
-            echo "::error::NUGET_API_KEY secret is not set" >&2
-            exit 1
-          fi
-          dotnet nuget push "artifacts/*.nupkg" \
-            --api-key "$NUGET_API_KEY" \
-            --source https://api.nuget.org/v3/index.json \
-            --skip-duplicate
+          NUGET_API_KEY: ${{ steps.nuget.outputs.NUGET_API_KEY }}
+        run: >
+          dotnet nuget push "artifacts/*.nupkg"
+          --api-key "$NUGET_API_KEY"
+          --source https://api.nuget.org/v3/index.json
+          --skip-duplicate
 
       - name: Upload packages
         uses: actions/upload-artifact@v4
