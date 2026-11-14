@@ -4,7 +4,7 @@
 
 `wikidown export-html` can render a full site — a landing page with a venue list, a map page with this month's date, membership tiers — from data files and wiki pages, with no front matter in any wiki page.
 
-These features belong to `export-html`. GitHub's built-in Jekyll builder doesn't have `wiki_body`, `wiki_title`, or the `wikidown.layouts` / `wikidown.root_page` keys, so a site that uses them deploys through [GitHub Actions](../Getting-Started/Publishing-to-GitHub-Pages.md#deploying-with-github-actions) instead of "Deploy from a branch".
+Deploy the site with the usual pipeline; see [Publishing to GitHub Pages](../Getting-Started/Publishing-to-GitHub-Pages.md).
 
 ## Data files: `site.data`
 
@@ -24,7 +24,7 @@ Every `.json`, `.yml`, and `.yaml` file under the wiki's `_data/` folder is load
 
 YAML scalars are typed the way Jekyll types them: unquoted numbers are numbers, so `sort` orders them numerically, and `yes`/`no` are booleans. A file that doesn't parse stops the export with an error that names the file.
 
-`site.data.navigation` is always the nav tree built from `.order`. A `_data/navigation.yml` file doesn't replace it, because that file can be out of date.
+`site.data.navigation` is always the nav tree built from `.order`. A leftover `_data/navigation.yml` from Jekyll publishing is ignored, with a warning.
 
 Every other top-level key in `_config.yml` is also available as `site.<key>`, as in Jekyll.
 

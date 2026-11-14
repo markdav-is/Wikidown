@@ -1,6 +1,6 @@
 {% comment %}
-  Recursive left-nav tree. Fed by _data/navigation.yml, which `wikidown pages`
-  generates from the wiki's .order files (and the CLI keeps fresh).
+  Recursive left-nav tree. Fed by site.data.navigation, which export-html
+  builds from the wiki's .order files on every export.
   Each item: title, optional url (absent for a folder with no index page),
   optional prefix + children.
 {% endcomment %}

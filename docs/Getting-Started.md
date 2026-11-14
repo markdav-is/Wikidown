@@ -22,8 +22,9 @@ Welcome to Wikidown. This folder is itself a Wikidown-format wiki.
 - [GitHub Copilot Integration](Getting-Started/GitHub-Copilot-Integration.md) — repo instructions, custom agent and chat mode, plus the coding agent on github.com
 - [Visual Studio Extension](Getting-Started/Visual-Studio-Extension.md) — add a Wikidown project in VS 2022+
 - [Updating](Getting-Started/Updating.md) — how downstream repos pick up new CLI releases, agent config changes, and VS extension updates
-- [Publishing to GitHub Pages](Getting-Started/Publishing-to-GitHub-Pages.md) — publish the wiki as a static site with `wikidown pages` and GitHub's built-in Jekyll, or anywhere via `wikidown export-html`
-- [Publishing to GitLab Pages](Getting-Started/Publishing-to-GitLab-Pages.md) — one CI job running `wikidown export-html`, no Jekyll or Ruby
+- [Publishing to GitHub Pages](Getting-Started/Publishing-to-GitHub-Pages.md) — publish the wiki as a static site: `wikidown pages` adds a GitHub Actions workflow that runs `wikidown export-html`
+- [Migrating from Jekyll Publishing](Getting-Started/Migrating-from-Jekyll-Publishing.md) — moving a wiki from GitHub's built-in Jekyll ("Deploy from a branch") to the pipeline, required as of 0.14.0
+- [Publishing to GitLab Pages](Getting-Started/Publishing-to-GitLab-Pages.md) — one CI job running `wikidown export-html`
 - [Site Templates](Site-Templates.md) — publish the wiki as a docs site or a marketing site: custom layouts, landing pages, and data-driven templates
 - [Kanban](Getting-Started/Kanban.md) — keep a simple To Do / Doing / Done board in your wiki with `wikidown kanban init`
 - [Clickable Maps](Getting-Started/Clickable-Maps.md) — turn an image into a map whose areas link to pages, with inline SVG and no JavaScript

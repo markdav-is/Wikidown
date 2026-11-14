@@ -50,8 +50,8 @@ public class PageTitleTests : IDisposable
         _repo.Write(new WikiPage(PagePath.Parse("/Cards/Attacks-Defense"), "# Attacks & Defense\n"));
         _repo.Write(new WikiPage(PagePath.Parse("/Cards/Move-1"), "no heading\n"));
 
-        Assert.Contains("title: \"Attacks & Defense\"", JekyllNavigation.Render(_repo));
-        Assert.Contains("title: \"Move 1\"", JekyllNavigation.Render(_repo));
+        var tree = NavTree.Build(_repo.Walk().ToList(), _repo.ReadOrder, p => PageTitle.For(p, _repo.Read(p).Markdown));
+        Assert.Equal(["Attacks & Defense", "Move 1"], Assert.Single(tree).Children.Select(c => c.Title));
 
         var pdf = WikiPdfContent.BuildAll(_repo);
         var cards = Assert.Single(pdf.Nav);

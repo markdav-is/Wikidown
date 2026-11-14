@@ -1,9 +1,10 @@
-# Jekyll configuration for publishing this Wikidown wiki with GitHub Pages.
-# Installed by `wikidown pages`. Safe to edit — never overwritten unless
-# you pass --force.
+# Site settings for `wikidown export-html`, which renders this wiki to a
+# static site. Installed by `wikidown pages`. Safe to edit — never
+# overwritten unless you pass --force.
 #
-# Enable in GitHub: Settings → Pages → Source: "Deploy from a branch",
-# branch: main, folder: /docs (or wherever this file lives).
+# Published by .github/workflows/pages.yml. In GitHub:
+# Settings → Pages → Source: "GitHub Actions".
+# Preview locally: wikidown export-html --output _site --clean
 
 title: "{{TITLE}}"
 description: ""
@@ -16,48 +17,13 @@ description: ""
 # url: https://<owner>.github.io
 # image: /images/logo.png
 
-# Subtrees to leave out of the published site (nav and pages). Publishing
-# only — the pages stay first-class for the CLI and editor.
-# `export-html` honors this fully; GitHub's Jekyll builder only hides them
-# from the nav, so also list them under `exclude:` below when using it.
 # wikidown:
+#   # Subtrees to leave out of the published site (nav and pages). The
+#   # pages stay first-class for the CLI and editor.
 #   exclude_from_site:
 #     - /Internal-Notes
-
-markdown: kramdown
-kramdown:
-  input: GFM
-  hard_wrap: false
-  syntax_highlighter: rouge
-
-# All three ship with GitHub Pages' builder — nothing to install.
-plugins:
-  - jekyll-relative-links
-  - jekyll-titles-from-headings
-  - jekyll-default-layout
-
-# Rewrites Wikidown's relative `[Page](../Folder/Page.md)` links to the
-# generated .html URLs.
-relative_links:
-  enabled: true
-  collections: false
-
-# Wikidown pages carry no front matter; the title comes from the first
-# `# Heading` and stays in the body.
-titles_from_headings:
-  enabled: true
-  strip_title: false
-
-defaults:
-  - scope:
-      path: ""
-    values:
-      layout: wikidown
-
-# Jekyll skips dot-folders by default; Wikidown keeps images here.
-include:
-  - .attachments
-
-exclude:
-  - vendor
-  - node_modules
+#   # Serve a page as the site's index.html, and give pages their own
+#   # layouts (_layouts/<name>.html). See the Site Templates docs.
+#   root_page: /Home
+#   layouts:
+#     /Home: landing

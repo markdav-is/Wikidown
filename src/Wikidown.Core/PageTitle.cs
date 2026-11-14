@@ -3,8 +3,8 @@ using Markdig.Syntax;
 
 namespace Wikidown.Core;
 
-// A page's display title is its first "# Heading", the same title Jekyll's
-// jekyll-titles-from-headings and export-html show on the page itself. The
+// A page's display title is its first "# Heading", the same title
+// export-html shows on the page itself. The
 // file name is only the URL; it's the fallback when a page has no heading.
 public static class PageTitle
 {

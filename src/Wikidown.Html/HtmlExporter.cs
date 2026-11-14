@@ -19,12 +19,12 @@ public sealed record HtmlExportResult(
     IReadOnlyList<LinkIssue> OutsideWiki,
     IReadOnlyList<string> Warnings);
 
-// Renders the wiki to a static site with the same theme, layout, and nav
-// data GitHub Pages' Jekyll would use — so the output is host-agnostic
-// (GitLab Pages, Azure Static Web Apps, a file share) and needs no Ruby.
-// Beyond that it gives templates what a data-driven landing page needs
-// while wiki pages keep no front matter: _data/ files, other pages' bodies
-// (the wiki_body filter), and per-page layouts chosen in _config.yml.
+// Renders the wiki to a static site that any host can serve (GitHub Pages
+// via Actions, GitLab Pages, Azure Static Web Apps, a file share).
+// Templates are Liquid in Jekyll's dialect, and get what a data-driven
+// landing page needs while wiki pages keep no front matter: _data/ files,
+// other pages' bodies (the wiki_body filter), and per-page layouts chosen
+// in _config.yml.
 public static class HtmlExporter
 {
     public static HtmlExportResult Export(WikiRepository repo, HtmlExportOptions options)
@@ -66,8 +66,11 @@ public static class HtmlExporter
             ["content"] = rendered[p.ToLinkPath()].Html,
         }, StringComparer.OrdinalIgnoreCase);
 
-        // The generated nav wins over a stale _data/navigation.yml.
+        // The nav always comes from .order. _data/navigation.yml was written
+        // for GitHub's Jekyll builder, which Wikidown no longer targets.
         var data = SiteData.Load(repo.RootPath);
+        if (data.ContainsKey("navigation"))
+            warnings.Add("_data/navigation.yml is ignored (the nav is built from .order files); delete it");
         data["navigation"] = NavData(NavTree.Build(pages, repo.ReadOrder, p => rendered[p.ToLinkPath()].Title), UrlOf);
 
         var site = new Dictionary<string, object?>(config.Values, StringComparer.Ordinal)

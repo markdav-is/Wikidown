@@ -14,8 +14,7 @@ from data files.
 |---|---|---|
 | Looks like | Docs site: top bar, `.order`-driven sidebar, page body | Anything: hero, cards, listings, pricing, custom nav |
 | Files | `_layouts/wikidown.html`, `_includes/nav-tree.html`, `assets/wikidown.css` | Your own `_layouts/*.html`, `_includes/*.html`, `assets/*`, plus `_data/*` |
-| Set up by | `wikidown pages`, or nothing at all: `export-html` has it built in | You write them; `_config.yml` says which pages use them |
-| Builds with | GitHub's Jekyll builder **or** `wikidown export-html` | `wikidown export-html` (deployed with GitHub Actions or any CI) |
+| Set up by | Nothing: `export-html` has it built in. `wikidown pages --theme` copies it for editing | You write them; `_config.yml` says which pages use them |
 | Example | [wikidown.org](https://wikidown.org)'s docs pages, this page included | [warehousedistrictarthop.com](https://warehousedistrictarthop.com) ([source](https://github.com/OpenEugene/art-hop)) |
 
 You don't pick one or the other. A marketing site is usually the wiki
@@ -34,7 +33,7 @@ replaces only the root `index.html`.
    `{{ content }}`, and the whole site as `site`: every page, the
    `.order` nav tree, `_config.yml` values, and everything in `_data/`.
 4. If the layout's front matter names another layout, the result is
-   wrapped in that one too, as in Jekyll.
+   wrapped in that one too.
 5. Static files (images, `assets/`, `.attachments/`, `CNAME`) are copied
    through unchanged.
 

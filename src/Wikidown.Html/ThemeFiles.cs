@@ -69,8 +69,8 @@ public sealed partial class ThemeFiles : IFileProvider
 
     // Liquid includes in Jekyll's dialect (`{% include file.html a=b %}`,
     // read back as `include.a`) rewritten to Fluid's
-    // (`{% include 'file.html', a: b %}`, read back as `a`), so one theme
-    // serves both GitHub's Jekyll and this exporter.
+    // (`{% include 'file.html', a: b %}`, read back as `a`), so themes
+    // written for Jekyll keep working.
     public static string ToFluidSyntax(string liquid)
     {
         var rewritten = IncludeTag().Replace(liquid, m =>

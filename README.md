@@ -46,27 +46,27 @@ Use `--agents claude|copilot|all|none` to pick, `--force` to overwrite, and
 
 ### Publish with GitHub Pages
 
-```bash
+```powershell
 wikidown pages
 ```
 
-Scaffolds a Jekyll site into the wiki folder — `_config.yml` tuned for the
-Wikidown format, a starter theme with a left-nav tree driven by your
-`.order` files, and an `index.html` redirect to Home — then push and set
-**Settings → Pages → Source: main, /docs**. The nav data
-(`_data/navigation.yml`) is regenerated automatically by the CLI on every
-change.
+Writes `.github/workflows/pages.yml`, a GitHub Actions workflow that
+renders the wiki with `wikidown export-html` (a starter theme with a
+left-nav tree driven by your `.order` files) and deploys it, plus a
+`_config.yml` for the site title and settings. Set **Settings → Pages →
+Source: GitHub Actions** and push.
 
 For any other host — GitLab Pages, Azure Static Web Apps, Netlify, a file
-share — or to preview locally, render the same theme in .NET instead; no
-Jekyll or Ruby involved:
+share — or to preview locally, run the export yourself:
 
-```bash
-wikidown export-html --output public
+```powershell
+wikidown export-html --output _site
 ```
 
-Details for both in
+Details in
 [`/docs/Getting-Started/Publishing-to-GitHub-Pages`](./docs/Getting-Started/Publishing-to-GitHub-Pages.md).
+Upgrading a wiki that used GitHub's Jekyll builder? See
+[Migrating from Jekyll Publishing](./docs/Getting-Started/Migrating-from-Jekyll-Publishing.md).
 
 ### Give agents the CLI
 

@@ -6,11 +6,11 @@ Wikidown's on-disk format is deliberately minimal: markdown pages, folder-based 
 
 By enforcing these rules, Wikidown prevents the link rot and structural drift that typically plagues flat-file documentation.
 
-The format is built first for GitHub and Jekyll (GitHub Pages): a project wiki that people and different LLM tools share, which renders correctly on github.com and publishes as a static site. It started from Azure DevOps wiki conventions and stays readable by Azure DevOps wikis, but those are no longer the reference point.
+The format is built first for GitHub: a project wiki that people and different LLM tools share, which renders correctly on github.com and publishes as a static site with `wikidown export-html`. It started from Azure DevOps wiki conventions and stays readable by Azure DevOps wikis, but those are no longer the reference point.
 
 ## 1. Page Files and Titles
 
-Every page in the wiki is a standard Markdown file (`.md`). A page's title is its first `# Heading`, as plain text (link, code, and emphasis markup is stripped). That's the title readers and tools see: the site nav (in `export-html` and Jekyll's generated `_data/navigation.yml`), the `export-pdf` table of contents and bookmarks, and the title column of `wikidown list` and `wikidown walk`.
+Every page in the wiki is a standard Markdown file (`.md`). A page's title is its first `# Heading`, as plain text (link, code, and emphasis markup is stripped). That's the title readers and tools see: the site nav from `export-html`, the `export-pdf` table of contents and bookmarks, and the title column of `wikidown list` and `wikidown walk`.
 
 The file name is the page's path and URL: the title with spaces written as hyphens.
 

@@ -1,9 +1,11 @@
 # Wikidown — agent guidance
 
 This repo builds Wikidown itself: a `/docs` wiki + CLI + WASM editor +
-product site. GitHub and Jekyll (GitHub Pages) compatibility come first;
-the format started from Azure DevOps wiki conventions but ADO is not the
-reference point. Planned work lives in GitHub issues.
+product site. GitHub compatibility comes first: pages render on github.com,
+and sites publish only through `wikidown export-html` in a pipeline
+(GitHub's built-in Jekyll builder was dropped in 0.14.0). The format
+started from Azure DevOps wiki conventions but ADO is not the reference
+point. Planned work lives in GitHub issues.
 
 ## Build, test, package
 
@@ -22,7 +24,7 @@ pack on every push/PR.
 
 - `src/Wikidown.Core/` — page model, `.order`, repo, search.
 - `src/Wikidown.Cli/` — `wikidown` command-line tool.
-- `src/Wikidown.Html/` — Jekyll-compatible starter theme + `export-html` (Markdig + Fluid).
+- `src/Wikidown.Html/` — starter theme + `export-html` (Markdig + Fluid), the only site builder.
 - `src/Wikidown.Pdf/` — `export-pdf` rendering (PDFsharp/MigraDoc).
 - `src/Wikidown.Web/` — Blazor WASM editor PWA (GitHub and Azure DevOps backends).
 - *(no separate marketing site)* — wikidown.org is `/docs` + its `index.html`, published by `pages.yml` via `wikidown export-html`.

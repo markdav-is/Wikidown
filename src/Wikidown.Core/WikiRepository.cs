@@ -41,7 +41,6 @@ public sealed class WikiRepository
         var content = Breadcrumb.Inject(this, page.Path, page.Markdown);
         LineEndings.WriteFile(file, EnsureTrailingNewline(content), NewFileEnding());
         EnsureOrderIncludes(page.Path);
-        JekyllNavigation.RefreshIfEnabled(this);
     }
 
     // A new file matches the wiki it joins (root .order, else a root page);
@@ -130,7 +129,6 @@ public sealed class WikiRepository
         }
 
         RemoveFromOrder(path);
-        JekyllNavigation.RefreshIfEnabled(this);
     }
 
     public void Move(PagePath from, PagePath to)
@@ -168,7 +166,6 @@ public sealed class WikiRepository
 
         RefreshBreadcrumb(to);
         foreach (var descendant in Walk(to)) RefreshBreadcrumb(descendant);
-        JekyllNavigation.RefreshIfEnabled(this);
     }
 
     // The breadcrumb is a structural summary of a page's ancestor chain, not
@@ -242,7 +239,6 @@ public sealed class WikiRepository
             File.Delete(path);
         else
             LineEndings.WriteFile(path, content, NewFileEnding());
-        JekyllNavigation.RefreshIfEnabled(this);
     }
 
     private void EnsureOrderIncludes(PagePath page)

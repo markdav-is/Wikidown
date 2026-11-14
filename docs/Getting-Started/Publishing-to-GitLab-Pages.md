@@ -5,17 +5,18 @@
 GitLab Pages serves static sites, but unlike GitHub it doesn't run a
 site generator for you — it publishes whatever a CI job leaves in a
 `public/` artifact. That suits Wikidown fine: `wikidown export-html`
-renders the wiki to finished HTML with the same starter theme the
-GitHub path uses, in one CI job, with no Jekyll or Ruby anywhere (see
+renders the wiki to finished HTML in one CI job, exactly as the GitHub
+workflow does (see
 [Publishing to GitHub Pages](Publishing-to-GitHub-Pages.md) for the
 GitHub story and the full `export-html` reference).
 
 ## Steps
 
-1. *(Optional)* Run `wikidown pages` and commit the result, if you want
-   the theme files (`_layouts`, `assets`, `_config.yml`) in your repo to
-   customize. `export-html` works without this — anything missing falls
-   back to the built-in theme.
+1. *(Optional)* Add a `_config.yml` to the wiki root for the site title
+   and other settings, and theme files if you want to customize them.
+   `wikidown pages --theme` writes both; it also writes a GitHub Actions
+   workflow, `.github/workflows/pages.yml`, which you can delete.
+   `export-html` works without any of this, using the built-in theme.
 
 2. Add `.gitlab-ci.yml` at the repo root:
 
@@ -61,7 +62,7 @@ page bodies are relative and never need it.
   folder: Azure Static Web Apps, Netlify, Cloudflare Pages, S3.
 - Want a custom `_layouts/wikidown.html`/`assets/wikidown.css` or a
   hand-authored root `index.html` instead of the stock redirect? Same
-  files, same rules as the GitHub path — see [Customizing the
+  files, same rules as on GitHub — see [Customizing the
   Theme](../Site-Templates/Customizing-the-Theme.md).
 
 See [CLI](../CLI.md) for the full `export-html` option reference.

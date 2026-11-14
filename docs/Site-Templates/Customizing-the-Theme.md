@@ -2,71 +2,69 @@
 
 # Customizing the Theme
 
-`wikidown pages` scaffolds two independent templates. Both are plain
-files in the wiki root, and both are optional to edit — but they solve
-different problems and get replaced in different ways.
+`wikidown export-html` has a starter theme built in, so a wiki publishes
+with no theme files at all. To change how it looks, copy the theme into
+the wiki and edit it:
+
+```powershell
+wikidown pages --theme
+```
+
+That writes two independent sets of files into the wiki root. They solve
+different problems:
 
 | Template | Wraps | Purpose |
 |---|---|---|
-| `_layouts/wikidown.html` + `_includes/nav-tree.html` + `assets/wikidown.css` | Every generated wiki page (`Home.html`, `Guides.html`, …) | Page chrome: top bar, the `.order`-driven left-nav sidebar, footer |
-| `index.html` | Nothing — it's standalone | The site root; free to look nothing like the wiki |
+| `_layouts/wikidown.html` + `_includes/nav-tree.html` + `assets/wikidown.css` | Every wiki page (`Home.html`, `Guides.html`, …) | Page chrome: top bar, the `.order`-driven left-nav sidebar, footer |
+| `index.html` | Nothing; it's standalone | The site root, free to look nothing like the wiki |
 
-This page covers customizing both. For the scaffold itself and publishing
-mechanics, see [Publishing to GitHub Pages](../Getting-Started/Publishing-to-GitHub-Pages.md)
-and [Publishing to GitLab Pages](../Getting-Started/Publishing-to-GitLab-Pages.md).
+`export-html` uses any of these files it finds in the wiki root and falls
+back to its built-in copy for the rest, so you can keep just the files you
+change. A file you've copied no longer picks up theme updates from newer
+CLI versions; delete it to go back to the built-in one. `wikidown pages`
+never overwrites existing files unless you pass `--force`.
+
+For deployment, see [Publishing to GitHub
+Pages](../Getting-Started/Publishing-to-GitHub-Pages.md) and [Publishing to
+GitLab Pages](../Getting-Started/Publishing-to-GitLab-Pages.md).
 
 ## The wiki page template
 
-`_layouts/wikidown.html` is the Liquid layout every rendered page goes
-through: `<head>`, top bar, a slot for `{{ content }}` (the rendered
-markdown), and the sidebar. `_includes/nav-tree.html` renders that sidebar
-recursively from `site.data.navigation` — the tree built from your `.order`
-files — with active-page highlighting and collapsible sections.
-`assets/wikidown.css` is the styling.
+`_layouts/wikidown.html` is the Liquid layout every page goes through:
+`<head>`, top bar, a slot for `{{ content }}` (the rendered markdown), and
+the sidebar. `_includes/nav-tree.html` renders the sidebar recursively from
+`site.data.navigation`, the tree built from your `.order` files, with
+active-page highlighting and collapsible sections. `assets/wikidown.css` is
+the styling.
 
-To customize: edit those three files directly in the wiki root. Both
-GitHub's built-in Jekyll and `wikidown export-html` prefer wiki-root copies
-over their embedded defaults, so your edits apply either way. Nothing
-regenerates them once they exist — the only thing that overwrites them is
-`wikidown pages --force`.
-
-Both files are standard Liquid. `export-html`'s Fluid renderer translates
-the one Jekyll-only construct it needs — `{% include file.html a=b %}`
-becomes `include.a` — so sticking to standard Liquid filters and tags keeps
-the layout working identically on both engines. Jekyll-only extras like
-`where_exp` aren't available in the .NET renderer. For templates that pull in
-`_data/` files or other pages' bodies, or for a different layout on some pages, see
-[Data-Driven Templates](Data-Driven-Templates.md).
+The templates are Liquid in Jekyll's dialect, including
+`{% include file.html a=b %}` read back as `include.a`. For every variable
+and filter, see the [Template Reference](Template-Reference.md). For
+templates that pull in `_data/` files or other pages' bodies, or a
+different layout on some pages, see [Data-Driven
+Templates](Data-Driven-Templates.md).
 
 ## The root `index.html`
 
-Unlike every other generated page, `index.html` is **not** wrapped by
-`_layouts/wikidown.html` at all — the scaffolded file carries `layout: none`
-in its front matter, and both renderers treat it as fully standalone. That
-means it's free to look nothing like the rest of the wiki: no sidebar, its
-own nav bar, a hero section, feature cards — whatever a marketing homepage
-needs.
+`index.html` is **not** wrapped by `_layouts/wikidown.html`: the stock file
+carries `layout: none` in its front matter. That means it's free to look
+nothing like the rest of the wiki: no sidebar, its own nav bar, a hero
+section, feature cards, whatever a homepage needs.
 
-The default scaffolded version is a trivial redirect stub: a meta-refresh
-and a canonical link that send visitors straight to the wiki's home page,
-plus a visible fallback link for the no-JS/no-refresh case.
+The stock version is a redirect: a meta-refresh and a canonical link that
+send visitors to the wiki's home page, plus a visible fallback link.
 
-**[wikidown.org](https://wikidown.org)'s own `index.html` is a real,
-working example of replacing it** — hero section, feature cards, its own
-top nav that links into the wiki with a plain `href="Home.html"`. It's
-worth reading directly as the reference implementation to copy from:
+**[wikidown.org](https://wikidown.org)'s own `index.html` is a working
+example of replacing it**: hero section, feature cards, and its own top nav
+that links into the wiki with a plain `href="Home.html"`. Copy from
 [`docs/index.html`](../index.html) in this repo.
 
-To customize: edit or replace `docs/index.html` after scaffolding. Both
-publishing paths read it straight off disk when present:
+Two alternatives to a hand-written `index.html`:
 
-- `wikidown pages` only writes files that don't already exist, unless you
-  pass `--force` — which clobbers a customized `index.html` back to the
-  stock redirect (see the `--force` warning on
-  [Publishing to GitHub Pages](../Getting-Started/Publishing-to-GitHub-Pages.md#quick-start)).
-- `wikidown export-html` layers wiki-root files over its embedded defaults
-  — a wiki-root `index.html` always wins over the built-in one when
-  present, and it doesn't need `wikidown pages` to have been run first.
+- Set `wikidown.root_page` in `_config.yml` to serve a wiki page as the
+  site root, with its own layout. The page's text stays editable as
+  markdown. See [Building a Marketing Site](Building-a-Marketing-Site.md).
+- Keep the redirect and put the landing content on the Home page.
 
 ## The `{{HOME}}` / `{{TITLE}}` placeholders
 
@@ -77,64 +75,28 @@ The stock `index.html` contains two placeholders:
 <title>{{ site.title }}</title>
 ```
 
-`{{TITLE}}` and `{{HOME}}` are **plain literal text**, not Liquid — they're
-substituted with a raw string replace over the file's text, done
-independently in two places:
+`{{HOME}}` and `{{TITLE}}` are plain text, not Liquid. They're replaced
+with a string replace before the template is rendered: once by
+`wikidown pages --theme` when it writes the file, and again by
+`export-html` on every export, so a file that still contains them stays
+current.
 
-- `wikidown pages` (`PagesCommand`) substitutes them once, at scaffold
-  time, and writes the already-substituted text into the committed
-  `index.html`. Real Jekyll — GitHub's own builder — never sees the
-  placeholders at all; by the time it builds, they're already gone.
-- `wikidown export-html` (`HtmlExporter`) substitutes them fresh on every
-  export, so it keeps a hand-scaffolded `index.html` that still contains
-  the placeholders self-updating even without rerunning `wikidown pages`.
+`{{HOME}}` becomes the wiki's `/Home` page if one exists, else the first
+top-level page, always with a `.html` suffix (`/Home.html`). The sidebar
+links the Home page as `/` instead.
 
-`{{HOME}}` resolves to the wiki's `/Home` page if one exists, else the
-first top-level page, else `/Home.html` as a last resort — always with a
-`.html` suffix, since it's the concrete redirect target of a real generated
-file. (Links *within* rendered wiki pages — the sidebar, breadcrumbs — are
-different: those resolve the wiki's Home page to `/` instead of
-`/Home.html`, so a fully custom homepage that serves Home's content at the
-literal site root doesn't break them. The redirect stub itself doesn't need
-that, because `Home.html` always exists as its own file alongside
-`index.html`.)
-
-### Why the placeholder sits inside a Liquid string
-
-Look closely at the source template
-(`src/Wikidown.Html/Theme/index.html`):
-
-```liquid
-{{ '{{HOME}}' | relative_url }}
-```
-
-`{{HOME}}` is written inside a Liquid *string literal*, itself wrapped in
-the `relative_url` filter. The raw-text replace happens **before** any
-Liquid or Fluid parsing runs, so it substitutes the literal characters
-`{{HOME}}` inside the quotes — turning `'{{HOME}}'` into e.g.
-`'/Home.html'` — leaving well-formed Liquid that only gets evaluated
-afterward. That's how baseurl-prefixing still works on both engines:
-`relative_url` runs at each engine's own render time (real Jekyll's own
-filter on the GitHub Pages path, a custom-registered Fluid filter using
-`--base-url` for `export-html`) — the placeholder substitution only ever
-supplies the unprefixed link path, never the final href.
-
-Practical takeaway if you're customizing `index.html`: reuse
-`{{ '{{HOME}}' | relative_url }}` somewhere in your markup if you want your
-"go to the docs" link to auto-track the wiki's actual home page instead of
-a URL you'd have to keep in sync by hand. It's optional, not required —
-wikidown.org's own page skips it and hardcodes `href="Home.html"` in its
-nav bar instead, which is fine too.
+The placeholder sits inside a Liquid string, `'{{HOME}}'`, so after the
+replace it's ordinary Liquid (`'/Home.html' | relative_url`) and still gets
+the site's base path. To make your own "go to the docs" link follow the
+wiki's home page, reuse `{{ '{{HOME}}' | relative_url }}`. Hard-coding
+`href="Home.html"`, as wikidown.org does, works too.
 
 ## Previewing changes
 
-`wikidown export-html --output public --clean` plus any static file
-server gives instant local preview of either kind of edit, with no Jekyll,
-Ruby, or GitHub Pages deploy required — see [Publishing to GitHub
-Pages](../Getting-Started/Publishing-to-GitHub-Pages.md#any-other-host-export-html) for the
-full workflow.
+```powershell
+wikidown export-html --output _site --clean
+dotnet serve -d _site
+```
 
-See [CLI](../CLI.md) for the full option reference, and
-[Publishing to GitLab Pages](../Getting-Started/Publishing-to-GitLab-Pages.md) for a worked
-example of `export-html` in CI — the theme-customization mechanics here
-apply to any `export-html`-based host, not just GitHub.
+Any static file server works. Edits to `_layouts/`, `_includes/`,
+`assets/`, or `index.html` show up on the next export.

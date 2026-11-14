@@ -6,7 +6,57 @@ What changed in each Wikidown release, and where to get it. Newest first.
 For how to update an existing install, see
 [Updating](Getting-Started/Updating.md).
 
+## 0.14.0 — 14 November 2026
+
+**Breaking:** wikis publish only through a pipeline that runs
+`wikidown export-html`. GitHub's built-in Jekyll builder ("Deploy from a
+branch") is no longer supported, and `wikidown pages` now writes a GitHub
+Actions workflow instead of a Jekyll site. A wiki that publishes with
+"Deploy from a branch" needs a few minutes of changes: see [Migrating from
+Jekyll Publishing](Getting-Started/Migrating-from-Jekyll-Publishing.md).
+Sites already deployed by `export-html` (the `wiki-pages.yml` workflow,
+GitLab Pages) only need to delete `_data/navigation.yml`.
+
+One renderer means the site you preview locally is the site that deploys,
+and [Site Templates](Site-Templates.md) features work on every site.
+
+### Where to get it
+
+| Component | Link |
+|---|---|
+| `wikidown` CLI (NuGet global tool) | [Wikidown.Cli 0.14.0](https://www.nuget.org/packages/Wikidown.Cli/0.14.0) — `dotnet tool update -g Wikidown.Cli` |
+| `Wikidown.Core` library | [Wikidown.Core 0.14.0](https://www.nuget.org/packages/Wikidown.Core/0.14.0) |
+| Self-contained CLI binaries (no .NET needed) | [GitHub Release cli-v0.14.0](https://github.com/markdav-is/Wikidown/releases/tag/cli-v0.14.0) — win/linux/osx, x64 and arm64; or re-run the [install script](CLI.md) |
+| GitHub Actions workflow | `markdav-is/Wikidown/.github/workflows/wiki-pages.yml@main` — see [The workflow](Getting-Started/Publishing-to-GitHub-Pages.md#the-workflow) |
+
+The web editor and the Visual Studio extension (1.6.0) are unchanged.
+
+### What changed
+
+- **`wikidown pages` sets up a pipeline.** It writes
+  `.github/workflows/pages.yml` at the root of the git checkout, which calls
+  the reusable `wiki-pages.yml` workflow, plus a `_config.yml` with no
+  Jekyll settings. The theme stays built in unless you pass the new
+  `--theme` flag to copy it into the wiki for editing. It also lists Jekyll
+  leftovers you can delete.
+- **No more `_data/navigation.yml`.** The CLI no longer writes or refreshes
+  it; `export-html` builds the nav from `.order` files on every export and
+  warns if the old file is still there. The stock layout's flat-list
+  fallback for a missing nav file is gone.
+- **Project sites need no `base-url`.** The `wiki-pages.yml` workflow now
+  takes the site's path from GitHub when neither the `base-url` input nor
+  `baseurl` in `_config.yml` is set, as GitHub's Jekyll builder did.
+- **`wikidown move` leaves code alone.** Links inside fenced code blocks
+  and inline code are examples, and are no longer rewritten when a page
+  moves, matching what `check-links` already ignored.
+- **Docs.** A new [Site Templates](Site-Templates.md) section covers
+  marketing-style sites: a step-by-step [Building a Marketing
+  Site](Site-Templates/Building-a-Marketing-Site.md) how-to, data-driven
+  template examples, and a [Template
+  Reference](Site-Templates/Template-Reference.md).
+
 ## 0.13.0 — 14 November 2026
+
 
 `export-html` can now build data-driven sites: templates read `_data/`
 files and other pages' bodies, and `_config.yml` picks a layout per page
@@ -19,7 +69,7 @@ and which page is the site root. See [Data-Driven Sites](Site-Templates/Data-Dri
 | `wikidown` CLI (NuGet global tool) | [Wikidown.Cli 0.13.0](https://www.nuget.org/packages/Wikidown.Cli/0.13.0) — `dotnet tool update -g Wikidown.Cli` |
 | `Wikidown.Core` library | [Wikidown.Core 0.13.0](https://www.nuget.org/packages/Wikidown.Core/0.13.0) |
 | Self-contained CLI binaries (no .NET needed) | [GitHub Release cli-v0.13.0](https://github.com/markdav-is/Wikidown/releases/tag/cli-v0.13.0) — win/linux/osx, x64 and arm64; or re-run the [install script](CLI.md) |
-| GitHub Actions workflow | `markdav-is/Wikidown/.github/workflows/wiki-pages.yml@main` — see [Deploying with GitHub Actions](Getting-Started/Publishing-to-GitHub-Pages.md#deploying-with-github-actions) |
+| GitHub Actions workflow | `markdav-is/Wikidown/.github/workflows/wiki-pages.yml@main` — see [Deploying with GitHub Actions](Getting-Started/Publishing-to-GitHub-Pages.md#the-workflow) |
 
 The web editor and the Visual Studio extension (1.6.0) are unchanged.
 

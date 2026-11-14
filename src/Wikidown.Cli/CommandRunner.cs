@@ -131,12 +131,12 @@ public static class CommandRunner
         w.WriteLine("  init     [--agents claude|copilot|all|none] [--force]");
         w.WriteLine("           seed the wiki and install AI agent configs (Claude Code +");
         w.WriteLine("           GitHub Copilot) in the folder containing the wiki root");
-        w.WriteLine("  pages    [--title T] [--force]");
-        w.WriteLine("           scaffold a Jekyll site + starter theme into the wiki root so");
-        w.WriteLine("           GitHub Pages can publish it; (re)generates _data/navigation.yml");
+        w.WriteLine("  pages    [--title T] [--theme] [--force]");
+        w.WriteLine("           add a GitHub Actions workflow that publishes the wiki to GitHub");
+        w.WriteLine("           Pages with export-html, plus _config.yml; --theme copies the theme");
         w.WriteLine("  export-html --output <dir> [--base-url /prefix] [--title T] [--clean]");
-        w.WriteLine("           render the wiki to a static HTML site with the same theme, no");
-        w.WriteLine("           Jekyll/Ruby needed — for GitLab Pages, any static host, or local preview");
+        w.WriteLine("           render the wiki to a static HTML site — for GitHub Pages, GitLab");
+        w.WriteLine("           Pages, any static host, or local preview");
         w.WriteLine("  kanban init [--path /Kanban]");
         w.WriteLine("           create a kanban: a dashboard page with To Do, Doing and Done");
         w.WriteLine("           sub-pages; items are sub-pages of those");
@@ -537,21 +537,26 @@ public static class CommandRunner
         ["pages"] =
             """
             Usage:
-              wikidown pages [--title T] [--force] [--root <path>]
+              wikidown pages [--title T] [--theme] [--force] [--root <path>]
 
-            Scaffold a Jekyll-based static site (starter theme, assets,
-            _data/navigation.yml, root index.html redirect) into the wiki
-            root so GitHub Pages can publish it.
+            Set the wiki up to publish through a pipeline: writes
+            .github/workflows/pages.yml (in the git checkout holding the
+            wiki), which runs `wikidown export-html` and deploys to GitHub
+            Pages, and the wiki's _config.yml. Then set Settings → Pages →
+            Source to "GitHub Actions". Also notes leftover files from
+            GitHub's Jekyll builder that can be deleted.
 
             Options:
               --title   Site title (default: repo folder name)
-              --force   Overwrite theme files you've edited
+              --theme   Also copy the theme (_layouts, _includes, assets,
+                        index.html) into the wiki to customize it
+              --force   Overwrite files that already exist
               --root    Path to the docs folder (default: ./docs)
               -h, --help
 
             Examples:
               wikidown pages
-              wikidown pages --title "My Project Wiki" --force
+              wikidown pages --title "My Project Wiki" --theme
 
             """,
 
@@ -561,7 +566,7 @@ public static class CommandRunner
               wikidown export-html --output <dir> [--base-url /prefix] [--title T] [--clean] [--root <path>]
 
             Render the wiki to a complete static HTML site in-process
-            (Markdig + Fluid), no Jekyll or Ruby needed. Templates get
+            (Markdig + Fluid). Templates get
             site.data from _data/ (JSON and YAML), each page's rendered
             content, and the wiki_body / wiki_title filters; _config.yml's
             wikidown.layouts and wikidown.root_page pick per-page layouts

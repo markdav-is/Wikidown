@@ -160,7 +160,7 @@ public class HtmlExporterTests : IDisposable
     public void Export_UsesScaffoldedThemeAndConfigWhenPresent()
     {
         Seed();
-        Assert.Equal(0, CommandRunner.Run(new[] { "pages", "--root", _wikiRoot, "--title", "Scaffolded" }, TextWriter.Null, TextWriter.Null));
+        Assert.Equal(0, CommandRunner.Run(new[] { "pages", "--root", _wikiRoot, "--title", "Scaffolded", "--theme" }, TextWriter.Null, TextWriter.Null));
         File.WriteAllText(Path.Combine(_wikiRoot, "assets", "wikidown.css"), "/* custom */");
         File.WriteAllText(Path.Combine(_wikiRoot, "_includes", "nav-tree.html"), "<nav>CUSTOM {{ include.items.size }}</nav>");
         var config = File.ReadAllText(Path.Combine(_wikiRoot, "_config.yml"));
@@ -289,17 +289,6 @@ public class HtmlExporterTests : IDisposable
     }
 
     [Fact]
-    public void JekyllNavigation_HonorsExcludeFromSite()
-    {
-        Seed();
-        File.WriteAllText(Path.Combine(_wikiRoot, "_config.yml"),
-            "wikidown:\n  exclude_from_site:\n    - /Guides\n");
-        var yaml = JekyllNavigation.Render(_repo);
-        Assert.Contains("Home", yaml);
-        Assert.DoesNotContain("Guides", yaml);
-    }
-
-    [Fact]
     public void Export_CopiesRootStaticFiles_NotSourcesOrJekyllMachinery()
     {
         Seed();
@@ -374,13 +363,14 @@ public class HtmlExporterTests : IDisposable
             "[{{ site.data.team[0].name }} {{ site.data.team[0].active }} {{ site.data.team[0].age | plus: 1 }} {{ site.data.team[1].name }}]" +
             "[{{ site.data.navigation | map: \"title\" | join: \",\" }}]");
 
-        HtmlExporter.Export(_repo, new HtmlExportOptions(_output));
+        var result = HtmlExporter.Export(_repo, new HtmlExportOptions(_output));
 
         var html = ReadOut("Home.html");
         Assert.Contains("[https://ig.example/x]", html);
         Assert.Contains("[November 1]", html);
         Assert.Contains("[Ann true 41 Bo]", html);
         Assert.Contains("[Home,Guides]", html);
+        Assert.Contains(result.Warnings, w => w.StartsWith("_data/navigation.yml is ignored", StringComparison.Ordinal));
     }
 
     [Fact]

@@ -22,10 +22,12 @@ public class PagesCommandTests : IDisposable
         try { Directory.Delete(Path.GetDirectoryName(_repoRoot)!, recursive: true); } catch { /* best-effort */ }
     }
 
-    private int Run(params string[] extra)
+    private int Run(params string[] extra) => Run(TextWriter.Null, extra);
+
+    private int Run(TextWriter stdout, params string[] extra)
     {
         var args = new[] { "pages", "--root", _wikiRoot }.Concat(extra).ToArray();
-        return CommandRunner.Run(args, TextWriter.Null, TextWriter.Null);
+        return CommandRunner.Run(args, stdout, TextWriter.Null);
     }
 
     private string At(string relPath) =>
@@ -33,27 +35,57 @@ public class PagesCommandTests : IDisposable
 
     private string ReadAt(string relPath) => File.ReadAllText(At(relPath));
 
+    private string Workflow(string root) =>
+        File.ReadAllText(Path.Combine(root, ".github", "workflows", "pages.yml"));
+
     private void Seed()
     {
         _repo.Write(new WikiPage(PagePath.Parse("/Home"), "# Home\n"));
-        _repo.Write(new WikiPage(PagePath.Parse("/Guides"), "# Guides\n\n[Usage](Guides/Usage.md) · [Install](Guides/Install.md)\n"));
-        _repo.Write(new WikiPage(PagePath.Parse("/Guides/Install"), "# Install\n"));
+        _repo.Write(new WikiPage(PagePath.Parse("/Guides"), "# Guides\n\n[Usage](Guides/Usage.md)\n"));
         _repo.Write(new WikiPage(PagePath.Parse("/Guides/Usage"), "# Usage\n"));
-        _repo.WriteOrder(PagePath.Parse("/Guides"), new[] { "Usage", "Install" });
     }
 
     [Fact]
-    public void Pages_ScaffoldsThemeAndNavigation()
+    public void Pages_WritesWorkflowAndConfig_NotTheTheme()
     {
         Seed();
         Assert.Equal(0, Run());
 
         Assert.True(File.Exists(At("_config.yml")));
-        Assert.True(File.Exists(At("index.html")));
+        Assert.DoesNotContain("jekyll", ReadAt("_config.yml"), StringComparison.OrdinalIgnoreCase);
+        Assert.False(File.Exists(At("_layouts/wikidown.html")));
+        Assert.False(File.Exists(At("index.html")));
+        Assert.False(File.Exists(At("_data/navigation.yml")));
+
+        var workflow = Workflow(_repoRoot);
+        Assert.Contains("uses: markdav-is/Wikidown/.github/workflows/wiki-pages.yml@main", workflow);
+        Assert.Contains("root: docs\n", workflow);
+        Assert.Contains("pages: write", workflow);
+    }
+
+    [Fact]
+    public void Pages_PutsWorkflowAtTheGitRoot_WithTheWikiPathRelativeToIt()
+    {
+        var gitRoot = Path.GetDirectoryName(_repoRoot)!;
+        Directory.CreateDirectory(Path.Combine(gitRoot, ".git"));
+        Seed();
+
+        Run();
+
+        Assert.Contains("root: MyProject/docs\n", Workflow(gitRoot));
+        Assert.False(File.Exists(Path.Combine(_repoRoot, ".github", "workflows", "pages.yml")));
+    }
+
+    [Fact]
+    public void Pages_Theme_CopiesLayoutsIncludesAssetsAndIndex()
+    {
+        Seed();
+        Run("--theme");
+
         Assert.True(File.Exists(At("_layouts/wikidown.html")));
         Assert.True(File.Exists(At("_includes/nav-tree.html")));
         Assert.True(File.Exists(At("assets/wikidown.css")));
-        Assert.True(File.Exists(At("_data/navigation.yml")));
+        Assert.Contains("'/Home.html' | relative_url", ReadAt("index.html"));
     }
 
     [Fact]
@@ -73,72 +105,52 @@ public class PagesCommandTests : IDisposable
         _repo.Write(new WikiPage(PagePath.Parse("/Zeta"), "# Zeta\n"));
         _repo.Write(new WikiPage(PagePath.Parse("/Alpha"), "# Alpha\n"));
         _repo.WriteOrder(PagePath.Root, new[] { "Zeta", "Alpha" });
-        Run();
+        Run("--theme");
         Assert.Contains("'/Zeta.html' | relative_url", ReadAt("index.html"));
         Assert.DoesNotContain("{{HOME}}", ReadAt("index.html"));
-
-        _repo.Write(new WikiPage(PagePath.Parse("/Home"), "# Home\n"));
-        Run("--force");
-        Assert.Contains("'/Home.html' | relative_url", ReadAt("index.html"));
     }
 
     [Fact]
-    public void Pages_NavigationHonorsOrderFiles()
+    public void Pages_DoesNotOverwriteExistingFilesWithoutForce()
     {
         Seed();
-        Run();
-        var yaml = ReadAt("_data/navigation.yml");
-        Assert.Equal(
-            "- title: \"Home\"\n" +
-            "  url: \"/\"\n" +
-            "- title: \"Guides\"\n" +
-            "  url: \"/Guides.html\"\n" +
-            "  prefix: \"/Guides/\"\n" +
-            "  children:\n" +
-            "    - title: \"Usage\"\n" +
-            "      url: \"/Guides/Usage.html\"\n" +
-            "    - title: \"Install\"\n" +
-            "      url: \"/Guides/Install.html\"\n",
-            yaml[yaml.IndexOf("- title", StringComparison.Ordinal)..]);
-    }
-
-    [Fact]
-    public void Pages_DoesNotOverwriteEditedThemeWithoutForce()
-    {
-        Seed();
-        Run();
+        Run("--theme");
         File.WriteAllText(At("assets/wikidown.css"), "/* mine */");
-        Run();
+        var workflow = Path.Combine(_repoRoot, ".github", "workflows", "pages.yml");
+        File.WriteAllText(workflow, "# mine");
+
+        Run("--theme");
         Assert.Equal("/* mine */", ReadAt("assets/wikidown.css"));
-        Run("--force");
+        Assert.Equal("# mine", File.ReadAllText(workflow));
+
+        Run("--theme", "--force");
         Assert.NotEqual("/* mine */", ReadAt("assets/wikidown.css"));
+        Assert.NotEqual("# mine", File.ReadAllText(workflow));
     }
 
     [Fact]
-    public void Pages_NavigationRegeneratesOnRepositoryChanges()
+    public void Pages_PointsOutJekyllLeftovers()
+    {
+        Seed();
+        Directory.CreateDirectory(At("_data"));
+        File.WriteAllText(At("_data/navigation.yml"), "- title: Home\n");
+        File.WriteAllText(At("Gemfile"), "source 'https://rubygems.org'\n");
+        File.WriteAllText(At("_config.yml"), "title: X\nplugins:\n  - jekyll-relative-links\n");
+
+        var output = new StringWriter();
+        Run(output);
+
+        Assert.Contains("_data/navigation.yml", output.ToString());
+        Assert.Contains("Gemfile", output.ToString());
+        Assert.Contains("_config.yml still has Jekyll settings", output.ToString());
+    }
+
+    [Fact]
+    public void Pages_RepositoryChangesNoLongerWriteNavigationData()
     {
         Seed();
         Run();
-        Assert.DoesNotContain("Release Notes", ReadAt("_data/navigation.yml"));
-
         _repo.Write(new WikiPage(PagePath.Parse("/Release-Notes"), "# Release Notes\n"));
-        Assert.Contains("- title: \"Release Notes\"", ReadAt("_data/navigation.yml"));
-
-        _repo.Move(PagePath.Parse("/Release-Notes"), PagePath.Parse("/Guides/Release-Notes"));
-        Assert.Contains("url: \"/Guides/Release-Notes.html\"", ReadAt("_data/navigation.yml"));
-
-        _repo.WriteOrder(PagePath.Parse("/Guides"), new[] { "Release-Notes", "Usage", "Install" });
-        var yaml = ReadAt("_data/navigation.yml");
-        Assert.True(yaml.IndexOf("Release Notes", StringComparison.Ordinal) < yaml.IndexOf("Usage", StringComparison.Ordinal));
-
-        _repo.Delete(PagePath.Parse("/Guides/Release-Notes"));
-        Assert.DoesNotContain("Release Notes", ReadAt("_data/navigation.yml"));
-    }
-
-    [Fact]
-    public void Pages_NavigationNotCreatedForWikisThatNeverOptedIn()
-    {
-        Seed();
         Assert.False(File.Exists(At("_data/navigation.yml")));
     }
 
@@ -146,40 +158,7 @@ public class PagesCommandTests : IDisposable
     public void Pages_ScaffoldedFoldersDoNotTripIndexCheck()
     {
         Seed();
-        Run();
+        Run("--theme");
         Assert.Empty(IndexChecker.Check(_repo));
-    }
-
-    [Fact]
-    public void Navigation_EmptyWikiRendersEmptyList()
-    {
-        Assert.EndsWith("[]\n", JekyllNavigation.Render(_repo));
-    }
-
-    [Fact]
-    public void Navigation_OnlyTopLevelHomeLinksToRoot()
-    {
-        _repo.Write(new WikiPage(PagePath.Parse("/Home"), "# Home\n"));
-        _repo.Write(new WikiPage(PagePath.Parse("/Foo"), "# Foo\n"));
-        _repo.Write(new WikiPage(PagePath.Parse("/Foo/Home"), "# Nested Home\n"));
-
-        var yaml = JekyllNavigation.Render(_repo);
-
-        Assert.Contains("url: \"/\"\n", yaml);
-        Assert.Contains("url: \"/Foo/Home.html\"\n", yaml);
-        Assert.DoesNotContain("\"/Home.html\"", yaml);
-    }
-
-    [Theory]
-    [InlineData("Home")]
-    [InlineData("home")]
-    [InlineData("HOME")]
-    public void Navigation_TopLevelHomeLinksToRoot_RegardlessOfCase(string fileName)
-    {
-        _repo.Write(new WikiPage(PagePath.Parse("/" + fileName), $"# {fileName}\n"));
-
-        var yaml = JekyllNavigation.Render(_repo);
-
-        Assert.Contains("url: \"/\"\n", yaml);
     }
 }

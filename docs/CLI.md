@@ -190,7 +190,7 @@ The CLI behaves the same on Windows, macOS, and Linux:
   - links and images whose target is a file **outside the wiki root**
     (`../../assets/x.png`, or `/assets/x.png` resolving to the Git repo
     root), as `(outside the wiki; run check-links --fix)` — no publishing
-    route (Jekyll branch deploy, `export-html`, `export-pdf`) ships files
+    route (`export-html`, `export-pdf`) ships files
     outside the wiki. Links to `.md` files outside the wiki are not
     flagged. A target starting with `/` resolves against the wiki root if
     the file exists there (then it's an absolute link, above), otherwise
@@ -268,22 +268,23 @@ The CLI behaves the same on Windows, macOS, and Linux:
   those fonts lack (arrows, box drawing, Greek, Cyrillic) are set in the
   also-embedded DejaVu Sans / DejaVu Sans Mono instead of printing blank.
   `export-pdf` works identically on Windows, Linux, and macOS.
-- `pages [--title T] [--force]` — scaffold everything GitHub Pages' built-in
-  Jekyll needs to publish the wiki as a static site, straight from the repo
-  with no build pipeline: `_config.yml`, a starter theme (top bar, collapsible
-  left nav that follows `.order`, content column), `assets/wikidown.css`, and
-  a root `index.html` redirect. Nothing to install locally — GitHub runs
-  Jekyll for you. The nav
-  tree lives in `_data/navigation.yml`, which the CLI
-  regenerates on every write/move/delete/reorder once it exists. `--title`
-  sets the site title (defaults to the repo folder name); `--force`
-  overwrites theme files you've edited. Commit the result, point
-  **Settings → Pages** at the `/docs` folder, and the wiki is live. See
-  [Publishing to GitHub Pages](Getting-Started/Publishing-to-GitHub-Pages.md)
-  for setup steps, what each scaffolded file does, and gotchas.
+- `pages [--title T] [--theme] [--force]` — set the wiki up to publish to
+  GitHub Pages through a pipeline: writes `.github/workflows/pages.yml` at
+  the root of the git checkout (it calls Wikidown's reusable workflow, which
+  runs `export-html` and deploys) and a `_config.yml` in the wiki root.
+  `--theme` also copies the starter theme (`_layouts/`, `_includes/`,
+  `assets/wikidown.css`, the root `index.html` redirect) into the wiki for
+  editing; without it the built-in theme is used. `--title` sets the site
+  title (defaults to the repo folder name); `--force` overwrites existing
+  files. It also lists leftovers from GitHub's Jekyll builder
+  (`_data/navigation.yml`, Gemfiles, Jekyll keys in `_config.yml`), which
+  0.14.0 dropped. Commit, set **Settings → Pages → Source** to "GitHub
+  Actions", and push. See [Publishing to GitHub
+  Pages](Getting-Started/Publishing-to-GitHub-Pages.md) and [Migrating from
+  Jekyll Publishing](Getting-Started/Migrating-from-Jekyll-Publishing.md).
 - `export-html --output <dir> [--base-url /prefix] [--title T] [--clean]` —
-  render the wiki to a complete static site using the same theme `pages`
-  scaffolds, in-process (Markdig + Fluid) with no Jekyll or Ruby. One
+  render the wiki to a complete static site, in-process (Markdig + Fluid).
+  This is how every Wikidown site is built. One
   `.html` per page, `index.html` redirect, `assets/` and `.attachments/`
   copied through, along with every other root static file (images,
   install scripts, favicons); relative `.md` links rewritten to `.html` (including `href`s in raw HTML and
@@ -291,14 +292,15 @@ The CLI behaves the same on Windows, macOS, and Linux:
   titles from the first heading, nav built live from `.order`, and
   `_config.yml`'s `favicon` and `wikidown.exclude_from_site` honored. Uses theme files from
   the wiki root when present (so customizations apply) and the built-in
-  copy otherwise — running `pages` first is optional. `--base-url` prefixes
+  copy otherwise. A leftover `_data/navigation.yml` is ignored, with a warning. `--base-url` prefixes
   theme links for sites served under a path (GitLab project sites);
   `--clean` empties the output folder first. Each reference to a file
   outside the wiki prints
   `warning: {page}: outside the wiki: {target} (run check-links --fix)`
-  and the command exits 1; it never rewrites anything. This is the path for GitLab
-  Pages, Azure Static Web Apps, any static host, and local preview — see
-  [Publishing to GitHub Pages § Any other host](Getting-Started/Publishing-to-GitHub-Pages.md).
+  and the command exits 1; it never rewrites anything. Use it for local
+  preview, and in CI for GitHub Pages (via `pages`), GitLab Pages, Azure
+  Static Web Apps, or any static host — see [Publishing to GitHub
+  Pages](Getting-Started/Publishing-to-GitHub-Pages.md).
 
 See [Format](Getting-Started/Format.md) for the on-disk format the CLI
 maintains, including the relative-link convention that `check-links`

@@ -1,6 +1,6 @@
-/* Wikidown starter theme for GitHub Pages / Jekyll.
-   Installed by `wikidown pages`; edit freely — it is never overwritten
-   unless you pass --force. Palette mirrors wikidown.org. */
+/* Wikidown starter theme for `wikidown export-html`.
+   Copied into the wiki by `wikidown pages --theme`; edit freely — it is
+   never overwritten unless you pass --force. Palette mirrors wikidown.org. */
 
 :root {
     --c-bg: #f5f7fb;

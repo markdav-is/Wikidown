@@ -1,8 +1,8 @@
 name: wiki-pages
 
 # Reusable: publish any repo's Wikidown wiki to GitHub Pages with
-# `wikidown export-html` instead of GitHub's Jekyll builder. Set the repo's
-# Settings → Pages → Source to "GitHub Actions", then call it:
+# `wikidown export-html`. Set the repo's Settings → Pages → Source to
+# "GitHub Actions", then call it (`wikidown pages` writes this for you):
 #
 #   on:
 #     push:
@@ -29,7 +29,7 @@ on:
         type: string
         default: docs
       base-url:
-        description: Path prefix when the site isn't at the domain root (e.g. /my-repo); empty uses _config.yml's baseurl
+        description: Path prefix when the site isn't at the domain root (e.g. /my-repo); empty uses _config.yml's baseurl, else the Pages site's own path
         type: string
         default: ''
       cli-version:
@@ -62,14 +62,21 @@ jobs:
             dotnet tool install -g Wikidown.Cli
           fi
 
-      - uses: actions/configure-pages@v5
+      - id: pages
+        uses: actions/configure-pages@v5
 
+      # A project site without a custom domain lives under /<repo>; GitHub
+      # reports that path, so links work without setting baseurl by hand.
       - name: Export the wiki
         env:
           WIKI_ROOT: ${{ inputs.root }}
           BASE_URL: ${{ inputs.base-url }}
+          PAGES_PATH: ${{ steps.pages.outputs.base_path }}
         run: |
           args=(export-html --root "$WIKI_ROOT" --output _site --clean)
+          if [ -z "$BASE_URL" ] && ! grep -qE '^baseurl:[[:space:]]*[^[:space:]#]' "$WIKI_ROOT/_config.yml" 2>/dev/null; then
+            BASE_URL="$PAGES_PATH"
+          fi
           [ -n "$BASE_URL" ] && args+=(--base-url "$BASE_URL")
           wikidown "${args[@]}"
           touch _site/.nojekyll

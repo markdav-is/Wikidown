@@ -10,11 +10,8 @@ namespace Wikidown.Html;
 
 public sealed record RenderedPage(string Title, string Html);
 
-// Markdown -> HTML for one wiki page, doing the two things the Jekyll path
-// gets from plugins: relative `.md` links become `.html`
-// (jekyll-relative-links) and the title comes from the first `# Heading`
-// (jekyll-titles-from-headings). The heading stays in the body, as it does
-// there with strip_title: false.
+// Markdown -> HTML for one wiki page: relative `.md` links become `.html`,
+// and the title comes from the first `# Heading`, which stays in the body.
 public static partial class MarkdownPageRenderer
 {
     private static readonly MarkdownPipeline Pipeline = new MarkdownPipelineBuilder()

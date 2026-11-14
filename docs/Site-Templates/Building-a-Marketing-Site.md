@@ -151,7 +151,7 @@ blurb.
 ## 5. Restyle the other pages
 
 Interior pages still use `_layouts/wikidown.html`. Either keep the stock
-one (run `wikidown pages` to get an editable copy) or replace it with your
+one (run `wikidown pages --theme` to get an editable copy) or replace it with your
 own so the whole site shares one header and footer. The Art Hop's version
 drops the sidebar and reuses the landing page's includes:
 
@@ -192,10 +192,9 @@ Preview with the same two commands as step 1. A layout or include with a
 Liquid error stops the export and names the file; a `wiki_body` that
 names a missing page prints a warning.
 
-These templates use `wiki_body`, `wikidown.layouts`, and `root_page`,
-which GitHub's built-in Jekyll builder doesn't support, so publish with
-`export-html` from CI. On GitHub, set **Settings → Pages → Source** to
-"GitHub Actions" and add `.github/workflows/pages.yml`:
+Publish the same way as any Wikidown wiki: run `wikidown pages` to add
+`.github/workflows/pages.yml`, set **Settings → Pages → Source** to
+"GitHub Actions", and push. The workflow looks like this:
 
 ```yaml
 name: pages

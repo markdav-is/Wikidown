@@ -2,170 +2,64 @@
 
 # Publishing to GitHub Pages
 
-GitHub Pages can publish a Wikidown wiki straight from the repo using Jekyll,
-its built-in static-site generator — no build pipeline, and nothing to
-install: GitHub's servers run Jekyll, your machine never does. `wikidown pages`
-scaffolds everything Jekyll needs into the wiki root, plus a starter theme
-with a left-navigation tree that follows your `.order` files.
+A Wikidown wiki publishes to GitHub Pages through a GitHub Actions
+workflow: on every push, the workflow runs `wikidown export-html` to render
+the wiki to a static site and deploys it. `wikidown pages` writes that
+workflow for you. That's how [wikidown.org](https://wikidown.org) itself is
+published: it *is* this wiki, exported on every change.
 
-Not on GitHub, or want to preview locally? `wikidown export-html` renders
-the **same theme** in .NET with no Jekyll or Ruby involved — see
-[Any other host: `export-html`](#any-other-host-export-html) below, and
-[Publishing to GitLab Pages](Publishing-to-GitLab-Pages.md) for the GitLab
-walkthrough. That's how [wikidown.org](https://wikidown.org) itself is
-published: it *is* this wiki, exported by CI on every change.
+> **Upgrading from 0.13 or earlier?** Wikidown no longer supports GitHub's
+> built-in Jekyll builder ("Deploy from a branch"). See [Migrating from
+> Jekyll Publishing](Migrating-from-Jekyll-Publishing.md).
 
 ## Quick start
 
-```sh
-wikidown pages            # run from the repo root; --root docs is the default
-git add docs
-git commit -m "Publish wiki with GitHub Pages"
+From the repo root (`--root docs` is the default):
+
+```powershell
+wikidown pages
+git add .github docs
+git commit -m "Publish the wiki to GitHub Pages"
 git push
 ```
 
-Then in GitHub: **Settings → Pages → Source** "Deploy from a branch", branch
-`main`, folder `/docs`. The wiki is live at
-`https://<owner>.github.io/<repo>/` a minute later.
+Then in GitHub: **Settings → Pages → Source: "GitHub Actions"**. The
+workflow runs on the push (watch it under the **Actions** tab), and the
+wiki is live at `https://<owner>.github.io/<repo>/` when it finishes.
 
 Options:
 
-- `--title T` — site title; defaults to the repo folder name.
-- `--force` — overwrite theme files you've edited. **Careful:** this also
-  replaces a customized root `index.html` with the stock redirect.
+- `--title T`: site title. Defaults to the repo folder name.
+- `--theme`: also copy the theme into the wiki so you can edit it (see
+  [What it writes](#what-it-writes)).
+- `--force`: overwrite files that already exist. **Careful:** with
+  `--theme` this replaces edited theme files and a customized root
+  `index.html`.
 
-## What it scaffolds
-
-Everything lands inside the wiki root:
+## What it writes
 
 | File | Purpose |
 |---|---|
-| `_config.yml` | Jekyll config: GFM markdown, the three GitHub-bundled plugins (`jekyll-relative-links`, `jekyll-titles-from-headings`, `jekyll-default-layout`), `include: [.attachments]` so images work (Jekyll skips dot-folders by default), default layout `wikidown`. Also the home of Wikidown's own site settings: `repository_url` (GitHub link in the top bar), `favicon`, and `wikidown.exclude_from_site` (below). |
-| `_data/navigation.yml` | The nav tree, generated from `.order`. **Regenerated automatically** by the CLI on every write/move/delete/reorder once it exists — never edit by hand. |
-| `_layouts/wikidown.html`, `_includes/nav-tree.html` | The starter theme: top bar, collapsible left nav (active page highlighted, ancestors expanded), content column, footer. Responsive — the nav becomes a slide-in drawer on narrow screens. |
-| `assets/wikidown.css` | Styling, same palette as wikidown.org. Edit freely; `pages` never overwrites it without `--force`. |
-| `index.html` | Redirects the site root to `/Home.html` (or the first top-level page if there is no Home). Replace it with a hand-authored landing page if you want one — wikidown.org does exactly that. |
+| `.github/workflows/pages.yml` | Written at the root of the git checkout. Calls Wikidown's reusable workflow with `root:` set to the wiki folder. |
+| `_config.yml` (wiki root) | Site settings: `title`, `description`, `repository_url` (GitHub link in the top bar), `favicon`, `url` and `image` (link previews), and `wikidown.exclude_from_site` (below). |
 
-Customizing any of these — the wiki page layout or the root `index.html` —
-is its own topic: see [Customizing the
-Theme](../Site-Templates/Customizing-the-Theme.md).
+With `--theme`, it also copies the starter theme into the wiki root:
 
-## Excluding pages from the published site
+| File | Purpose |
+|---|---|
+| `_layouts/wikidown.html`, `_includes/nav-tree.html` | Top bar, collapsible left nav built from `.order` (active page highlighted, ancestors expanded), content column, footer. On narrow screens the nav becomes a slide-in drawer. |
+| `assets/wikidown.css` | Styling, same palette as wikidown.org. |
+| `index.html` | Redirects the site root to `/Home.html` (or the first top-level page if there is no Home). Replace it with a landing page if you want one. |
 
-Internal notes can stay in the wiki without shipping to the site. List
-subtrees under `wikidown.exclude_from_site` in `_config.yml`:
+Without `--theme`, the CLI's built-in copy of the theme is used, so the
+site picks up theme fixes when the workflow installs a newer CLI. Copy the
+theme only when you want to change it; see [Customizing the
+Theme](../Site-Templates/Customizing-the-Theme.md) and, for landing pages and
+data-driven layouts, [Site Templates](../Site-Templates.md).
 
-```yaml
-wikidown:
-  exclude_from_site:
-    - /Meta
-    - /Testing
-```
+## The workflow
 
-This is a **publishing** concern only: excluded pages remain first-class
-for the CLI, editor, and `check-links` — they just produce no
-`.html` and no nav entry. `export-html` honors it fully;
-`_data/navigation.yml` is generated without them too, so the Jekyll path
-hides them from the nav — but GitHub's builder still *emits* their pages,
-so when using built-in Jekyll also list them under the top-level `exclude:`
-key to keep the files out entirely.
-
-One thing the tools can't do for you: body links pointing *into* an
-excluded subtree will 404 on the published site. `check-links` still
-validates them against the repo (where the pages exist), so trim such
-links from published pages yourself.
-
-## Why it works with the Wikidown format
-
-- Relative `.md` links (including the auto breadcrumb) are rewritten to the
-  generated `.html` URLs by `jekyll-relative-links`.
-- Page titles come from the first `# Heading`, so pages need no YAML front
-  matter. The sidebar nav (`_data/navigation.yml`) uses the same title, so a
-  page `Attacks-Defense.md` headed `# Attacks & Defense` shows as
-  "Attacks & Defense".
-- `.order` files are dotfiles, so Jekyll ignores them; the nav tree reads
-  them via `_data/navigation.yml` instead, because GitHub's Pages builder
-  can't run custom plugins.
-- `wikidown check-links` ignores `_`-prefixed folders and folders with no
-  markdown, so the scaffolded files don't trip the index-page audit.
-
-## Gotchas
-
-- **Liquid in page bodies.** Jekyll processes `{{ }}` and `{% %}`
-  everywhere, including code blocks. Wrap such content in
-  `{% raw %} … {% endraw %}`. (`export-html` does *not* run Liquid over
-  page bodies, so it's unaffected.)
-- **Project sites live under `/<repo>/`.** The theme uses `relative_url`
-  everywhere so this just works; if you serve from a custom domain, set
-  `baseurl: ""` in `_config.yml`.
-- **Don't `.nojekyll`** when using the built-in Jekyll path — that file
-  disables Jekyll and would serve raw `.md` files. (An
-  `export-html`-based deploy *should* write `.nojekyll`, since the output
-  is already final HTML.)
-- **Keep `_data/navigation.yml` committed.** If it's missing the layout
-  falls back to a flat alphabetical page list.
-- **Only files inside the wiki folder publish.** An image or file linked
-  from elsewhere in the repo (`../../assets/x.png`, `/assets/x.png`) 404s
-  on the site. `wikidown check-links` flags these, and
-  `wikidown check-links --fix` copies them into
-  `.attachments/from-repo/` and relinks them.
-
-## Any other host: `export-html`
-
-```sh
-wikidown export-html --output public
-```
-
-Renders every page through the same `_layouts/wikidown.html`,
-`_includes/nav-tree.html`, and `assets/wikidown.css` that GitHub's Jekyll
-would use — but in-process, with [Markdig](https://github.com/xoofx/markdig)
-for markdown and [Fluid](https://github.com/sebastienros/fluid) for Liquid.
-The output folder is a complete static site: one `.html` per page, the root
-`index.html`, `assets/`, `.attachments/`, and **every other static file in
-the wiki root** (images, install scripts, favicons, extra stylesheets)
-copied through verbatim — wiki sources (`.md`, `.order`), `_`-prefixed
-Jekyll machinery, other dot-files, and Gemfiles stay out. Nothing to
-install beyond the CLI.
-
-- Works **with or without** having run `wikidown pages`. If the wiki root
-  has theme files, they're used (so your customizations apply); anything
-  missing falls back to the built-in copy. `_config.yml`'s `title`,
-  `description`, `repository_url`, `baseurl`, `favicon`,
-  `wikidown.exclude_from_site`, `wikidown.layouts`, and
-  `wikidown.root_page` are honored, and `_data/` files load into
-  `site.data` — see [Data-Driven Templates](../Site-Templates/Data-Driven-Templates.md).
-- `--base-url /prefix` — prefix for theme links (stylesheet, nav, redirect)
-  when the site isn't served from the domain root, e.g. GitLab project
-  sites at `https://<group>.gitlab.io/<project>/`. Overrides `baseurl` in
-  `_config.yml`. Links inside page bodies are relative and never need it.
-- `--title T` — overrides the site title.
-- `--clean` — delete the output folder first, so removed pages don't
-  linger.
-
-Links, titles, and the nav tree match the Jekyll output: relative
-`.md`/`.md#anchor` links become `.html` (in raw HTML and inline SVG `href`s too
-— see [Format § Raw HTML and inline SVG](Format.md#raw-html-and-inline-svg)), the title is the first `# Heading`,
-and the sidebar is built from `.order` (live, not from
-`_data/navigation.yml`, so it's always current).
-
-**Local preview** is just the export plus any static file server, e.g.
-`dotnet serve -d public` (`dotnet tool install -g dotnet-serve`) or
-`npx serve public`. Theme authors can iterate on `_layouts`/`assets` this
-way before pushing to GitHub.
-
-Theme files are written in Jekyll's Liquid dialect; `export-html` translates
-the one construct that differs (`{% include file a=b %}` / `include.a`) on
-the fly, so a single theme serves both paths. Stick to standard Liquid
-filters and tags. `export-html` adds the common Jekyll filters
-(`relative_url`, `absolute_url`, `markdownify`, `jsonify`, …) and its own
-`wiki_body` / `wiki_title`; Jekyll-only extras like `where_exp` aren't
-available. The full list is on [Template Reference](../Site-Templates/Template-Reference.md#filters).
-
-## Deploying with GitHub Actions
-
-To publish `export-html` output to GitHub Pages instead of using GitHub's Jekyll builder, set **Settings → Pages → Source** to "GitHub Actions" and call Wikidown's reusable workflow. You need this route when the site uses features Jekyll doesn't have, such as `wiki_body` or `wikidown.layouts` ([Data-Driven Templates](../Site-Templates/Data-Driven-Templates.md)).
-
-`.github/workflows/pages.yml`:
+`wikidown pages` writes this file. You can also write it by hand:
 
 ```yaml
 name: pages
@@ -184,21 +78,90 @@ jobs:
   pages:
     uses: markdav-is/Wikidown/.github/workflows/wiki-pages.yml@main
     with:
-      root: docs          # the wiki folder
-      # base-url: /my-repo   # for a project site without a custom domain
-      # cli-version: 0.13.0  # pin a Wikidown.Cli version; default is the latest
+      root: docs              # the wiki folder, relative to the repo root
+      # base-url: /my-repo    # only to override the detected path
+      # cli-version: 0.14.0   # pin a Wikidown.Cli version; default is the latest
 ```
 
-The workflow installs the `Wikidown.Cli` tool, runs `wikidown export-html --clean`, adds `.nojekyll`, and deploys the folder. The job fails if the export fails, for example when a page links to a file outside the wiki. A `CNAME` file in the wiki root is copied into the output with the other static files, but for an Actions deploy the custom domain is set in the repo's Pages settings.
+The reusable workflow installs the `Wikidown.Cli` tool, runs
+`wikidown export-html --clean`, and deploys the result. The job fails if
+the export fails, for example on a template error.
 
-## GitLab Pages
+- **Project sites.** A site at `https://<owner>.github.io/<repo>/` lives
+  under `/<repo>`. The workflow reads that path from GitHub and passes it
+  as `--base-url`, unless `_config.yml` sets `baseurl` or you pass
+  `base-url`. Links in page bodies are relative and never need it.
+- **Custom domains.** Set the domain under **Settings → Pages**. A `CNAME`
+  file in the wiki root is copied to the site with the other static files.
+- **Pinning.** Without `cli-version`, each run installs the newest CLI. Pin
+  it to control when theme and renderer changes reach your site.
+- **Branches.** Change `branches: [main]` if your default branch has
+  another name, and add `paths: ['docs/**']` to skip runs for code-only
+  pushes.
 
-Covered on its own page:
-[Publishing to GitLab Pages](Publishing-to-GitLab-Pages.md) — a one-job
-`.gitlab-ci.yml` that runs `export-html` in a .NET container. The same
-recipe works for any CI that deploys a static folder.
+## Excluding pages from the published site
 
-See [CLI](../CLI.md) for the full command list,
-[Format](Format.md) for the on-disk conventions the generated site relies on,
-and [Customizing the Theme](../Site-Templates/Customizing-the-Theme.md) for swapping the wiki
-layout or the root `index.html`.
+Internal notes can stay in the wiki without shipping to the site. List
+subtrees under `wikidown.exclude_from_site` in `_config.yml`:
+
+```yaml
+wikidown:
+  exclude_from_site:
+    - /Meta
+    - /Testing
+```
+
+Excluded pages remain first-class for the CLI, editor, and
+`check-links`. They just produce no `.html` and no nav entry.
+
+Body links pointing *into* an excluded subtree will 404 on the published
+site. `check-links` still validates them against the repo (where the pages
+exist), so trim such links from published pages yourself.
+
+## How the wiki maps to the site
+
+- Relative `.md` and `.md#anchor` links become `.html` links, in markdown
+  and in raw HTML and inline SVG `href`s (see [Format § Raw HTML and inline
+  SVG](Format.md#raw-html-and-inline-svg)).
+- A page's title is its first `# Heading`, so pages need no front matter.
+  The nav uses the same title: `Attacks-Defense.md` headed
+  `# Attacks & Defense` shows as "Attacks & Defense".
+- The nav tree is built from the `.order` files at export time, so it's
+  always current.
+- The output is one `.html` per page, the root `index.html`, `assets/`,
+  `.attachments/`, and every other static file in the wiki root (images,
+  install scripts, favicons, extra stylesheets). Wiki sources (`.md`,
+  `.order`), `_`-prefixed folders, other dot-files, and Gemfiles stay out.
+- **Only files inside the wiki folder publish.** An image linked from
+  elsewhere in the repo (`../../assets/x.png`) 404s on the site.
+  `wikidown check-links` flags these, and `wikidown check-links --fix`
+  copies them into `.attachments/from-repo/` and relinks them.
+
+## Previewing locally
+
+```powershell
+wikidown export-html --output _site --clean
+dotnet serve -d _site      # dotnet tool install -g dotnet-serve
+```
+
+Or `npx serve _site`. Add `_site` to `.gitignore`. The export uses the
+same theme, settings, and renderer as the workflow, so what you see is what
+deploys.
+
+`export-html` options:
+
+- `--base-url /prefix`: prefix for theme links when the site isn't served
+  from the domain root. Overrides `baseurl` in `_config.yml`.
+- `--title T`: overrides the site title.
+- `--clean`: empty the output folder first, so removed pages don't linger.
+
+## Other hosts
+
+`export-html` output is a plain static folder, so any CI can publish it:
+[Publishing to GitLab Pages](Publishing-to-GitLab-Pages.md) covers GitLab,
+and the same command works for Azure Static Web Apps, Netlify, or a file
+share.
+
+See [CLI](../CLI.md) for the full command list, [Format](Format.md) for the
+on-disk conventions, and [Site Templates](../Site-Templates.md) for changing
+how the site looks.

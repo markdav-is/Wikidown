@@ -205,13 +205,7 @@ handles. Work through this checklist for each change:
 5. **Delete.** Remove the page, its subpage folder (if intended), its
    `.order` entry, and every inbound link to it from other pages.
 
-6. **Published wikis.** If `_data/navigation.yml` exists, it is generated —
-   the CLI regenerates it on every structural change, but raw edits leave
-   it stale. Don't hand-edit it; tell the user to re-run `wikidown pages`
-   (any machine that can execute it) so the published site's nav catches
-   up.
-
-7. **Verify later.** Recommend running `wikidown check-links` from an
+6. **Verify later.** Recommend running `wikidown check-links` from an
    environment that can execute the CLI — it audits exactly the invariants
    above.
 

@@ -5,9 +5,10 @@
 Everything a layout or include can use when a wiki is rendered by
 `wikidown export-html`. Templates are written in
 [Liquid](https://shopify.github.io/liquid/), Jekyll's dialect, and rendered
-by [Fluid](https://github.com/sebastienros/fluid), a .NET Liquid engine. A
-template that sticks to what's listed here also works with GitHub's Jekyll
-builder, except for the items marked *export-html only*.
+by [Fluid](https://github.com/sebastienros/fluid), a .NET Liquid engine.
+Wikidown follows Jekyll's conventions for layouts, includes, data files,
+and filters, so Jekyll's documentation mostly applies, but sites are built
+only by `export-html`, not by Jekyll itself.
 
 ## Files
 
@@ -32,9 +33,9 @@ wiki with no `_layouts/` still renders with the stock theme.
 | `url` | Absolute site address (`https://example.org`), used by `absolute_url` |
 | `baseurl` | Path prefix for a project site (`/my-repo`). `--base-url` overrides it |
 | `favicon`, `image`, `repository_url` | Exposed as `site.*` for the layouts to use |
-| `wikidown.root_page` | Page rendered as the site's `index.html` with URL `/`. *export-html only* |
-| `wikidown.layouts` | Map of page path (`/Home`, `/Venues/*`) to layout name. *export-html only* |
-| `wikidown.exclude_from_site` | Page paths (with their subpages) to leave out of the site. *export-html only* |
+| `wikidown.root_page` | Page rendered as the site's `index.html` with URL `/`. |
+| `wikidown.layouts` | Map of page path (`/Home`, `/Venues/*`) to layout name. |
+| `wikidown.exclude_from_site` | Page paths (with their subpages) to leave out of the site. |
 
 Page paths can be written `/Home`, `Home`, or `Home.md`.
 
@@ -97,7 +98,7 @@ behavior](https://jekyllrb.com/docs/liquid/filters/):
 | `number_of_words` | Word count |
 | `sort` | Sorts numbers as numbers (`3, 5, 10`, not `10, 3, 5`); `sort: "price"` sorts by a property |
 
-**Wikidown filters** (*export-html only*):
+**Wikidown filters**:
 
 | Filter | Does |
 |---|---|

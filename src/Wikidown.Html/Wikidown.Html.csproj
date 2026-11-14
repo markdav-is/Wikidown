@@ -2,7 +2,7 @@
   <PropertyGroup>
     <IsPackable>false</IsPackable>
     <RootNamespace>Wikidown.Html</RootNamespace>
-    <Description>Renders a Wikidown wiki to a static HTML site using the Jekyll-compatible starter theme (Markdig + Fluid), and carries that theme for `wikidown pages`.</Description>
+    <Description>Renders a Wikidown wiki to a static HTML site with its starter theme (Markdig + Fluid), and carries that theme for `wikidown pages --theme`.</Description>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Wikidown.Core\Wikidown.Core.csproj" />
