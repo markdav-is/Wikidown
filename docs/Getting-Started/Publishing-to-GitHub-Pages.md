@@ -130,8 +130,10 @@ install beyond the CLI.
 - Works **with or without** having run `wikidown pages`. If the wiki root
   has theme files, they're used (so your customizations apply); anything
   missing falls back to the built-in copy. `_config.yml`'s `title`,
-  `description`, `repository_url`, `baseurl`, `favicon`, and
-  `wikidown.exclude_from_site` are honored.
+  `description`, `repository_url`, `baseurl`, `favicon`,
+  `wikidown.exclude_from_site`, `wikidown.layouts`, and
+  `wikidown.root_page` are honored, and `_data/` files load into
+  `site.data` — see [Data-Driven Sites](Data-Driven-Sites.md).
 - `--base-url /prefix` — prefix for theme links (stylesheet, nav, redirect)
   when the site isn't served from the domain root, e.g. GitLab project
   sites at `https://<group>.gitlab.io/<project>/`. Overrides `baseurl` in
@@ -154,8 +156,40 @@ way before pushing to GitHub.
 Theme files are written in Jekyll's Liquid dialect; `export-html` translates
 the one construct that differs (`{% include file a=b %}` / `include.a`) on
 the fly, so a single theme serves both paths. Stick to standard Liquid
-filters and tags — Jekyll-only extras like `where_exp` aren't available in
-the .NET renderer.
+filters and tags. `export-html` adds the common Jekyll filters
+(`relative_url`, `absolute_url`, `markdownify`, `jsonify`, …) and its own
+`wiki_body` / `wiki_title`; Jekyll-only extras like `where_exp` aren't
+available. The full list is on [Data-Driven Sites](Data-Driven-Sites.md#filters).
+
+## Deploying with GitHub Actions
+
+To publish `export-html` output to GitHub Pages instead of using GitHub's Jekyll builder, set **Settings → Pages → Source** to "GitHub Actions" and call Wikidown's reusable workflow. You need this route when the site uses features Jekyll doesn't have, such as `wiki_body` or `wikidown.layouts` ([Data-Driven Sites](Data-Driven-Sites.md)).
+
+`.github/workflows/pages.yml`:
+
+```yaml
+name: pages
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: false
+jobs:
+  pages:
+    uses: markdav-is/Wikidown/.github/workflows/wiki-pages.yml@main
+    with:
+      root: docs          # the wiki folder
+      # base-url: /my-repo   # for a project site without a custom domain
+      # cli-version: 0.13.0  # pin a Wikidown.Cli version; default is the latest
+```
+
+The workflow installs the `Wikidown.Cli` tool, runs `wikidown export-html --clean`, adds `.nojekyll`, and deploys the folder. The job fails if the export fails, for example when a page links to a file outside the wiki. A `CNAME` file in the wiki root is copied into the output with the other static files, but for an Actions deploy the custom domain is set in the repo's Pages settings.
 
 ## GitLab Pages
 

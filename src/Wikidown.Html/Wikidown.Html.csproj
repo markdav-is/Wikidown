@@ -10,6 +10,7 @@
   <ItemGroup>
     <PackageReference Include="Fluid.Core" />
     <PackageReference Include="Markdig" />
+    <PackageReference Include="YamlDotNet" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Theme\_config.yml" LogicalName="theme/_config.yml" />

@@ -561,7 +561,11 @@ public static class CommandRunner
               wikidown export-html --output <dir> [--base-url /prefix] [--title T] [--clean] [--root <path>]
 
             Render the wiki to a complete static HTML site in-process
-            (Markdig + Fluid), no Jekyll or Ruby needed.
+            (Markdig + Fluid), no Jekyll or Ruby needed. Templates get
+            site.data from _data/ (JSON and YAML), each page's rendered
+            content, and the wiki_body / wiki_title filters; _config.yml's
+            wikidown.layouts and wikidown.root_page pick per-page layouts
+            and the page served as index.html.
 
             Options:
               --output     Required output directory

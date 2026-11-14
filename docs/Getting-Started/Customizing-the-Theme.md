@@ -34,7 +34,9 @@ Both files are standard Liquid. `export-html`'s Fluid renderer translates
 the one Jekyll-only construct it needs — `{% include file.html a=b %}`
 becomes `include.a` — so sticking to standard Liquid filters and tags keeps
 the layout working identically on both engines. Jekyll-only extras like
-`where_exp` aren't available in the .NET renderer.
+`where_exp` aren't available in the .NET renderer. For templates that pull in
+`_data/` files or other pages' bodies, or for a different layout on some pages, see
+[Data-Driven Sites](Data-Driven-Sites.md).
 
 ## The root `index.html`
 

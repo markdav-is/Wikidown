@@ -16,6 +16,9 @@ public static class ExportHtmlCommand
         foreach (var issue in result.OutsideWiki)
             w.WriteLine($"warning: {issue.Page.ToLinkPath()}: outside the wiki: {issue.Target} (run check-links --fix)");
 
+        foreach (var warning in result.Warnings)
+            w.WriteLine($"warning: {warning}");
+
         w.WriteLine($"exported {result.PageCount} page(s) to {result.OutputDirectory}");
         return result.OutsideWiki.Count > 0 ? 1 : 0;
     }

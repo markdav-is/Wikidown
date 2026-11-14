@@ -24,6 +24,8 @@
       url: "/Getting-Started/Publishing-to-GitLab-Pages.html"
     - title: "Customizing the Theme"
       url: "/Getting-Started/Customizing-the-Theme.html"
+    - title: "Data-Driven Sites"
+      url: "/Getting-Started/Data-Driven-Sites.html"
     - title: "Kanban"
       url: "/Getting-Started/Kanban.html"
     - title: "Clickable Maps with Inline SVG"

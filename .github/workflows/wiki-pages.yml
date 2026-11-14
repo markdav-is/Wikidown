@@ -1,0 +1,89 @@
+name: wiki-pages
+
+# Reusable: publish any repo's Wikidown wiki to GitHub Pages with
+# `wikidown export-html` instead of GitHub's Jekyll builder. Set the repo's
+# Settings → Pages → Source to "GitHub Actions", then call it:
+#
+#   on:
+#     push:
+#       branches: [main]
+#     workflow_dispatch:
+#   permissions:
+#     contents: read
+#     pages: write
+#     id-token: write
+#   concurrency:
+#     group: pages
+#     cancel-in-progress: false
+#   jobs:
+#     pages:
+#       uses: markdav-is/Wikidown/.github/workflows/wiki-pages.yml@main
+#       with:
+#         root: docs
+
+on:
+  workflow_call:
+    inputs:
+      root:
+        description: Wiki folder, relative to the repo root
+        type: string
+        default: docs
+      base-url:
+        description: Path prefix when the site isn't at the domain root (e.g. /my-repo); empty uses _config.yml's baseurl
+        type: string
+        default: ''
+      cli-version:
+        description: Wikidown.Cli version to install; empty for the latest
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Install the Wikidown CLI
+        env:
+          CLI_VERSION: ${{ inputs.cli-version }}
+        run: |
+          if [ -n "$CLI_VERSION" ]; then
+            dotnet tool install -g Wikidown.Cli --version "$CLI_VERSION"
+          else
+            dotnet tool install -g Wikidown.Cli
+          fi
+
+      - uses: actions/configure-pages@v5
+
+      - name: Export the wiki
+        env:
+          WIKI_ROOT: ${{ inputs.root }}
+          BASE_URL: ${{ inputs.base-url }}
+        run: |
+          args=(export-html --root "$WIKI_ROOT" --output _site --clean)
+          [ -n "$BASE_URL" ] && args+=(--base-url "$BASE_URL")
+          wikidown "${args[@]}"
+          touch _site/.nojekyll
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

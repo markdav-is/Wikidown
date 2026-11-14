@@ -24,26 +24,54 @@ public static partial class MarkdownPageRenderer
 
     public static RenderedPage Render(string markdown, string fallbackTitle)
     {
-        var document = Parse(markdown);
+        var html = RenderWithLinks(Parse(markdown), RewriteMarkdownLink, images: false);
+        var title = PageTitle.FromMarkdown(markdown) ?? fallbackTitle;
+        return new RenderedPage(title, html);
+    }
 
+    /// <summary>
+    /// A page's body for showing inside another page (the wiki_body
+    /// filter): no breadcrumb, optionally no first H1, and every relative
+    /// link and image made site-absolute, since the host page usually sits
+    /// in a different folder than the page the links were written for.
+    /// </summary>
+    public static string RenderBody(string markdown, string pageLinkPath, string baseUrl, bool stripTitle)
+    {
+        var document = Parse(Breadcrumb.Strip(markdown));
+        if (stripTitle && document.FirstOrDefault(b => b is HeadingBlock { Level: 1 }) is { } h1)
+            document.Remove(h1);
+        var folder = pageLinkPath[..(pageLinkPath.LastIndexOf('/') + 1)];
+        return RenderWithLinks(document, url => SiteAbsolute(RewriteMarkdownLink(url), folder, baseUrl), images: true);
+    }
+
+    private static string RenderWithLinks(MarkdownDocument document, Func<string, string> rewrite, bool images)
+    {
         foreach (var link in document.Descendants<LinkInline>())
         {
-            if (link.IsImage || link.Url is null) continue;
-            link.Url = RewriteMarkdownLink(link.Url);
+            if (link.Url is null || link.IsImage && !images) continue;
+            link.Url = rewrite(link.Url);
         }
 
         // Raw HTML (an inline SVG map's <a> regions) isn't in the link tree.
         // Code is HTML-escaped by now, so only real tags match.
-        var html = LinkChecker.HtmlHref().Replace(ToHtml(document), match =>
+        return LinkChecker.HtmlHref().Replace(ToHtml(document), match =>
         {
             var href = match.Groups["href"];
             var offset = href.Index - match.Index;
-            return match.Value[..offset] + RewriteMarkdownLink(href.Value) + match.Value[(offset + href.Length)..];
+            return match.Value[..offset] + rewrite(href.Value) + match.Value[(offset + href.Length)..];
         });
-
-        var title = PageTitle.FromMarkdown(markdown) ?? fallbackTitle;
-        return new RenderedPage(title, html);
     }
+
+    // "Pinebox.md" written in /Venues/ -> "/base/Venues/Pinebox.html".
+    private static string SiteAbsolute(string url, string folder, string baseUrl)
+    {
+        if (url.Length == 0 || url[0] is '#' or '/' || UrlScheme().IsMatch(url)) return url;
+        var resolved = new Uri(new Uri("http://wiki.invalid" + folder), url);
+        return baseUrl + resolved.PathAndQuery + resolved.Fragment;
+    }
+
+    [GeneratedRegex(@"^[A-Za-z][A-Za-z0-9+.-]*:")]
+    private static partial Regex UrlScheme();
 
     /// <summary>
     /// The page body exactly as the site renders it, but with links left as

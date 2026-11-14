@@ -348,4 +348,173 @@ public class HtmlExporterTests : IDisposable
         Assert.Equal("/p", config.BaseUrl);
         Assert.Null(config.Description);
     }
+
+    private void WriteWikiFile(string relPath, string text)
+    {
+        var path = Path.Combine(_wikiRoot, relPath.Replace('/', Path.DirectorySeparatorChar));
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        File.WriteAllText(path, text);
+    }
+
+    // A layout that renders only the given Liquid, so assertions see just it.
+    private void ProbeLayout(string liquid) => WriteWikiFile("_layouts/wikidown.html", liquid);
+
+    [Fact]
+    public void Export_LoadsDataFolder_JsonAndYaml_FoldersAsNestedKeys()
+    {
+        Seed();
+        WriteWikiFile("_data/site.json", "{ \"currentHop\": \"2026-11\", \"social\": { \"instagram\": \"https://ig.example/x\" } }");
+        WriteWikiFile("_data/hops/2026-11.json", "{ \"date\": \"2026-11-07\", \"venues\": [ { \"page\": \"Guides/Usage.md\", \"stop\": 1 } ] }");
+        WriteWikiFile("_data/team.yml", "- name: Ann\n  active: yes\n  age: 40\n- name: \"Bo\"\n");
+        WriteWikiFile("_data/navigation.yml", "- title: Stale\n  url: /Stale.html\n");
+        ProbeLayout(
+            "{% assign hop = site.data.hops[site.data.site.currentHop] %}" +
+            "[{{ site.data.social.instagram }}{{ site.data.site.social.instagram }}]" +
+            "[{{ hop.date | date: \"%B\" }} {{ hop.venues[0].stop }}]" +
+            "[{{ site.data.team[0].name }} {{ site.data.team[0].active }} {{ site.data.team[0].age | plus: 1 }} {{ site.data.team[1].name }}]" +
+            "[{{ site.data.navigation | map: \"title\" | join: \",\" }}]");
+
+        HtmlExporter.Export(_repo, new HtmlExportOptions(_output));
+
+        var html = ReadOut("Home.html");
+        Assert.Contains("[https://ig.example/x]", html);
+        Assert.Contains("[November 1]", html);
+        Assert.Contains("[Ann true 41 Bo]", html);
+        Assert.Contains("[Home,Guides]", html);
+    }
+
+    [Fact]
+    public void Export_BadDataFile_NamesTheFile()
+    {
+        Seed();
+        WriteWikiFile("_data/broken.json", "{ nope");
+        var e = Assert.Throws<InvalidOperationException>(() => HtmlExporter.Export(_repo, new HtmlExportOptions(_output)));
+        Assert.Contains("_data/broken.json", e.Message);
+    }
+
+    [Fact]
+    public void Export_SitePagesCarryContent_AndJekyllFiltersBehave()
+    {
+        Seed();
+        WriteWikiFile("_data/tiers.json", "[ { \"price\": 10 }, { \"price\": 3 }, { \"price\": 5 } ]");
+        ProbeLayout(
+            "{% assign p = site.pages | where: \"path\", \"Guides/Usage.md\" | first %}" +
+            "[{{ p.title }}|{{ p.url }}|{{ p.content | strip_html | normalize_whitespace | truncatewords: 5 }}]" +
+            "[{{ site.data.tiers | map: \"price\" | sort | join: \",\" }}]" +
+            "[{{ site.data.tiers | sort: \"price\" | map: \"price\" | first }}]" +
+            "[{{ \"Hello  World\" | slugify }}|{{ \"a\n\n b\" | normalize_whitespace }}|{{ \"*x*\" | markdownify | strip }}]" +
+            "[{{ site.data.tiers[1] | jsonify }}]");
+
+        HtmlExporter.Export(_repo, new HtmlExportOptions(_output));
+
+        var html = ReadOut("Home.html");
+        Assert.Contains("[Usage|/Guides/Usage.html|Home / Guides / Usage...]", html);
+        Assert.Contains("[3,5,10]", html);
+        Assert.Contains("[3]", html);
+        Assert.Contains("[hello-world|a b|<p><em>x</em></p>]", html);
+        Assert.Contains("[{\"price\":3}]", html);
+    }
+
+    [Fact]
+    public void WikiBody_DropsBreadcrumb_OptionallyTitle_AndMakesLinksSiteAbsolute()
+    {
+        Seed();
+        _repo.Write(new WikiPage(PagePath.Parse("/Guides/Install"),
+            Breadcrumb.Render(_repo, PagePath.Parse("/Guides/Install")) + "\n\n# Install\n\nSee [Usage](Usage.md) and ![map](../.attachments/map.png).\n"));
+        ProbeLayout(
+            "{% if page.path == \"Home.md\" %}" +
+            "<full>{{ \"Guides/Install.md\" | wiki_body }}</full>" +
+            "<bare>{{ \"/Guides/Install\" | wiki_body: \"strip_title\" }}</bare>" +
+            "<obj>{% assign g = site.pages | where: \"path\", \"Guides.md\" | first %}{{ g | wiki_title }}</obj>" +
+            "<t>{{ \"Guides/Install.md\" | wiki_title }}</t>" +
+            "<none>{{ \"Nope.md\" | wiki_body }}</none>" +
+            "{% endif %}");
+
+        var result = HtmlExporter.Export(_repo, new HtmlExportOptions(_output, BaseUrl: "/base"));
+
+        var html = ReadOut("Home.html");
+        var full = html[html.IndexOf("<full>")..html.IndexOf("</full>")];
+        Assert.DoesNotContain("wikidown:breadcrumb", full);
+        Assert.Contains("<h1 id=\"install\">Install</h1>", full);
+        Assert.Contains("href=\"/base/Guides/Usage.html\"", full);
+        Assert.Contains("src=\"/base/.attachments/map.png\"", full);
+        var bare = html[html.IndexOf("<bare>")..html.IndexOf("</bare>")];
+        Assert.DoesNotContain("<h1", bare);
+        Assert.Contains("See <a", bare);
+        Assert.Contains("<obj>Guides</obj>", html);
+        Assert.Contains("<t>Install</t>", html);
+        Assert.Contains("<none></none>", html);
+        Assert.Contains(result.Warnings, w => w.Contains("Nope.md"));
+    }
+
+    [Fact]
+    public void Export_LayoutsFromConfig_ExactAndSubtree_WithParentLayouts()
+    {
+        Seed();
+        WriteWikiFile("_config.yml", "title: T\nwikidown:\n  layouts:\n    /Home: landing\n    Guides/*: guide\n");
+        WriteWikiFile("_layouts/base.html", "<base-layout>{{ content }}</base-layout>");
+        WriteWikiFile("_layouts/landing.html", "---\nlayout: base\n---\n<landing>{{ page.title }}</landing>");
+        WriteWikiFile("_layouts/guide.html", "<guide>{{ content }}</guide>");
+
+        HtmlExporter.Export(_repo, new HtmlExportOptions(_output));
+
+        Assert.Equal("<base-layout><landing>Home</landing></base-layout>", ReadOut("Home.html"));
+        Assert.StartsWith("<guide>", ReadOut("Guides/Install.html"));
+        Assert.StartsWith("<guide>", ReadOut("Guides/Usage.html"));
+        Assert.Contains("class=\"shell\"", ReadOut("Guides.html"));
+    }
+
+    [Fact]
+    public void Export_MissingLayout_Throws()
+    {
+        Seed();
+        WriteWikiFile("_config.yml", "title: T\nwikidown:\n  layouts: { /Home: nowhere }\n");
+        var e = Assert.Throws<InvalidOperationException>(() => HtmlExporter.Export(_repo, new HtmlExportOptions(_output)));
+        Assert.Contains("_layouts/nowhere.html", e.Message);
+    }
+
+    [Fact]
+    public void Export_RootPage_RendersAsIndex_InsteadOfRedirect()
+    {
+        Seed();
+        WriteWikiFile("_config.yml", "title: T\nwikidown:\n  root_page: /Guides\n");
+        ProbeLayout("<p>{{ page.title }} at {{ page.url }}</p>{% for n in site.data.navigation %}[{{ n.title }} {{ n.url }}]{% endfor %}");
+
+        HtmlExporter.Export(_repo, new HtmlExportOptions(_output));
+
+        Assert.StartsWith("<p>Guides at /</p>", ReadOut("index.html"));
+        Assert.Equal(ReadOut("Guides.html"), ReadOut("index.html"));
+        Assert.Contains("[Home /Home.html][Guides /]", ReadOut("Home.html"));
+    }
+
+    [Fact]
+    public void Export_RootPage_MustBePublished()
+    {
+        Seed();
+        WriteWikiFile("_config.yml", "title: T\nwikidown:\n  root_page: /Missing\n");
+        Assert.Throws<InvalidOperationException>(() => HtmlExporter.Export(_repo, new HtmlExportOptions(_output)));
+    }
+
+    [Fact]
+    public void Export_RootIndexHtml_GetsPageObject_AndFrontMatter()
+    {
+        Seed();
+        WriteWikiFile("index.html", "---\nlayout: none\ntitle: Landing\n---\n<p>{{ page.url }}|{{ page.title }}|{{ \"Home.md\" | wiki_title }}</p>");
+
+        HtmlExporter.Export(_repo, new HtmlExportOptions(_output));
+
+        Assert.Equal("<p>/|Landing|Home</p>", ReadOut("index.html"));
+    }
+
+    [Fact]
+    public void SiteConfig_ParsesWikidownLayoutsAndRootPage_AndExposesAllKeys()
+    {
+        var config = SiteConfig.Parse("title: T\ncustom:\n  n: 2\nwikidown:\n  root_page: Home.md\n  layouts: { /Map: map, Venues/*: venue }\n");
+        Assert.Equal("/Home", config.RootPage);
+        Assert.Equal("map", config.LayoutFor("/Map"));
+        Assert.Equal("venue", config.LayoutFor("/Venues/Pinebox"));
+        Assert.Equal("venue", config.LayoutFor("/Venues/Pinebox/Notes"));
+        Assert.Equal("wikidown", config.LayoutFor("/Venues"));
+        Assert.Equal(2L, ((Dictionary<string, object?>)config.Values["custom"]!)["n"]);
+    }
 }
