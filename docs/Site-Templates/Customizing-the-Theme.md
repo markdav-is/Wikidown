@@ -37,8 +37,9 @@ the sidebar. `_includes/nav-tree.html` renders the sidebar recursively from
 active-page highlighting and collapsible sections. `assets/wikidown.css` is
 the styling.
 
-The templates are Liquid in Jekyll's dialect, including
-`{% include file.html a=b %}` read back as `include.a`. For every variable
+The templates are [Liquid](https://shopify.github.io/liquid/), with site
+conventions borrowed from Jekyll, such as `{% include file.html a=b %}`
+read back as `include.a`. For every variable
 and filter, see the [Template Reference](Template-Reference.md). For
 templates that pull in `_data/` files or other pages' bodies, or a
 different layout on some pages, see [Data-Driven

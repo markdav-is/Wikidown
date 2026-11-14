@@ -4,11 +4,13 @@
 
 Everything a layout or include can use when a wiki is rendered by
 `wikidown export-html`. Templates are written in
-[Liquid](https://shopify.github.io/liquid/), Jekyll's dialect, and rendered
-by [Fluid](https://github.com/sebastienros/fluid), a .NET Liquid engine.
-Wikidown follows Jekyll's conventions for layouts, includes, data files,
-and filters, so Jekyll's documentation mostly applies, but sites are built
-only by `export-html`, not by Jekyll itself.
+[Liquid](https://shopify.github.io/liquid/) and rendered by
+[Fluid](https://github.com/sebastienros/fluid), a .NET Liquid engine.
+Liquid is only the template language. The site structure on top of it
+(`_layouts/`, `_includes/`, `_data/`, the `site` and `page` variables, and
+filters like `relative_url`) follows the conventions of
+[Jekyll](https://jekyllrb.com/docs/), so its documentation is a useful
+guide. Jekyll itself isn't used.
 
 ## Files
 
