@@ -40,7 +40,9 @@ public static partial class MoveLinkRewriter
             var lines = repo.Read(oldPage).Markdown.Split('\n');
             var changed = false;
 
-            for (var i = 0; i < lines.Length; i++)
+            // Code blocks and inline code are examples, not links: check-links
+            // ignores them, so a move must leave them alone too.
+            foreach (var i in LinkChecker.ProseLines(lines))
             {
                 // WikiRepository.Move fully regenerates the breadcrumb line for
                 // every moved page (it's a structural ancestor summary, not a
@@ -62,8 +64,10 @@ public static partial class MoveLinkRewriter
                     return match.Value[..offset] + replacement + match.Value[(offset + group.Length)..];
                 }
 
-                lines[i] = LinkChecker.LinkTarget().Replace(lines[i], m => Rewrite(m, m.Groups[1]));
-                lines[i] = LinkChecker.HtmlHref().Replace(lines[i], m => Rewrite(m, m.Groups["href"]));
+                var inCode = LinkChecker.InCodeSpan(lines[i]);
+                lines[i] = LinkChecker.LinkTarget().Replace(lines[i], m => inCode(m.Index) ? m.Value : Rewrite(m, m.Groups[1]));
+                inCode = LinkChecker.InCodeSpan(lines[i]);
+                lines[i] = LinkChecker.HtmlHref().Replace(lines[i], m => inCode(m.Index) ? m.Value : Rewrite(m, m.Groups["href"]));
             }
 
             if (changed) newContent[oldPage] = string.Join('\n', lines);

@@ -104,6 +104,28 @@ public class MoveLinkRewriterTests : IDisposable
     }
 
     [Fact]
+    public void MoveAndRewrite_LeavesCodeBlocksAndInlineCodeAlone()
+    {
+        _repo.Write(new WikiPage(PagePath.Parse("/Docs"), "# Docs\n"));
+        _repo.Write(new WikiPage(PagePath.Parse("/Docs/Old"),
+            "# Old\n\n```liquid\n<a href=\"{{ vp.url | relative_url }}\">x</a>\n[Old](Old.md)\n```\n\n" +
+            "~~~\n[Other](../Other.md)\n~~~\n"));
+        _repo.Write(new WikiPage(PagePath.Parse("/Other"),
+            "find `## [To Do](...)` and `[Old](Docs/Old.md)`, but see [Old](Docs/Old.md)\n"));
+
+        var rewrites = MoveLinkRewriter.MoveAndRewrite(_repo, PagePath.Parse("/Docs/Old"), PagePath.Parse("/Guides/New"));
+
+        var other = Assert.Single(rewrites);
+        Assert.Equal("Guides/New.md", other.NewTarget);
+        Assert.Equal(
+            "find `## [To Do](...)` and `[Old](Docs/Old.md)`, but see [Old](Guides/New.md)",
+            _repo.Read(PagePath.Parse("/Other")).Markdown.TrimEnd());
+        var moved = _repo.Read(PagePath.Parse("/Guides/New")).Markdown;
+        Assert.Contains("<a href=\"{{ vp.url | relative_url }}\">x</a>", moved);
+        Assert.Contains("[Other](../Other.md)", moved);
+    }
+
+    [Fact]
     public void MoveAndRewrite_LeavesUnrelatedLinksAlone()
     {
         _repo.Write(new WikiPage(PagePath.Parse("/Old"), "# Old\n"));

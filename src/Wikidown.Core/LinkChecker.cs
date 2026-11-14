@@ -76,13 +76,18 @@ public static partial class LinkChecker
     // code spans.
     internal static IEnumerable<Group> TargetGroups(string line)
     {
-        var code = CodeSpan().Matches(line).Select(m => (Start: m.Index, End: m.Index + m.Length)).ToList();
-        bool InCode(int index) => code.Any(span => index >= span.Start && index < span.End);
-
+        var InCode = InCodeSpan(line);
         return LinkTarget().Matches(line).Where(m => !InCode(m.Index)).Select(m => m.Groups[1])
             .Concat(ImgSrc().Matches(line).Where(m => !InCode(m.Index)).Select(m => m.Groups["src"]))
             .Concat(HtmlHref().Matches(line).Where(m => !InCode(m.Index)).Select(m => m.Groups["href"]))
             .OrderBy(g => g.Index);
+    }
+
+    // Whether a character index on this line falls inside an inline code span.
+    internal static Func<int, bool> InCodeSpan(string line)
+    {
+        var code = CodeSpan().Matches(line).Select(m => (Start: m.Index, End: m.Index + m.Length)).ToList();
+        return index => code.Any(span => index >= span.Start && index < span.End);
     }
 
     [GeneratedRegex(@"^(`{3,}|~{3,})")]
