@@ -6,6 +6,43 @@ What changed in each Wikidown release, and where to get it. Newest first.
 For how to update an existing install, see
 [Updating](Getting-Started/Updating.md).
 
+## 0.13.0 — 14 November 2026
+
+`export-html` can now build data-driven sites: templates read `_data/`
+files and other pages' bodies, and `_config.yml` picks a layout per page
+and which page is the site root. See [Data-Driven Sites](Getting-Started/Data-Driven-Sites.md).
+
+### Where to get it
+
+| Component | Link |
+|---|---|
+| `wikidown` CLI (NuGet global tool) | [Wikidown.Cli 0.13.0](https://www.nuget.org/packages/Wikidown.Cli/0.13.0) — `dotnet tool update -g Wikidown.Cli` |
+| `Wikidown.Core` library | [Wikidown.Core 0.13.0](https://www.nuget.org/packages/Wikidown.Core/0.13.0) |
+| Self-contained CLI binaries (no .NET needed) | [GitHub Release cli-v0.13.0](https://github.com/markdav-is/Wikidown/releases/tag/cli-v0.13.0) — win/linux/osx, x64 and arm64; or re-run the [install script](CLI.md) |
+| GitHub Actions workflow | `markdav-is/Wikidown/.github/workflows/wiki-pages.yml@main` — see [Deploying with GitHub Actions](Getting-Started/Publishing-to-GitHub-Pages.md#deploying-with-github-actions) |
+
+The web editor and the Visual Studio extension (1.6.0) are unchanged.
+
+### What changed
+
+- **`_data/` files.** Every JSON and YAML file under `_data/` loads into
+  `site.data`, with subfolders as nested keys
+  (`_data/hops/2026-11.json` is `site.data.hops["2026-11"]`). All
+  `_config.yml` keys are also available as `site.*`.
+- **Other pages in templates.** `site.pages` entries carry their rendered
+  `content`. The new `wiki_body` filter shows another page's body without
+  its breadcrumb (`wiki_body: "strip_title"` also drops its first heading),
+  with links that work from any page; `wiki_title` gives its title.
+- **More Jekyll filters.** `absolute_url`, `markdownify`, `jsonify`,
+  `slugify`, `normalize_whitespace`, `xml_escape`, `cgi_escape`, and
+  `number_of_words`. `sort` now orders numbers numerically.
+- **Per-page layouts and site root.** `wikidown.layouts` in `_config.yml`
+  maps pages or `/Folder/*` subtrees to `_layouts/<name>.html`, and
+  `wikidown.root_page` serves a page as `index.html`. Without it, the root
+  `index.html` now gets a `page` object like other pages.
+- **Deploy with GitHub Actions.** A reusable workflow installs the CLI,
+  runs `export-html`, and deploys to GitHub Pages.
+
 ## 0.12.0 — 21 October 2026
 
 Links inside raw HTML and inline SVG, such as the clickable regions of a
