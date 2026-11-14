@@ -62,6 +62,6 @@ page bodies are relative and never need it.
 - Want a custom `_layouts/wikidown.html`/`assets/wikidown.css` or a
   hand-authored root `index.html` instead of the stock redirect? Same
   files, same rules as the GitHub path — see [Customizing the
-  Theme](Customizing-the-Theme.md).
+  Theme](../Site-Templates/Customizing-the-Theme.md).
 
 See [CLI](../CLI.md) for the full `export-html` option reference.

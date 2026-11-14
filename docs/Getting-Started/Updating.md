@@ -78,7 +78,7 @@ published. Publishing is triggered by pushing a `vsix-v*` tag (see
 which builds the VSIX, runs `VsixPublisher.exe` against the Marketplace, and
 attaches the `.vsix` to the GitHub Release. No action is needed downstream
 beyond letting Visual Studio check for extension updates as usual — see
-[Visual Studio Extension](../Getting-Started/Visual-Studio-Extension.md).
+[Visual Studio Extension](Visual-Studio-Extension.md).
 
 ## Summary
 

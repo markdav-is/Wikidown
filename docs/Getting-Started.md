@@ -24,8 +24,7 @@ Welcome to Wikidown. This folder is itself a Wikidown-format wiki.
 - [Updating](Getting-Started/Updating.md) — how downstream repos pick up new CLI releases, agent config changes, and VS extension updates
 - [Publishing to GitHub Pages](Getting-Started/Publishing-to-GitHub-Pages.md) — publish the wiki as a static site with `wikidown pages` and GitHub's built-in Jekyll, or anywhere via `wikidown export-html`
 - [Publishing to GitLab Pages](Getting-Started/Publishing-to-GitLab-Pages.md) — one CI job running `wikidown export-html`, no Jekyll or Ruby
-- [Customizing the Theme](Getting-Started/Customizing-the-Theme.md) — swap the wiki page layout or replace the root `index.html` with a hand-authored landing page
-- [Data-Driven Sites](Getting-Started/Data-Driven-Sites.md) — build landing and map pages from `_data/` files and other pages' bodies, with per-page layouts set in `_config.yml`
+- [Site Templates](Site-Templates.md) — publish the wiki as a docs site or a marketing site: custom layouts, landing pages, and data-driven templates
 - [Kanban](Getting-Started/Kanban.md) — keep a simple To Do / Doing / Done board in your wiki with `wikidown kanban init`
 - [Clickable Maps](Getting-Started/Clickable-Maps.md) — turn an image into a map whose areas link to pages, with inline SVG and no JavaScript
 - [CLI](CLI.md) — `wikidown` dotnet tool

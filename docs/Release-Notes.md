@@ -10,7 +10,7 @@ For how to update an existing install, see
 
 `export-html` can now build data-driven sites: templates read `_data/`
 files and other pages' bodies, and `_config.yml` picks a layout per page
-and which page is the site root. See [Data-Driven Sites](Getting-Started/Data-Driven-Sites.md).
+and which page is the site root. See [Data-Driven Sites](Site-Templates/Data-Driven-Templates.md).
 
 ### Where to get it
 

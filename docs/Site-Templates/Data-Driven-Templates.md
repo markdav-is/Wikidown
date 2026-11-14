@@ -1,10 +1,10 @@
-[Home](../Home.md) / [Getting Started](../Getting-Started.md) / Data Driven Sites <!-- wikidown:breadcrumb -->
+[Home](../Home.md) / [Site Templates](../Site-Templates.md) / Data Driven Templates <!-- wikidown:breadcrumb -->
 
-# Data-Driven Sites
+# Data-Driven Templates
 
 `wikidown export-html` can render a full site — a landing page with a venue list, a map page with this month's date, membership tiers — from data files and wiki pages, with no front matter in any wiki page.
 
-These features belong to `export-html`. GitHub's built-in Jekyll builder doesn't have `wiki_body`, `wiki_title`, or the `wikidown.layouts` / `wikidown.root_page` keys, so a site that uses them deploys through [GitHub Actions](Publishing-to-GitHub-Pages.md#deploying-with-github-actions) instead of "Deploy from a branch".
+These features belong to `export-html`. GitHub's built-in Jekyll builder doesn't have `wiki_body`, `wiki_title`, or the `wikidown.layouts` / `wikidown.root_page` keys, so a site that uses them deploys through [GitHub Actions](../Getting-Started/Publishing-to-GitHub-Pages.md#deploying-with-github-actions) instead of "Deploy from a branch".
 
 ## Data files: `site.data`
 
@@ -53,9 +53,7 @@ To show another page's text, use `wiki_body` instead of `content`:
 
 ## Filters
 
-Fluid supplies standard Liquid: `where`, `map`, `first`, `join`, `date` (strftime, including `%-d`), `truncatewords`, `strip_html`, `strip_newlines`, `default`, and so on. `export-html` adds these Jekyll filters: `relative_url`, `absolute_url`, `markdownify`, `jsonify`, `slugify`, `normalize_whitespace`, `xml_escape`, `cgi_escape`, and `number_of_words`. It also replaces `sort`, which compares numbers as numbers, as Liquid does (`sort: "price"` sorts by a property).
-
-Jekyll-only tags and filters such as `where_exp` and `group_by` aren't available.
+Fluid supplies standard Liquid filters (`where`, `map`, `first`, `date`, `truncatewords`, `strip_html`, ...). `export-html` adds the common Jekyll filters (`relative_url`, `absolute_url`, `markdownify`, `jsonify`, `slugify`, ...), a numeric `sort`, and its own `wiki_body` / `wiki_title`. Jekyll-only extras such as `where_exp` and `group_by` aren't available. The full list, with what each does, is in the [Template Reference](Template-Reference.md#filters).
 
 ## Per-page layouts and the site root
 
@@ -76,29 +74,14 @@ wikidown:
 
 Without `root_page`, the wiki root's `index.html` is rendered as before. It gets a `page` object (`page.url` is `/`) plus any values from its front matter. A `layout:` other than `none` in that front matter is applied.
 
-## Example: a landing page
+## Examples
 
-`_config.yml`:
+Each example is taken from the [Warehouse District Art Hop](https://warehousedistrictarthop.com) site ([source](https://github.com/OpenEugene/art-hop)), and shows the data, the template, and why it's built that way.
 
-```yaml
-wikidown:
-  root_page: /Home
-  layouts:
-    /Home: landing
-```
+- [Shared Navigation and Footer](Data-Driven-Templates/Shared-Navigation-and-Footer.md): a hand-picked top menu and footer from `_data/site.json`, with active-link highlighting.
+- [Monthly Event Listing](Data-Driven-Templates/Monthly-Event-Listing.md): this month's venues from `_data/hops/<month>.json`, each with its blurb from its own wiki page.
+- [Pricing Tiers](Data-Driven-Templates/Pricing-Tiers.md): membership cards and a "from $3 a month" line from one list.
+- [Featured Story](Data-Driven-Templates/Featured-Story.md): a title, a 70-word excerpt, and a link for one page picked in a data file.
+- [Extras on Wiki Pages](Data-Driven-Templates/Extras-on-Wiki-Pages.md): add a widget to specific pages from the layout, or give a folder its own layout.
 
-`_layouts/landing.html` (excerpt):
-
-```liquid
-{% assign cfg = site.data.site %}
-{% assign hop = site.data.hops[cfg.currentHop] %}
-{% assign minprice = cfg.membership.tiers | map: "price" | sort | first %}
-<div class="intro">{{ page.path | wiki_body: "strip_title" }}</div>
-<p>Members from ${{ minprice }} a month</p>
-{% for entry in hop.venues %}
-  <h3><a href="{{ entry.page | replace: '.md', '.html' | relative_url }}">{{ entry.page | wiki_title }}</a></h3>
-  {{ entry.page | wiki_body: "strip_title" }}
-{% endfor %}
-```
-
-See [Customizing the Theme](Customizing-the-Theme.md) for the default layout and `index.html`, and [Publishing to GitHub Pages](Publishing-to-GitHub-Pages.md) for deployment.
+For a start-to-finish walkthrough, see [Building a Marketing Site](Building-a-Marketing-Site.md). See [Customizing the Theme](Customizing-the-Theme.md) for the default layout and `index.html`, and [Publishing to GitHub Pages](../Getting-Started/Publishing-to-GitHub-Pages.md) for deployment.

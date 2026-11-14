@@ -35,7 +35,7 @@ Put the image in `.attachments` like any other wiki image, then add the SVG to t
 </svg>
 ```
 
-Then add the matching CSS to the site's stylesheet, `assets/wikidown.css` (see [Customizing the Theme](Customizing-the-Theme.md)):
+Then add the matching CSS to the site's stylesheet, `assets/wikidown.css` (see [Customizing the Theme](../Site-Templates/Customizing-the-Theme.md)):
 
 ```css
 .content svg.map { width: 100%; height: auto; display: block; }

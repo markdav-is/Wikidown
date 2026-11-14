@@ -1,4 +1,4 @@
-[Home](../Home.md) / [Getting Started](../Getting-Started.md) / Customizing the Theme <!-- wikidown:breadcrumb -->
+[Home](../Home.md) / [Site Templates](../Site-Templates.md) / Customizing the Theme <!-- wikidown:breadcrumb -->
 
 # Customizing the Theme
 
@@ -12,8 +12,8 @@ different problems and get replaced in different ways.
 | `index.html` | Nothing — it's standalone | The site root; free to look nothing like the wiki |
 
 This page covers customizing both. For the scaffold itself and publishing
-mechanics, see [Publishing to GitHub Pages](Publishing-to-GitHub-Pages.md)
-and [Publishing to GitLab Pages](Publishing-to-GitLab-Pages.md).
+mechanics, see [Publishing to GitHub Pages](../Getting-Started/Publishing-to-GitHub-Pages.md)
+and [Publishing to GitLab Pages](../Getting-Started/Publishing-to-GitLab-Pages.md).
 
 ## The wiki page template
 
@@ -36,7 +36,7 @@ becomes `include.a` — so sticking to standard Liquid filters and tags keeps
 the layout working identically on both engines. Jekyll-only extras like
 `where_exp` aren't available in the .NET renderer. For templates that pull in
 `_data/` files or other pages' bodies, or for a different layout on some pages, see
-[Data-Driven Sites](Data-Driven-Sites.md).
+[Data-Driven Templates](Data-Driven-Templates.md).
 
 ## The root `index.html`
 
@@ -63,7 +63,7 @@ publishing paths read it straight off disk when present:
 - `wikidown pages` only writes files that don't already exist, unless you
   pass `--force` — which clobbers a customized `index.html` back to the
   stock redirect (see the `--force` warning on
-  [Publishing to GitHub Pages](Publishing-to-GitHub-Pages.md#quick-start)).
+  [Publishing to GitHub Pages](../Getting-Started/Publishing-to-GitHub-Pages.md#quick-start)).
 - `wikidown export-html` layers wiki-root files over its embedded defaults
   — a wiki-root `index.html` always wins over the built-in one when
   present, and it doesn't need `wikidown pages` to have been run first.
@@ -131,10 +131,10 @@ nav bar instead, which is fine too.
 `wikidown export-html --output public --clean` plus any static file
 server gives instant local preview of either kind of edit, with no Jekyll,
 Ruby, or GitHub Pages deploy required — see [Publishing to GitHub
-Pages](Publishing-to-GitHub-Pages.md#any-other-host-export-html) for the
+Pages](../Getting-Started/Publishing-to-GitHub-Pages.md#any-other-host-export-html) for the
 full workflow.
 
 See [CLI](../CLI.md) for the full option reference, and
-[Publishing to GitLab Pages](Publishing-to-GitLab-Pages.md) for a worked
+[Publishing to GitLab Pages](../Getting-Started/Publishing-to-GitLab-Pages.md) for a worked
 example of `export-html` in CI — the theme-customization mechanics here
 apply to any `export-html`-based host, not just GitHub.

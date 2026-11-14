@@ -48,7 +48,7 @@ Everything lands inside the wiki root:
 
 Customizing any of these — the wiki page layout or the root `index.html` —
 is its own topic: see [Customizing the
-Theme](Customizing-the-Theme.md).
+Theme](../Site-Templates/Customizing-the-Theme.md).
 
 ## Excluding pages from the published site
 
@@ -133,7 +133,7 @@ install beyond the CLI.
   `description`, `repository_url`, `baseurl`, `favicon`,
   `wikidown.exclude_from_site`, `wikidown.layouts`, and
   `wikidown.root_page` are honored, and `_data/` files load into
-  `site.data` — see [Data-Driven Sites](Data-Driven-Sites.md).
+  `site.data` — see [Data-Driven Templates](../Site-Templates/Data-Driven-Templates.md).
 - `--base-url /prefix` — prefix for theme links (stylesheet, nav, redirect)
   when the site isn't served from the domain root, e.g. GitLab project
   sites at `https://<group>.gitlab.io/<project>/`. Overrides `baseurl` in
@@ -159,11 +159,11 @@ the fly, so a single theme serves both paths. Stick to standard Liquid
 filters and tags. `export-html` adds the common Jekyll filters
 (`relative_url`, `absolute_url`, `markdownify`, `jsonify`, …) and its own
 `wiki_body` / `wiki_title`; Jekyll-only extras like `where_exp` aren't
-available. The full list is on [Data-Driven Sites](Data-Driven-Sites.md#filters).
+available. The full list is on [Template Reference](../Site-Templates/Template-Reference.md#filters).
 
 ## Deploying with GitHub Actions
 
-To publish `export-html` output to GitHub Pages instead of using GitHub's Jekyll builder, set **Settings → Pages → Source** to "GitHub Actions" and call Wikidown's reusable workflow. You need this route when the site uses features Jekyll doesn't have, such as `wiki_body` or `wikidown.layouts` ([Data-Driven Sites](Data-Driven-Sites.md)).
+To publish `export-html` output to GitHub Pages instead of using GitHub's Jekyll builder, set **Settings → Pages → Source** to "GitHub Actions" and call Wikidown's reusable workflow. You need this route when the site uses features Jekyll doesn't have, such as `wiki_body` or `wikidown.layouts` ([Data-Driven Templates](../Site-Templates/Data-Driven-Templates.md)).
 
 `.github/workflows/pages.yml`:
 
@@ -200,5 +200,5 @@ recipe works for any CI that deploys a static folder.
 
 See [CLI](../CLI.md) for the full command list,
 [Format](Format.md) for the on-disk conventions the generated site relies on,
-and [Customizing the Theme](Customizing-the-Theme.md) for swapping the wiki
+and [Customizing the Theme](../Site-Templates/Customizing-the-Theme.md) for swapping the wiki
 layout or the root `index.html`.
