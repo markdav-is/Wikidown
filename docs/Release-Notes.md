@@ -6,6 +6,27 @@ What changed in each Wikidown release, and where to get it. Newest first.
 For how to update an existing install, see
 [Updating](Getting-Started/Updating.md).
 
+## 0.14.1 — 14 November 2026
+
+The agent files that `wikidown init` installs now cover everything
+Wikidown does, not just page editing. The `wikidown` skill adds
+publishing (`wikidown pages`, `export-html`), site templates and `_data/`
+files for docs and marketing sites, landing pages, PDF export, and
+clickable image maps, and its description triggers on those tasks. The
+Claude subagent and Copilot agent point to it for site work. To pick up
+the new files in an existing repo, update the CLI and run
+`wikidown init --force`.
+
+### Where to get it
+
+| Component | Link |
+|---|---|
+| `wikidown` CLI (NuGet global tool) | [Wikidown.Cli 0.14.1](https://www.nuget.org/packages/Wikidown.Cli/0.14.1) — `dotnet tool update -g Wikidown.Cli` |
+| `Wikidown.Core` library | [Wikidown.Core 0.14.1](https://www.nuget.org/packages/Wikidown.Core/0.14.1) |
+| Self-contained CLI binaries (no .NET needed) | [GitHub Release cli-v0.14.1](https://github.com/markdav-is/Wikidown/releases/tag/cli-v0.14.1) — win/linux/osx, x64 and arm64; or re-run the [install script](CLI.md) |
+
+No other changes from 0.14.0.
+
 ## 0.14.0 — 14 November 2026
 
 **Breaking:** wikis publish only through a pipeline that runs
