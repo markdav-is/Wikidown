@@ -57,5 +57,8 @@ pack on every push/PR.
 - Prefer `wikidown edit` for small changes, `wikidown write-section` for
   one section, and `wikidown append` to add at the end; `wikidown write` is
   for full rewrites only and `wikidown new` for new pages.
+- Site files in `/docs` (`_config.yml`, `_layouts/`, `_includes/`, `_data/`,
+  `assets/`, `index.html`) are ordinary files: edit them directly, following
+  the `wikidown` skill's site sections. Pages never get front matter or Liquid.
 - When you ship a feature that changes user-visible behavior, ask whether the
   wiki should be updated, and (if yes) delegate to `wikidown-editor`.

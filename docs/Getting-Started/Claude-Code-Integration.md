@@ -28,7 +28,7 @@ same behavior.
 
 | File | What it does |
 |---|---|
-| `.claude/skills/wikidown/SKILL.md` | The `wikidown` skill: format rules, a command cheat sheet, and the editing workflow. Claude loads it for any task that touches `/docs`. |
+| `.claude/skills/wikidown/SKILL.md` | The `wikidown` skill: format rules, a command cheat sheet, the editing workflow, kanban, PDF export, publishing, site templates and data, and clickable maps. Claude loads it for any task that touches `/docs` or the published site. |
 | `.claude/agents/wikidown-editor.md` | The `wikidown-editor` subagent (Bash, Read, Grep and Glob tools). It owns wiki reads and writes, and Claude hands it documentation work on its own. |
 | `CLAUDE.md` | A "Documentation lives in `/docs`" section, appended to your existing file or written fresh. It tells every session to use the skill and subagent, never to write `/docs/*.md` directly, and to ask whether the wiki needs updating when a change alters user-visible behavior. |
 

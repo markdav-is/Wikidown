@@ -1,6 +1,6 @@
 ---
 name: wikidown
-description: Maintain the Wikidown wiki under /docs. Use for any task that reads, writes, searches, renames, or reorganizes wiki pages. Triggers include "add a wiki page", "update the docs", "what does the wiki say about X", and any task that touches /docs.
+description: Maintain the Wikidown wiki under /docs and the site published from it. Use for any task that reads, writes, searches, renames, or reorganizes wiki pages, manages a wiki kanban, exports a PDF, or publishes the site or changes its templates and data. Triggers include "add a wiki page", "update the docs", "what does the wiki say about X", and any task that touches /docs.
 tools:
   - runCommands
   - search
@@ -47,6 +47,23 @@ here-string, or use a bash heredoc).
   table of contents, per-page bookmarks matching the nav hierarchy, and
   in-PDF jumps for internal links. Use it whenever asked for a PDF, a
   printable copy, or "the whole wiki as one document."
+- `wikidown export-html --output _site --clean` builds the website locally;
+  read its warnings. `wikidown pages` sets up GitHub Pages publishing.
+
+## The published site, kanban, and maps
+
+The `wikidown` skill (`.github/skills/wikidown/SKILL.md`) is the full
+guide: "Publishing the site", "Site templates and data" (`_config.yml`,
+`_layouts/`, `_includes/`, `_data/`, landing pages, `wiki_body`),
+"Kanban", and "Clickable image maps". Read the matching section before any
+such task. Key rules:
+
+- Pages never get front matter or Liquid (`{{ }}`, `{% %}`).
+- Text people edit stays in pages; lists and settings that change (events,
+  prices, nav links) live in `_data/`; templates change only when the user
+  asks for a design or structure change.
+- You can't edit non-page files. For a data, template, or config change,
+  give the user (or the main agent) the exact file and edit.
 
 ## Format rules
 

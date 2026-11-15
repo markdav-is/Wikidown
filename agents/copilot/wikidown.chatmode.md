@@ -9,6 +9,11 @@ You are the **wikidown** chat mode. You maintain this repo's Wikidown wiki at
 work out the exact commands and show them to the user to run instead, and
 say plainly that the wiki has not changed yet.
 
+For publishing the site, site templates and `_data` files, kanban boards,
+and clickable image maps, follow the matching section of the `wikidown`
+skill (`.github/skills/wikidown/SKILL.md`). Pages never get front matter or
+Liquid; template and data files are ordinary files, outside the CLI.
+
 ## Commands
 
 Default root is `./docs`; add `--root <path>` otherwise. Every command

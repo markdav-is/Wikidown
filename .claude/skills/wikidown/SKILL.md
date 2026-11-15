@@ -1,15 +1,22 @@
 ---
 name: wikidown
-description: Use whenever the user asks to read, write, search, rename, or reorganize pages in the project's Wikidown wiki at /docs. Triggers include phrases like "add a wiki page", "update the docs", "what does the wiki say about X", and any task that touches /docs/*.md.
+description: Use for anything involving the project's Wikidown wiki at /docs or the website published from it. Covers reading, writing, searching, moving, and reorganizing pages; kanban boards; PDF export; publishing the site (wikidown pages, export-html, GitHub Pages or GitLab Pages workflows); and site templates for docs or marketing sites (_layouts, _includes, _data files, _config.yml, landing pages, wiki_body, clickable image maps). Triggers include "add a wiki page", "update the docs", "what does the wiki say about X", "publish the wiki", "change the home page / landing page", "add this month's events", "update the pricing", and any task that touches /docs.
 ---
 
 # Wikidown skill
 
 This repo's documentation lives in `/docs` and is a **Wikidown** wiki — a
-structured folder of markdown pages with `.order` navigation files. Edit it
-through the `wikidown` CLI, never by writing files directly. If you cannot
-run a shell at all, follow "No shell: suggest commands" below; if the CLI
-cannot run either, follow "Last resort: no CLI".
+structured folder of markdown pages with `.order` navigation files. The same
+folder can be published as a website: a docs site with a sidebar, or a
+marketing site with a landing page and sections built from data files.
+
+- **Pages** (`*.md`, `.order`): edit through the `wikidown` CLI, never by
+  writing files directly. If you cannot run a shell at all, follow "No
+  shell: suggest commands" below; if the CLI cannot run either, follow
+  "Last resort: no CLI".
+- **Site files** (`_config.yml`, `_layouts/`, `_includes/`, `_data/`,
+  `assets/`, `index.html`): ordinary files. Edit them with your normal file
+  tools. See "Publishing the site" and "Site templates and data".
 
 ## Format rules
 
@@ -30,7 +37,16 @@ cannot run either, follow "Last resort: no CLI".
   bodies; command *addressing* (`--path Getting-Started/Format`) still uses
   the title-path form.
 - **Page structure** — start with `# Title`, then a one-sentence summary,
-  then content under H2/H3 headings.
+  then content under H2/H3 headings. The first `# Heading` is the page's
+  title everywhere (nav, PDF, site).
+- **No front matter, no Liquid in pages.** A `---` block at the top of a
+  page, or `{{ }}` / `{% %}` in its body, shows up as literal text on the
+  site. Page layout and dynamic content belong in templates (below).
+- **Raw HTML and inline SVG** are allowed in pages. Their `href`s follow the
+  same relative-`.md` rule and are rewritten, checked, and moved like
+  markdown links. Keep each `href` on the same line as its opening `<a` or
+  `<image` tag, and avoid blank lines inside an `<svg>` (GitHub ends the
+  block there).
 
 ## Command cheat sheet
 
@@ -63,20 +79,22 @@ Default root is `./docs`; add `--root <path>` to every command otherwise.
 | Audit links and `.order`| `wikidown check-links`                                                   |
 | Fix outside images/files| `wikidown check-links --fix` — copies them into `.attachments/from-repo` and relinks |
 | Start a kanban          | `wikidown kanban init [--path P]` (see "Kanban" below)                   |
+| One PDF of the wiki     | `wikidown export-pdf --output wiki.pdf [--from P] [--title T]`           |
+| Build the site locally  | `wikidown export-html --output _site --clean`                            |
+| Set up site publishing  | `wikidown pages [--title T] [--theme]` (see "Publishing the site")       |
 
 Every command prints `--help`. For multi-line bodies, write the text to a
 temp file and pass `--file` — it works the same in every shell. `--stdin`
 also works (pipe a PowerShell here-string, or use a bash heredoc).
 
-## Exporting
+## PDF export
 
-- `wikidown export-pdf --output <path> [--from P] [--title T]` combines the
-  whole wiki (or a subtree, with `--from`) into one linked PDF — cover page,
-  table of contents, per-page bookmarks matching the nav hierarchy, and
-  in-PDF jumps for internal links. Use it whenever asked for a PDF, a
-  printable copy, or "the whole wiki as one document."
-- `wikidown export-html --output <dir>` renders the wiki with the starter
-  theme for any static host.
+`wikidown export-pdf --output <path> [--from P] [--title T]` combines the
+whole wiki (or a subtree, with `--from`) into one linked PDF — cover page,
+table of contents, per-page bookmarks matching the nav hierarchy, and
+in-PDF jumps for internal links. Use it whenever asked for a PDF, a
+printable copy, or "the whole wiki as one document." `--no-toc` and
+`--no-cover` drop those pages.
 
 ## Workflow
 
@@ -153,6 +171,139 @@ link prefixes to match.
   order as on their sub-page. Run `wikidown check-links` afterwards; it
   flags any item that isn't linked from its sub-page.
 
+## Publishing the site
+
+The wiki is published as a static site by `wikidown export-html`, run in a
+pipeline. Nothing else builds it (GitHub's built-in Jekyll builder is not
+supported).
+
+- **Set up GitHub Pages:** `wikidown pages` writes
+  `.github/workflows/pages.yml` at the root of the git checkout and a
+  `_config.yml` in the wiki. The user then sets **Settings → Pages →
+  Source: "GitHub Actions"** and pushes. Existing files are skipped unless
+  `--force`. `--theme` also copies the starter theme into the wiki for
+  editing; without it the built-in theme is used.
+- **Other hosts** (GitLab Pages, Azure Static Web Apps, any CI): run
+  `wikidown export-html --output <dir> --clean` and deploy the folder.
+  `--base-url /prefix` when the site isn't at the domain root.
+- **Preview / verify:** `wikidown export-html --output _site --clean`, then
+  any static server (`dotnet serve -d _site`, `npx serve _site`). Read the
+  command's output: warnings name missing pages and leftover files, and a
+  template error stops the export and names the file. Don't commit `_site`.
+- **Leave pages out of the site** (internal notes, plans) without removing
+  them from the wiki:
+
+  ```yaml
+  wikidown:
+    exclude_from_site:
+      - /Meta
+  ```
+
+- **Only files inside the wiki folder publish.** Run `wikidown check-links`
+  before publishing; `check-links --fix` copies images linked from outside
+  the wiki into `.attachments/from-repo/`.
+- **Upgrading a wiki that used "Deploy from a branch"** (Jekyll): run
+  `wikidown pages`, switch the Pages source to GitHub Actions, delete
+  `_data/navigation.yml` and Gemfiles, and remove `{% raw %}` wrappers and
+  front matter from pages. Full guide:
+  https://wikidown.org/Getting-Started/Migrating-from-Jekyll-Publishing.html
+
+## Site templates and data
+
+Templates are [Liquid](https://shopify.github.io/liquid/), with site
+conventions borrowed from Jekyll. Where things go:
+
+| What | Where |
+|---|---|
+| Text people edit (intro, about, product and venue descriptions) | Wiki pages, via the CLI |
+| Lists and settings that change (events, prices, nav links, contact info) | `_data/*.json` or `*.yml` |
+| Page structure and look | `_layouts/<name>.html`, `_includes/*.html`, `assets/` |
+| Which page uses which layout; the site root | `_config.yml` → `wikidown:` |
+| Site title, description, `url`, `baseurl`, `favicon`, `image` | `_config.yml` top level |
+
+Keep copy in pages and lists in data, so routine updates never touch a
+template. **Don't edit templates unless the user asks for a design or
+structure change**; a content request ("add a venue", "change the price")
+is a page or data edit.
+
+`_config.yml`:
+
+```yaml
+wikidown:
+  root_page: /Home        # serve this page as the site's index.html (URL "/")
+  layouts:
+    /Home: landing        # _layouts/landing.html
+    /Venues/*: venue      # every page under /Venues
+```
+
+Every other page uses `_layouts/wikidown.html` (built in unless copied
+with `wikidown pages --theme`). A layout can sit inside another by naming
+it in front matter (`layout: base`). Without `root_page`, the wiki root's
+`index.html` is the site root (a redirect to Home by default).
+
+What templates can use:
+
+- `{{ content }}`: the current page's rendered markdown (in a layout).
+- `page.title`, `page.url`, `page.path` (`Venues/Pinebox.md`),
+  `page.dir`, `page.layout`.
+- `site.title` and every `_config.yml` key; `site.data.<file>` for each
+  `_data` file (subfolders nest: `_data/hops/2026-11.json` is
+  `site.data.hops["2026-11"]`); `site.data.navigation` (the `.order` tree);
+  `site.pages` (every published page, in `.order` order).
+- `{{ "Venues/Pinebox.md" | wiki_body: "strip_title" }}` shows another
+  page's body (links fixed to work anywhere); `wiki_title` gives its
+  title. Look a page up with
+  `site.pages | where: "path", "Venues/Pinebox.md" | first`.
+- Filters: standard Liquid plus `relative_url` (use it for every site
+  path: `{{ '/assets/site.css' | relative_url }}`), `absolute_url`,
+  `markdownify`, `jsonify`, `slugify`, `normalize_whitespace`,
+  `xml_escape`, `cgi_escape`, `number_of_words`, and a numeric `sort`.
+  `date` takes strftime formats (`"%A, %B %-d, %Y"`).
+- `{% include nav.html title=x %}`, read back as `include.title`.
+- Not available: `where_exp`, `group_by`, `{% link %}`, `{% post_url %}`,
+  `{% highlight %}`, `site.posts`, collections.
+
+Common tasks:
+
+- **Monthly listing** (events, venues): one `_data/<thing>/<month>.json`
+  per month listing page paths plus monthly details; a `current` key in
+  `_data/site.json` picks the month; an include loops over it and shows
+  each page's blurb with `wiki_body`. New month = new data file + change
+  `current`.
+- **Pricing / plans:** a list in `_data`, cards in an include,
+  `| map: "price" | sort | first` for "from $N". Keep prices unquoted so
+  they sort as numbers.
+- **Shared nav and footer:** links and contact details in `_data/site.json`,
+  rendered by `_includes/nav.html` and `footer.html` in every layout.
+- **Extra widget on one page:** in the layout,
+  `{% if page.path == "Membership.md" %}{% include membership.html %}{% endif %}`.
+  After `wikidown move`, update such paths by hand; `move` rewrites links
+  in pages, not in templates or data files.
+- **Landing page:** `root_page` + a `landing` layout that pulls its text
+  from the Home page with `wiki_body: "strip_title"`.
+
+Check a template change with `export-html` (above), then look at the
+generated HTML. Full reference with worked examples:
+https://wikidown.org/Site-Templates.html ·
+https://wikidown.org/Site-Templates/Template-Reference.html
+
+## Clickable image maps
+
+To make areas of an image link to pages, put an inline `<svg>` in the page:
+an `<image>` of the picture plus `<a href="Page.md">` around shapes. No
+JavaScript or plugins. Paths are relative to the page, like any link.
+
+```html
+<svg class="map" viewBox="0 0 1000 600" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Map">
+  <image href="../.attachments/region-map.png" width="1000" height="600"/>
+  <a href="Places/Harbor.md" aria-label="Harbor"><circle cx="720" cy="430" r="40"/><title>Harbor</title></a>
+</svg>
+```
+
+Style the shapes in the site's stylesheet (`assets/`). Follow the raw
+HTML rules in "Format rules". Guide:
+https://wikidown.org/Getting-Started/Clickable-Maps.html
+
 ## No shell: suggest commands
 
 If your host cannot run commands (a chat-only assistant), do not edit
@@ -223,3 +374,10 @@ your summary that edits were made manually so the user knows to verify.
   absolute `/Title/Path` links in page bodies — use relative `.md` links.
 - Don't rename without checking inbound references first.
 - Don't write one-off chat notes into the wiki.
+- Don't add front matter or Liquid to pages; use `_config.yml`, layouts,
+  and `_data` instead.
+- Don't hard-code site paths in templates; pass them through `relative_url`.
+- Don't put content that changes monthly into a layout; put it in `_data`
+  or a page.
+- Don't create `_data/navigation.yml` or Jekyll settings (`plugins:`,
+  `kramdown:`); the nav is built from `.order` at export time.

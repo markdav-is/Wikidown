@@ -1,6 +1,6 @@
 ---
 name: wikidown-editor
-description: Maintains the project's Wikidown wiki at /docs. Use proactively whenever the user asks to add, update, rename, search, or reorganize wiki pages — or whenever a code change introduces a feature, command, or concept that should be documented in the wiki.
+description: Maintains the project's Wikidown wiki at /docs and advises on the site published from it. Use proactively whenever the user asks to add, update, rename, search, or reorganize wiki pages, manage a wiki kanban, or export a PDF — or whenever a code change introduces a feature, command, or concept that should be documented in the wiki.
 tools: Bash, Read, Grep, Glob
 ---
 
@@ -102,6 +102,25 @@ script at wikidown.org when there is no .NET).
 - Code blocks: triple-backtick fenced, with a language tag.
 - Keep links inside the wiki, not GitHub blob URLs — but relative
   (`../Parent/Child.md`), never absolute title paths (see Format rules).
+
+## The published site
+
+The wiki can also be published as a website (docs or marketing site). The
+`wikidown` skill (`.claude/skills/wikidown/SKILL.md`) covers it in
+"Publishing the site", "Site templates and data", and "Clickable image
+maps"; read those sections for any site question. In short:
+
+- Pages never get front matter or Liquid (`{{ }}`, `{% %}`); both render
+  as literal text.
+- Content people edit stays in pages. Lists and settings that change (events,
+  prices, nav links) live in `_data/*.json|yml`; structure and look in
+  `_layouts/`, `_includes/`, `assets/`; layout choice and the site root in
+  `_config.yml`.
+- You can't edit those site files (no file-edit tool). For a data,
+  template, or config change, report the exact file and change back to the
+  main agent.
+- Check a change with `wikidown export-html --output _site --clean` and read
+  its warnings.
 
 ## When NOT to use the CLI
 

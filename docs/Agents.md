@@ -24,7 +24,10 @@ instead.
 Claude and Copilot share one skill file in the Agent Skills standard format:
 [`agents/skills/wikidown/SKILL.md`](https://github.com/markdav-is/Wikidown/blob/main/agents/skills/wikidown/SKILL.md).
 It carries the format rules, a `wikidown` command cheat sheet (which verb to
-reach for and when), the editing workflow, and a manual last-resort protocol
+reach for and when), the editing workflow, kanban boards, PDF export,
+publishing the site, site templates and `_data` files for docs and
+marketing sites (what goes in pages versus data versus layouts), clickable
+image maps, and a manual last-resort protocol
 for locked-down machines where the CLI can't run (no .NET plus an execution
 policy blocking the self-contained binary) — breadcrumb format, `.order`
 bookkeeping, and the move/delete invariants, so an agent can still edit

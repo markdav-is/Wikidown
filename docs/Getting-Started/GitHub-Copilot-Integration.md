@@ -29,7 +29,7 @@ same behavior.
 | File | What it does |
 |---|---|
 | `.github/copilot-instructions.md` | Repo-wide instructions: use the skill for anything in `/docs`, go through the `wikidown` CLI rather than editing files, and propose a wiki update when a code change alters user-visible behavior. |
-| `.github/skills/wikidown/SKILL.md` | The `wikidown` skill: format rules, a command cheat sheet, and the editing workflow. |
+| `.github/skills/wikidown/SKILL.md` | The `wikidown` skill: format rules, a command cheat sheet, the editing workflow, kanban, PDF export, publishing, site templates and data, and clickable maps. |
 | `.github/agents/wikidown.agent.md` | The `wikidown` custom agent (run-commands and search tools). Pick it in the VS Code agent picker; the coding agent on github.com uses it too. |
 | `.github/chatmodes/wikidown.chatmode.md` | A chat mode for wiki editing. Without terminal access it shows you the exact `wikidown` commands to run instead. |
 
