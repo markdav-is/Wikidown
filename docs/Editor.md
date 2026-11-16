@@ -165,7 +165,7 @@ The generated breadcrumb line is hidden while you edit and kept when you
 save.
 
 Save commits the change with an optional message. The default is
-"Update <page>".
+"Update" followed by the page name.
 
 ### Images
 
