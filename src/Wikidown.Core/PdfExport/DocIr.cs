@@ -18,7 +18,7 @@ public sealed record IrExternalLink(IReadOnlyList<IrRun> Content, string Url) : 
 // An image referenced inline, mixed with other text in a paragraph. A
 // paragraph containing nothing but a single image becomes a block-level
 // IrImage instead (the common case for wiki pages).
-public sealed record IrInlineImage(string AltText, string RawTarget, string? ResolvedPath) : IrRun;
+public sealed record IrInlineImage(string AltText, string RawTarget, string? ResolvedPath, string? LinkUrl = null) : IrRun;
 
 public abstract record IrBlock;
 
@@ -44,8 +44,9 @@ public sealed record IrTable(
 
 // ResolvedPath is null when the target is external or doesn't resolve to a
 // file on disk — the renderer degrades this to a visible placeholder rather
-// than failing the whole export.
-public sealed record IrImage(string AltText, string RawTarget, string? ResolvedPath) : IrBlock;
+// than failing the whole export. LinkUrl, when the source knows one, is where
+// the image lives in the hosted repo, so clicking it in the PDF opens it there.
+public sealed record IrImage(string AltText, string RawTarget, string? ResolvedPath, string? LinkUrl = null) : IrBlock;
 
 public sealed record IrThematicBreak : IrBlock;
 

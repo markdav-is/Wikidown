@@ -86,6 +86,43 @@ html, body {
 .wd-preview blockquote p { margin: 0.25rem 0; }
 .wd-preview hr { border: 0; border-top: 1px solid var(--c-border); margin: 2rem 0; }
 
+.wd-tree-row .wd-tree-menu { opacity: 0; }
+.wd-tree-row:hover .wd-tree-menu,
+.wd-tree-row:focus-within .wd-tree-menu { opacity: 1; }
+@media (hover: none) { .wd-tree-row .wd-tree-menu { opacity: 1; } }
+
+.wd-ellipsis {
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.wd-board {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    overflow-x: auto;
+    padding-bottom: 1rem;
+}
+.wd-board-column {
+    flex: 0 0 18rem;
+    background: var(--mud-palette-background-gray);
+}
+.wd-board-zone {
+    min-height: 3rem;
+    padding: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+.wd-board-card {
+    display: flex;
+    align-items: center;
+    padding: 0.4rem 0.25rem 0.4rem 0.75rem;
+    cursor: grab;
+}
+
 .wd-editor-pane,
 .wd-preview-pane {
     height: calc(100vh - 14rem);

@@ -1,0 +1,120 @@
+@using Wikidown.Core
+
+<MudDialog>
+    <DialogContent>
+        <MudStack Spacing="3" Style="min-width:min(24rem, 80vw)">
+            @if (ShowTitle)
+            {
+                <MudTextField @bind-Value="_title" Label="@TitleLabel" Variant="Variant.Outlined" AutoFocus="true"
+                              Immediate="true" OnKeyDown="OnKey" Error="@(_error is not null)" ErrorText="@_error" />
+            }
+            @if (ShowParent)
+            {
+                <MudSelect T="string" @bind-Value="_parent" Label="Inside" Variant="Variant.Outlined"
+                           Error="@(!ShowTitle && _error is not null)" ErrorText="@_error">
+                    <MudSelectItem Value="@("/")">Top level</MudSelectItem>
+                    @foreach (var (node, depth) in Choices())
+                    {
+                        <MudSelectItem Value="@node.Path.ToLinkPath()">
+                            <span style="padding-left:@(depth * 16)px">@node.Title</span>
+                        </MudSelectItem>
+                    }
+                </MudSelect>
+            }
+            @if (LinkOption is not null && _parent != "/")
+            {
+                <MudCheckBox @bind-Value="_link" Label="@LinkOption" Dense="true" Color="Color.Primary" />
+            }
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@(() => Dialog.Cancel())">Cancel</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit">@Confirm</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    public sealed record Result(PagePath Parent, string Title, bool Link);
+
+    [CascadingParameter] private IMudDialogInstance Dialog { get; set; } = default!;
+
+    [Parameter] public bool ShowTitle { get; set; } = true;
+    [Parameter] public bool ShowParent { get; set; }
+    [Parameter] public string TitleLabel { get; set; } = "Title";
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public PagePath Parent { get; set; } = PagePath.Root;
+    [Parameter] public string Confirm { get; set; } = "OK";
+    [Parameter] public IReadOnlyList<NavNode> Nodes { get; set; } = Array.Empty<NavNode>();
+
+    /// <summary>The page being moved or renamed: it and its subpages can't be the destination, and its own name is not a clash.</summary>
+    [Parameter] public PagePath? Subject { get; set; }
+
+    /// <summary>When set, offers this checkbox for pages created inside another page.</summary>
+    [Parameter] public string? LinkOption { get; set; }
+
+    private string _title = "";
+    private string _parent = "/";
+    private bool _link = true;
+    private string? _error;
+
+    protected override void OnInitialized()
+    {
+        _title = Title;
+        _parent = Parent.ToLinkPath();
+    }
+
+    private IEnumerable<(NavNode Node, int Depth)> Choices(IReadOnlyList<NavNode>? nodes = null, int depth = 0)
+    {
+        foreach (var node in nodes ?? Nodes)
+        {
+            if (Subject is not null && Same(node.Path, Subject)) continue;
+            yield return (node, depth);
+            foreach (var child in Choices(node.Children, depth + 1)) yield return child;
+        }
+    }
+
+    private void OnKey(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") Submit();
+    }
+
+    private void Submit()
+    {
+        var parent = PagePath.Parse(_parent);
+        PageName name;
+        try
+        {
+            name = ShowTitle ? PageName.FromTitle(_title) : Subject!.Name;
+            name.EnsurePortable();
+        }
+        catch (ArgumentException)
+        {
+            _error = string.IsNullOrWhiteSpace(_title)
+                ? "Give it a name."
+                : "Names can't contain / \\ : * ? \" < > | or #.";
+            return;
+        }
+
+        var target = parent.Append(name);
+        if (Find(Nodes, target) is { } taken && !(Subject is not null && Same(taken.Path, Subject)))
+        {
+            _error = "There is already a page with that name there.";
+            return;
+        }
+        Dialog.Close(DialogResult.Ok(new Result(parent, name.Title, _link && LinkOption is not null)));
+    }
+
+    private static NavNode? Find(IReadOnlyList<NavNode> nodes, PagePath path)
+    {
+        foreach (var node in nodes)
+        {
+            if (Same(node.Path, path)) return node;
+            if (Find(node.Children, path) is { } hit) return hit;
+        }
+        return null;
+    }
+
+    private static bool Same(PagePath a, PagePath b) =>
+        string.Equals(a.ToLinkPath(), b.ToLinkPath(), StringComparison.OrdinalIgnoreCase);
+
+}

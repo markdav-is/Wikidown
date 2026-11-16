@@ -11,7 +11,10 @@ public sealed class AzureDevOpsBackend(HttpClient http) : IWikiBackend
 {
     private const string ApiVersion = "7.1";
 
-    private static readonly JsonSerializerOptions JsonOpts = new(JsonSerializerDefaults.Web);
+    private static readonly JsonSerializerOptions JsonOpts = new(JsonSerializerDefaults.Web)
+    {
+        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
+    };
 
     public WikiProvider Provider => WikiProvider.AzureDevOps;
 
@@ -183,6 +186,76 @@ public sealed class AzureDevOpsBackend(HttpClient http) : IWikiBackend
         return new CommitResult(updated.ObjectId ?? string.Empty);
     }
 
+    public async Task<WikiFiles> ReadAllAsync(WikiConnection conn, CancellationToken ct = default)
+    {
+        var head = await GetBranchHeadAsync(conn, ct);
+        var scope = "/" + conn.DocsPath.Trim('/');
+        var url = $"{ItemsBase(conn)}?scopePath={Uri.EscapeDataString(scope)}" +
+                  $"&recursionLevel=Full" +
+                  $"&versionDescriptor.version={Uri.EscapeDataString(conn.Branch)}" +
+                  $"&versionDescriptor.versionType=branch&api-version={ApiVersion}";
+        using var req = Authenticated(HttpMethod.Get, url, conn.Token);
+        using var res = await http.SendAsync(req, ct);
+
+        var files = new Dictionary<string, byte[]>(StringComparer.Ordinal);
+        if (res.StatusCode == HttpStatusCode.NotFound) return new WikiFiles(head, files);
+        res.EnsureSuccessStatusCode();
+        var payload = await res.Content.ReadFromJsonAsync<AdoItemList>(cancellationToken: ct);
+
+        var prefix = scope.TrimEnd('/') + "/";
+        var wanted = (payload?.Value ?? new())
+            .Where(i => string.Equals(i.GitObjectType, "blob", StringComparison.OrdinalIgnoreCase)
+                        && i.Path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            .Select(i => i.Path[prefix.Length..])
+            .Where(rel => rel.EndsWith(".md", StringComparison.OrdinalIgnoreCase)
+                          || rel == ".order" || rel.EndsWith("/.order", StringComparison.Ordinal))
+            .ToList();
+
+        using var gate = new SemaphoreSlim(6);
+        await Task.WhenAll(wanted.Select(async rel =>
+        {
+            await gate.WaitAsync(ct);
+            try
+            {
+                var bytes = await ReadBytesAsync(conn, rel, ct);
+                if (bytes is not null) lock (files) files[rel] = bytes;
+            }
+            finally { gate.Release(); }
+        }));
+        return new WikiFiles(head, files);
+    }
+
+    public async Task CommitAsync(
+        WikiConnection conn, IReadOnlyList<FileChange> changes, string message,
+        string? expectedHead = null, CancellationToken ct = default)
+    {
+        if (changes.Count == 0) return;
+        var head = expectedHead ?? await GetBranchHeadAsync(conn, ct);
+        var push = new AdoPush(
+            new[] { new AdoRefUpdate($"refs/heads/{conn.Branch}", head) },
+            new[]
+            {
+                new AdoCommit(message, changes.Select(c => new AdoChange(
+                    c.Content is null ? "delete" : c.IsNew ? "add" : "edit",
+                    new AdoChangePath("/" + Combine(conn.DocsPath, c.Path)),
+                    c.Content is null ? null : new AdoNewContent(Convert.ToBase64String(c.Content), "base64encoded"))).ToList()),
+            });
+
+        var url = $"https://dev.azure.com/{Uri.EscapeDataString(conn.Owner)}" +
+                  $"/{Uri.EscapeDataString(conn.Project)}" +
+                  $"/_apis/git/repositories/{Uri.EscapeDataString(conn.Repo)}/pushes" +
+                  $"?api-version={ApiVersion}";
+        using var req = Authenticated(HttpMethod.Post, url, conn.Token);
+        req.Content = JsonContent.Create(push, options: JsonOpts);
+        using var res = await http.SendAsync(req, ct);
+        if (res.IsSuccessStatusCode) return;
+
+        var detail = await res.Content.ReadAsStringAsync(ct);
+        if (res.StatusCode == HttpStatusCode.Conflict || detail.Contains("TF401028", StringComparison.Ordinal))
+            throw new WikiConflictException("The wiki changed on Azure DevOps while you were working. Try again.");
+        throw new InvalidOperationException($"Azure DevOps commit failed ({(int)res.StatusCode}): {Trim(detail)}");
+    }
+
     public async Task<byte[]?> ReadBytesAsync(
         WikiConnection conn, string docsRelPath, CancellationToken ct = default)
     {
@@ -265,7 +338,7 @@ public sealed class AzureDevOpsBackend(HttpClient http) : IWikiBackend
     private sealed record AdoPush(IReadOnlyList<AdoRefUpdate> RefUpdates, IReadOnlyList<AdoCommit> Commits);
     private sealed record AdoRefUpdate(string Name, string OldObjectId);
     private sealed record AdoCommit(string Comment, IReadOnlyList<AdoChange> Changes);
-    private sealed record AdoChange(string ChangeType, AdoChangePath Item, AdoNewContent NewContent);
+    private sealed record AdoChange(string ChangeType, AdoChangePath Item, AdoNewContent? NewContent);
     private sealed record AdoChangePath(string Path);
     private sealed record AdoNewContent(string Content, string ContentType);
 }

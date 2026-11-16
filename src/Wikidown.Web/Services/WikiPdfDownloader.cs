@@ -43,7 +43,8 @@ public sealed class WikiPdfDownloader(PageImageResolver images, IJSRuntime js)
 
         var source = new InMemoryPdfPageSource(
             pages.Select(p => p.Path),
-            (from, target) => ToMigraDocName(images.DataUrlFor(conn, from, target)));
+            (from, target) => ToMigraDocName(images.DataUrlFor(conn, from, target)),
+            (from, target) => LinkChecker.ResolveDocsRelativePath(from, target) is { } rel ? conn.DocsBlobUrl(rel) : null);
         var content = WikiPdfContent.Build(pages, orderFor, source, allowHtmlSkip: true);
 
         using var stream = new MemoryStream();

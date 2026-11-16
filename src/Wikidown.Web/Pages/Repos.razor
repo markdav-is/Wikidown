@@ -1,0 +1,175 @@
+@page "/repos"
+@inject ConnectionStore Store
+@inject GitHubAccount Account
+@inject NavigationManager Nav
+@using Wikidown.Web.Services
+
+<PageTitle>Open a wiki — Wikidown</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium">
+    <MudText Typo="Typo.h4" GutterBottom="true">Open a wiki</MudText>
+
+    @if (_recent.Count > 0)
+    {
+        <MudText Typo="Typo.overline">Recent</MudText>
+        <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="1" Class="mb-4">
+            @foreach (var recent in _recent)
+            {
+                var conn = recent;
+                <MudChip T="string" Variant="Variant.Outlined" Color="Color.Primary"
+                         Icon="@Icons.Material.Filled.History" OnClick="@(() => OpenAsync(conn))">
+                    @conn.Label
+                </MudChip>
+            }
+        </MudStack>
+    }
+
+    @if (_error is { } error)
+    {
+        <MudAlert Severity="Severity.Error" Class="mb-3">@error</MudAlert>
+    }
+
+    @if (!Account.SignedIn)
+    {
+        <MudAlert Severity="Severity.Info" Class="mb-4">
+            <MudLink Href="">Sign in with GitHub</MudLink> to pick from your repositories.
+            Without signing in you can still read a public repository by name.
+        </MudAlert>
+    }
+    else
+    {
+        <MudTextField @bind-Value="_filter" Immediate="true" Placeholder="Find a repository…"
+                      Variant="Variant.Outlined" Margin="Margin.Dense" AutoFocus="true" Clearable="true"
+                      Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Class="mb-2" />
+
+        @if (_repos is null)
+        {
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="pa-4">
+                <MudProgressCircular Indeterminate="true" Size="Size.Small" />
+                <MudText>Loading your repositories…</MudText>
+            </MudStack>
+        }
+        else
+        {
+            var shown = Filtered.Take(60).ToList();
+            <MudPaper Outlined="true">
+                <MudList T="string" Dense="true" ReadOnly="false">
+                    @foreach (var item in shown)
+                    {
+                        var repo = item;
+                        <MudListItem T="string" OnClick="@(() => OpenAsync(Account.Connect(repo)))"
+                                     Icon="@(repo.Private ? Icons.Material.Filled.Lock : Icons.Material.Filled.MenuBook)">
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                <MudStack Spacing="0" Style="min-width:0">
+                                    <MudText Typo="Typo.body1"><strong>@repo.FullName</strong></MudText>
+                                    @if (!string.IsNullOrWhiteSpace(repo.Description))
+                                    {
+                                        <MudText Typo="Typo.caption" Class="wd-ellipsis">@repo.Description</MudText>
+                                    }
+                                </MudStack>
+                                <MudSpacer />
+                                @if (!repo.CanPush)
+                                {
+                                    <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">read-only</MudChip>
+                                }
+                                <MudText Typo="Typo.caption" Style="white-space:nowrap">@Ago(repo.PushedAt)</MudText>
+                            </MudStack>
+                        </MudListItem>
+                    }
+                    @if (shown.Count == 0)
+                    {
+                        <MudListItem T="string" Disabled="true">No repository matches “@_filter”.</MudListItem>
+                    }
+                </MudList>
+            </MudPaper>
+            @if (Filtered.Count() > shown.Count)
+            {
+                <MudText Typo="Typo.caption" Class="mt-1">Showing the @shown.Count most recently updated. Type to narrow it down.</MudText>
+            }
+        }
+    }
+
+    <MudText Typo="Typo.overline" Class="mt-6 d-block">Not in the list?</MudText>
+    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+        <MudTextField @bind-Value="_byName" Immediate="true" Placeholder="owner/repository"
+                      Variant="Variant.Outlined" Margin="Margin.Dense" OnKeyDown="OnByNameKey" />
+        <MudButton Variant="Variant.Outlined" OnClick="OpenByNameAsync"
+                   Disabled="@(_busy || !_byName.Contains('/'))">Open</MudButton>
+    </MudStack>
+    <MudText Typo="Typo.caption" Class="mt-4 d-block">
+        Using GitLab or Azure DevOps? <MudLink Href="connect" Typo="Typo.caption">Connect with a token</MudLink>.
+    </MudText>
+</MudContainer>
+
+@code {
+    private IReadOnlyList<GitHubRepo>? _repos;
+    private IReadOnlyList<WikiConnection> _recent = Array.Empty<WikiConnection>();
+    private string _filter = "";
+    private string _byName = "";
+    private string? _error;
+    private bool _busy;
+
+    private IEnumerable<GitHubRepo> Filtered =>
+        string.IsNullOrWhiteSpace(_filter)
+            ? _repos ?? []
+            : (_repos ?? []).Where(r => r.FullName.Contains(_filter.Trim(), StringComparison.OrdinalIgnoreCase));
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Store.LoadAsync();
+        await Account.LoadAsync();
+        _recent = await Store.RecentAsync();
+        if (!Account.SignedIn) return;
+        try
+        {
+            _repos = await Account.ListReposAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            _repos = Array.Empty<GitHubRepo>();
+        }
+    }
+
+    private async Task OpenAsync(WikiConnection conn)
+    {
+        // A recent GitHub wiki may carry the token of an earlier sign-in.
+        if (conn.Provider == WikiProvider.GitHub && Account.Token is { } token) conn = conn with { Token = token };
+        await Store.SaveAsync(conn);
+        Nav.NavigateTo("browse");
+    }
+
+    private Task OnByNameKey(KeyboardEventArgs e) =>
+        e.Key == "Enter" && _byName.Contains('/') ? OpenByNameAsync() : Task.CompletedTask;
+
+    private async Task OpenByNameAsync()
+    {
+        var parts = _byName.Trim().Replace("https://github.com/", "").Trim('/').Split('/');
+        if (parts.Length < 2) return;
+        _busy = true;
+        _error = null;
+        try
+        {
+            await OpenAsync(Account.Connect(await Account.GetRepoAsync(parts[0], parts[1])));
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private static string Ago(DateTimeOffset? when)
+    {
+        if (when is not { } t) return "";
+        var age = DateTimeOffset.UtcNow - t;
+        return age.TotalDays >= 365 ? $"{(int)(age.TotalDays / 365)}y ago"
+            : age.TotalDays >= 30 ? $"{(int)(age.TotalDays / 30)}mo ago"
+            : age.TotalDays >= 1 ? $"{(int)age.TotalDays}d ago"
+            : age.TotalHours >= 1 ? $"{(int)age.TotalHours}h ago"
+            : "just now";
+    }
+}

@@ -26,6 +26,12 @@ public sealed record WikiSnapshot(
         Orders.TryGetValue(folder.ToLinkPath(), out var entries) ? entries : Array.Empty<string>();
 }
 
+/// <summary>Every page and .order file of the wiki, keyed by docs-relative forward-slash path.</summary>
+public sealed record WikiFiles(string? HeadId, IReadOnlyDictionary<string, byte[]> Files);
+
+/// <summary>One file in a commit; null <see cref="Content"/> deletes it. Path is docs-relative.</summary>
+public sealed record FileChange(string Path, byte[]? Content, bool IsNew);
+
 public sealed class WikiConflictException(string message) : Exception(message);
 
 public interface IWikiBackend
@@ -43,6 +49,18 @@ public interface IWikiBackend
 
     Task<CommitResult> WritePageAsync(
         WikiConnection conn, CommitRequest request, CancellationToken ct = default);
+
+    Task<WikiFiles> ReadAllAsync(
+        WikiConnection conn, CancellationToken ct = default);
+
+    /// <summary>
+    /// Commits several files at once. <paramref name="expectedHead"/> is the
+    /// <see cref="WikiFiles.HeadId"/> the changes were computed from; a branch
+    /// that has moved on since throws <see cref="WikiConflictException"/>.
+    /// </summary>
+    Task CommitAsync(
+        WikiConnection conn, IReadOnlyList<FileChange> changes, string message,
+        string? expectedHead = null, CancellationToken ct = default);
 
     /// <summary>Raw bytes of a non-page file under the docs folder (images in .attachments); null if missing.</summary>
     Task<byte[]?> ReadBytesAsync(

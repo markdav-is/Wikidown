@@ -150,6 +150,9 @@ The CLI behaves the same on Windows, macOS, and Linux:
   (`<a href>`, `xlink:href`, `<image href>`) the same way, and regenerates the breadcrumb for the moved
   page and every moved descendant. Reports a count and a per-link list of
   what changed. `--dry-run` previews the rewrite without touching any files.
+  `--from` can also be a folder that has no page of its own; its subpages
+  move with it. Renaming a page within the same folder keeps its position
+  in `.order`.
 - `kanban init [--path /Kanban]` — create a simple to-do board: a
   dashboard page (default `/Kanban`) with To Do, Doing and Done sub-pages
   and one `##` section per sub-page, each heading linking its sub-page.

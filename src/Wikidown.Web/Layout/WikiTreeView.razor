@@ -1,7 +1,11 @@
 @using Wikidown.Core
+@using Wikidown.Web.Services
 
-@foreach (var node in Nodes)
+@for (var i = 0; i < Nodes.Count; i++)
 {
+    var node = Nodes[i];
+    var first = i == 0;
+    var last = i == Nodes.Count - 1;
     var link = node.Path.ToLinkPath();
     var hasKids = node.Children.Count > 0;
     <div class="wd-tree-row" style="padding-left:@(Depth * 16)px">
@@ -28,10 +32,20 @@
                 @node.Title
             </MudNavLink>
         }
+        <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small" Dense="true" Class="wd-tree-menu"
+                 AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" title="@($"Actions for {node.Title}")">
+            <MudMenuItem Icon="@Icons.Material.Filled.NoteAdd" OnClick="@(() => Act(TreeActionKind.NewSubpage, node))">New subpage</MudMenuItem>
+            <MudMenuItem Icon="@Icons.Material.Filled.DriveFileRenameOutline" OnClick="@(() => Act(TreeActionKind.Rename, node))">Rename</MudMenuItem>
+            <MudMenuItem Icon="@Icons.Material.Filled.DriveFileMove" OnClick="@(() => Act(TreeActionKind.Move, node))">Move to…</MudMenuItem>
+            <MudMenuItem Icon="@Icons.Material.Filled.ArrowUpward" Disabled="first" OnClick="@(() => Act(TreeActionKind.MoveUp, node))">Move up</MudMenuItem>
+            <MudMenuItem Icon="@Icons.Material.Filled.ArrowDownward" Disabled="last" OnClick="@(() => Act(TreeActionKind.MoveDown, node))">Move down</MudMenuItem>
+            <MudDivider />
+            <MudMenuItem Icon="@Icons.Material.Filled.Delete" IconColor="Color.Error" OnClick="@(() => Act(TreeActionKind.Delete, node))">Delete</MudMenuItem>
+        </MudMenu>
     </div>
     @if (hasKids && IsExpanded(link))
     {
-        <WikiTreeView Nodes="@node.Children" Depth="@(Depth + 1)" Expanded="@Expanded" />
+        <WikiTreeView Nodes="@node.Children" Depth="@(Depth + 1)" Expanded="@Expanded" OnAction="@OnAction" />
     }
 }
 
@@ -39,6 +53,7 @@
     [Parameter] public IReadOnlyList<NavNode> Nodes { get; set; } = Array.Empty<NavNode>();
     [Parameter] public int Depth { get; set; }
     [Parameter] public HashSet<string> Expanded { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+    [Parameter] public EventCallback<TreeAction> OnAction { get; set; }
 
     private bool IsExpanded(string link) => Expanded.Contains(link);
 
@@ -46,4 +61,6 @@
     {
         if (!Expanded.Add(link)) Expanded.Remove(link);
     }
+
+    private Task Act(TreeActionKind kind, NavNode node) => OnAction.InvokeAsync(new TreeAction(kind, node));
 }

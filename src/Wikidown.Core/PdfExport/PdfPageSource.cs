@@ -14,11 +14,15 @@ public interface IPdfPageSource
 
     /// <summary>An image target to something MigraDoc can load (a file path or "base64:…"), or null when missing.</summary>
     string? ResolveImage(PagePath from, string target);
+
+    /// <summary>Where a resolved image can be viewed in the hosted repo (a browser URL), or null when unknown.</summary>
+    string? ImageLinkUrl(PagePath from, string target);
 }
 
 public sealed class RepositoryPdfPageSource(WikiRepository repo) : IPdfPageSource
 {
     private readonly TargetResolver _resolver = new(repo);
+    private readonly Lazy<GitBlobLinks?> _links = new(() => GitBlobLinks.Find(repo.RootPath));
 
     public bool Exists(PagePath page) => repo.Exists(page);
 
@@ -30,6 +34,9 @@ public sealed class RepositoryPdfPageSource(WikiRepository repo) : IPdfPageSourc
 
     public string? ResolveImage(PagePath from, string target) =>
         _resolver.Resolve(from, target) is { Exists: true } resolved ? resolved.FullPath : null;
+
+    public string? ImageLinkUrl(PagePath from, string target) =>
+        ResolveImage(from, target) is { } fullPath ? _links.Value?.For(fullPath) : null;
 
     private PagePath? FilePathToPagePath(string fullPath)
     {
@@ -51,7 +58,8 @@ public sealed class RepositoryPdfPageSource(WikiRepository repo) : IPdfPageSourc
 /// </summary>
 public sealed class InMemoryPdfPageSource(
     IEnumerable<PagePath> pages,
-    Func<PagePath, string, string?> imageResolver) : IPdfPageSource
+    Func<PagePath, string, string?> imageResolver,
+    Func<PagePath, string, string?>? imageLinkResolver = null) : IPdfPageSource
 {
     private readonly HashSet<string> _pages = new(pages.Select(p => p.ToLinkPath()), StringComparer.OrdinalIgnoreCase);
 
@@ -72,4 +80,6 @@ public sealed class InMemoryPdfPageSource(
     }
 
     public string? ResolveImage(PagePath from, string target) => imageResolver(from, target);
+
+    public string? ImageLinkUrl(PagePath from, string target) => imageLinkResolver?.Invoke(from, target);
 }

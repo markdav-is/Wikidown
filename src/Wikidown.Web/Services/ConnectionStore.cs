@@ -8,6 +8,8 @@ namespace Wikidown.Web.Services;
 public sealed class ConnectionStore(IJSRuntime js)
 {
     private const string StorageKey = "wikidown.connection.v1";
+    private const string RecentKey = "wikidown.recent.v1";
+    private const int RecentLimit = 8;
 
     private WikiConnection? _cached;
     private Task<WikiConnection?>? _load;
@@ -44,8 +46,30 @@ public sealed class ConnectionStore(IJSRuntime js)
         _load = Task.FromResult<WikiConnection?>(connection);
         var json = JsonSerializer.Serialize(connection);
         await js.InvokeVoidAsync("localStorage.setItem", StorageKey, json);
+        var recent = (await RecentAsync()).Where(c => !SameWiki(c, connection)).Prepend(connection).Take(RecentLimit);
+        await js.InvokeVoidAsync("localStorage.setItem", RecentKey, JsonSerializer.Serialize(recent));
         Changed?.Invoke();
     }
+
+    /// <summary>Wikis opened on this device, latest first.</summary>
+    public async Task<IReadOnlyList<WikiConnection>> RecentAsync()
+    {
+        var json = await js.InvokeAsync<string?>("localStorage.getItem", RecentKey);
+        if (string.IsNullOrWhiteSpace(json)) return Array.Empty<WikiConnection>();
+        try { return JsonSerializer.Deserialize<List<WikiConnection>>(json) ?? new(); }
+        catch (JsonException) { return Array.Empty<WikiConnection>(); }
+    }
+
+    /// <summary>Drops a provider's wikis (and their tokens) — signing out must not leave them behind.</summary>
+    public async Task ForgetAsync(WikiProvider provider)
+    {
+        var kept = (await RecentAsync()).Where(c => c.Provider != provider).ToList();
+        await js.InvokeVoidAsync("localStorage.setItem", RecentKey, JsonSerializer.Serialize(kept));
+        if (_cached?.Provider == provider) await ClearAsync();
+    }
+
+    private static bool SameWiki(WikiConnection a, WikiConnection b) =>
+        a with { Token = "" } == b with { Token = "" };
 
     public async Task ClearAsync()
     {

@@ -1,5 +1,8 @@
 @inherits LayoutComponentBase
 @inject NavigationManager Nav
+@inject ConnectionStore Store
+@inject GitHubAccount Account
+@using Wikidown.Web.Services
 @implements IDisposable
 
 <MudThemeProvider Theme="_theme" IsDarkMode="false" />
@@ -8,44 +11,71 @@
 <MudSnackbarProvider />
 
 <MudLayout>
-    <MudAppBar Elevation="1" Color="Color.Primary">
-        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start"
-                       OnClick="@ToggleDrawer" />
-        <MudLink Href="" Color="Color.Inherit" Underline="Underline.None" Class="ml-2 d-flex align-center">
-            <img src="logo.png" alt="" height="28" style="margin-right:8px;" />
+    <MudAppBar Elevation="1" Color="Color.Primary" Dense="true">
+        <MudLink Href="" Color="Color.Inherit" Underline="Underline.None" Class="d-flex align-center">
+            <img src="logo.png" alt="" height="26" style="margin-right:8px;" />
             <MudText Typo="Typo.h6">Wikidown</MudText>
         </MudLink>
+        @if (Store.Current is { } conn)
+        {
+            <MudTooltip Text="Open another wiki">
+                <MudButton Href="repos" Color="Color.Inherit" Class="ml-4" Style="text-transform:none"
+                           StartIcon="@Icons.Material.Filled.MenuBook" EndIcon="@Icons.Material.Filled.UnfoldMore">
+                    @conn.Label
+                </MudButton>
+            </MudTooltip>
+        }
         <MudSpacer />
         <div class="wd-appbar-slot d-flex align-center flex-grow-0">
             <SectionOutlet SectionName="appbar-actions" />
         </div>
         <MudSpacer />
         <DraftsMenu />
-        <MudLink Href="https://github.com/markdav-is/Wikidown" Target="_blank"
-                 Color="Color.Inherit" Underline="Underline.None">
-            <MudIcon Icon="@Icons.Custom.Brands.GitHub" />
-        </MudLink>
+        <MudMenu AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Dense="true">
+            <ActivatorContent>
+                @if (Account.User?.AvatarUrl is { } avatar)
+                {
+                    <MudAvatar Size="Size.Small" Class="ml-2" Style="cursor:pointer"><MudImage Src="@avatar" Alt="Account" /></MudAvatar>
+                }
+                else
+                {
+                    <MudIconButton Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Inherit" title="Account" />
+                }
+            </ActivatorContent>
+            <ChildContent>
+                @if (Account.User is { } user)
+                {
+                    <MudText Typo="Typo.body2" Class="px-4 py-2">Signed in as <strong>@user.Login</strong></MudText>
+                    <MudDivider />
+                }
+                <MudMenuItem Href="repos" Icon="@Icons.Material.Filled.MenuBook">Open a wiki</MudMenuItem>
+                <MudMenuItem Href="connect" Icon="@Icons.Material.Filled.Link">GitLab or Azure DevOps</MudMenuItem>
+                <MudMenuItem Href="https://wikidown.org" Target="_blank" Icon="@Icons.Material.Filled.HelpOutline">Help</MudMenuItem>
+                <MudDivider />
+                @if (Account.SignedIn)
+                {
+                    <MudMenuItem OnClick="SignOutAsync" Icon="@Icons.Material.Filled.Logout">Sign out</MudMenuItem>
+                }
+                else
+                {
+                    <MudMenuItem Href="" Icon="@Icons.Custom.Brands.GitHub">Sign in with GitHub</MudMenuItem>
+                    @if (Store.Current is not null)
+                    {
+                        <MudMenuItem OnClick="CloseWikiAsync" Icon="@Icons.Material.Filled.Close">Close this wiki</MudMenuItem>
+                    }
+                }
+            </ChildContent>
+        </MudMenu>
     </MudAppBar>
 
-    <MudDrawer @bind-Open="_drawerOpen" Elevation="1" ClipMode="DrawerClipMode.Always">
-        <MudNavMenu>
-            <MudNavLink Href="" Match="NavLinkMatch.All"
-                        Icon="@Icons.Material.Filled.Home">Home</MudNavLink>
-            <MudNavLink Href="connect" Icon="@Icons.Material.Filled.Link">Connect</MudNavLink>
-            <MudNavLink Href="browse" Icon="@Icons.Material.Filled.MenuBook">Browse</MudNavLink>
-        </MudNavMenu>
-    </MudDrawer>
-
     <MudMainContent>
-        <MudContainer MaxWidth="@(IsBrowse ? MaxWidth.ExtraLarge : MaxWidth.Large)" Class="py-4">
+        <MudContainer MaxWidth="@(IsBrowse ? MaxWidth.False : MaxWidth.Large)" Class="py-4">
             @Body
         </MudContainer>
     </MudMainContent>
 </MudLayout>
 
 @code {
-    private bool _drawerOpen = true;
-
     private readonly MudTheme _theme = new()
     {
         PaletteLight = new PaletteLight
@@ -56,30 +86,39 @@
         }
     };
 
-    private bool _wasBrowse;
-
     private bool IsBrowse =>
         Nav.ToBaseRelativePath(Nav.Uri).StartsWith("browse", StringComparison.OrdinalIgnoreCase);
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        _wasBrowse = IsBrowse;
-        _drawerOpen = !_wasBrowse;
+        Store.Changed += Refresh;
+        Account.Changed += Refresh;
         Nav.LocationChanged += OnLocationChanged;
+        await Store.LoadAsync();
+        await Account.LoadAsync();
     }
 
-    // Browse has its own tree, so the app drawer collapses on entry and comes back on exit.
-    // Only react to crossing the browse boundary so a manual toggle survives page-to-page navigation.
-    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    private void Refresh() => _ = InvokeAsync(StateHasChanged);
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e) => Refresh();
+
+    private async Task SignOutAsync()
     {
-        var isBrowse = IsBrowse;
-        if (isBrowse == _wasBrowse) return;
-        _wasBrowse = isBrowse;
-        _drawerOpen = !isBrowse;
-        StateHasChanged();
+        await Account.SignOutAsync();
+        await Store.ForgetAsync(WikiProvider.GitHub);
+        Nav.NavigateTo("");
     }
 
-    private void ToggleDrawer() => _drawerOpen = !_drawerOpen;
+    private async Task CloseWikiAsync()
+    {
+        await Store.ClearAsync();
+        Nav.NavigateTo("");
+    }
 
-    public void Dispose() => Nav.LocationChanged -= OnLocationChanged;
+    public void Dispose()
+    {
+        Store.Changed -= Refresh;
+        Account.Changed -= Refresh;
+        Nav.LocationChanged -= OnLocationChanged;
+    }
 }

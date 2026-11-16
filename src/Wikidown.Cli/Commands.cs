@@ -134,12 +134,7 @@ public static class Commands
                 throw new CliUsageException($"page already exists: {page.ToLinkPath()}");
         }
 
-        var dashboard = new System.Text.StringBuilder($"# {board.Name.Title}\n");
-        foreach (var section in sections)
-            dashboard.Append($"\n## [{section.Name.Title}]({board.Name.FileBase}/{section.Name.FileName})\n");
-        repo.Write(new WikiPage(board, dashboard.ToString()));
-        foreach (var section in sections)
-            repo.Write(new WikiPage(section, $"# {section.Name.Title}\n"));
+        KanbanBoard.Create(repo, board, KanbanSections);
 
         w.WriteLine($"created {board.ToLinkPath()}");
         foreach (var section in sections) w.WriteLine($"created {section.ToLinkPath()}");

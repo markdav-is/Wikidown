@@ -2,42 +2,85 @@
 @page "/browse/{*Path}"
 @inject ConnectionStore Store
 @inject BackendResolver Backends
+@inject WikiWorkspace Workspace
+@inject GitHubAccount Account
+@inject DemoBackend Demo
 @inject NavigationManager Nav
 @inject ISnackbar Snackbar
 @inject IDialogService Dialogs
 @inject DraftStore Drafts
 @inject PageImageResolver Images
 @inject PagePreview Preview
+@inject IJSRuntime JS
+@implements IDisposable
 @using Wikidown.Core
 @using Wikidown.Web.Services
 
-<PageTitle>Browse — Wikidown</PageTitle>
+<PageTitle>@(_currentPath is null ? "Wikidown" : $"{_currentPath.Name.Title} — Wikidown")</PageTitle>
 
-@if (_conn is null)
+@if (!_loaded)
 {
-    <MudText Typo="Typo.h4" GutterBottom="true">Browse</MudText>
+}
+else if (_conn is null)
+{
     <MudAlert Severity="Severity.Info">
-        No wiki connected. <MudLink Href="connect">Connect one</MudLink>.
+        No wiki is open. <MudLink Href="repos">Open one</MudLink>.
     </MudAlert>
 }
 else
 {
+    @if (_busy)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Secondary" Class="wd-busy" />
+    }
     <MudGrid Spacing="3">
         @if (TreeVisible)
         {
-        <MudItem xs="12" md="4" lg="3">
+        <MudItem xs="12" md="4" lg="3" xl="2">
             <MudPaper Class="pa-3" Outlined="true">
-                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mb-2">
-                    <MudIcon Icon="@Icons.Material.Filled.FolderOpen" />
-                    <MudStack Spacing="0" Class="flex-grow-1">
-                        <MudText Typo="Typo.subtitle2">@RepoLabel(_conn)</MudText>
-                        <MudText Typo="Typo.caption" Color="Color.Default">@@@_conn.Branch · /@_conn.DocsPath</MudText>
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="mb-2">
+                    <MudStack Spacing="0" Class="flex-grow-1" Style="min-width:0">
+                        <MudText Typo="Typo.subtitle2" Class="wd-ellipsis">@_conn.Label</MudText>
+                        @if (_conn.Provider != WikiProvider.Demo)
+                        {
+                            <MudText Typo="Typo.caption" Class="wd-ellipsis">@_conn.Branch · /@_conn.DocsPath</MudText>
+                        }
                     </MudStack>
-                    <MudIconButton Icon="@Icons.Material.Filled.PictureAsPdf" Size="Size.Small"
-                                   title="Export PDF" OnClick="@(() => Nav.NavigateTo("export"))" />
+                    <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small" Dense="true" title="Wiki actions"
+                             AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                        <MudMenuItem Icon="@Icons.Material.Filled.Refresh" OnClick="RefreshAsync">Refresh</MudMenuItem>
+                        <MudMenuItem Icon="@Icons.Material.Filled.PictureAsPdf" Href="export">Export PDF</MudMenuItem>
+                        @if (_conn.Provider == WikiProvider.Demo)
+                        {
+                            <MudMenuItem Icon="@Icons.Material.Filled.RestartAlt" OnClick="ResetSampleAsync">Reset the sample wiki</MudMenuItem>
+                        }
+                        @if (_conn.Provider != WikiProvider.Demo)
+                        {
+                            <MudMenuItem Icon="@Icons.Material.Filled.Tune" OnClick="ChangeSettingsAsync">Branch and folder…</MudMenuItem>
+                            <MudMenuItem Icon="@Icons.Material.Filled.OpenInNew" Href="@_conn.BlobLinks.Blob(_conn.DocsPath)" Target="_blank">Open on @_conn.Provider</MudMenuItem>
+                        }
+                    </MudMenu>
                 </MudStack>
 
-                @if (_loadingTree)
+                <MudStack Row="true" Spacing="1" Class="mb-2">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small" Disabled="_busy"
+                               StartIcon="@Icons.Material.Filled.Add" OnClick="@(() => NewPageAsync(PagePath.Root))">
+                        New page
+                    </MudButton>
+                    <MudButton Variant="Variant.Text" Size="Size.Small" Disabled="_busy"
+                               StartIcon="@Icons.Material.Filled.ViewKanban" OnClick="NewKanbanAsync">
+                        New kanban
+                    </MudButton>
+                </MudStack>
+
+                @if (_tree.Count > 0)
+                {
+                    <MudTextField @bind-Value="_filter" Immediate="true" Placeholder="Find a page…" Clearable="true"
+                                  Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-2"
+                                  Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" />
+                }
+
+                @if (_loadingTree && _tree.Count == 0)
                 {
                     <MudProgressCircular Indeterminate="true" Size="Size.Small" />
                 }
@@ -47,33 +90,59 @@ else
                 }
                 else if (_tree.Count == 0)
                 {
-                    <MudText Typo="Typo.body2" Color="Color.Default">
-                        No pages found at <code>/@_conn.DocsPath</code>.
+                    <MudText Typo="Typo.body2">
+                        There are no pages in <code>/@_conn.DocsPath</code> yet. Press <strong>New page</strong> to start the wiki.
                     </MudText>
+                }
+                else if (!string.IsNullOrWhiteSpace(_filter))
+                {
+                    <MudNavMenu Class="wd-tree">
+                        @foreach (var hit in Flatten(_tree).Where(n => n.IsPage && Matches(n)).Take(50))
+                        {
+                            <MudNavLink Href="@($"browse{hit.Path.ToLinkPath()}")" Icon="@Icons.Material.Filled.Article">
+                                @hit.Title
+                                <MudText Typo="Typo.caption" Class="wd-ellipsis">@hit.Path.Parent.ToLinkPath()</MudText>
+                            </MudNavLink>
+                        }
+                    </MudNavMenu>
                 }
                 else
                 {
                     <MudNavMenu Class="wd-tree">
-                        <WikiTreeView Nodes="@_tree" Expanded="@_expanded" />
+                        <WikiTreeView Nodes="@_tree" Expanded="@_expanded" OnAction="OnTreeAction" />
                     </MudNavMenu>
                 }
             </MudPaper>
         </MudItem>
         }
 
-        <MudItem xs="12" md="@(TreeVisible ? 8 : 12)" lg="@(TreeVisible ? 9 : 12)">
+        <MudItem xs="12" md="@(TreeVisible ? 8 : 12)" lg="@(TreeVisible ? 9 : 12)" xl="@(TreeVisible ? 10 : 12)">
             @if (_currentPath is null)
             {
                 <MudPaper Class="pa-6" Outlined="true">
-                    <MudText Typo="Typo.h5">Pick a page</MudText>
-                    <MudText>Choose a page from the tree to view or edit it.</MudText>
+                    @if (_tree.Count == 0 && !_loadingTree && _treeError is null)
+                    {
+                        <MudText Typo="Typo.h5" GutterBottom="true">Start your wiki</MudText>
+                        <MudText Class="mb-4">
+                            Pages are Markdown files in <code>/@_conn.DocsPath</code>. The first one is usually called Home.
+                        </MudText>
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add"
+                                   Disabled="_busy" OnClick="@(() => NewPageAsync(PagePath.Root, "Home"))">
+                            Create the first page
+                        </MudButton>
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.h5">Pick a page</MudText>
+                        <MudText>Choose a page on the left, or press New page.</MudText>
+                    }
                 </MudPaper>
             }
-            else if (_loadingPage)
+            else if (_loadingPage && _currentPage is null)
             {
                 <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
                     <MudProgressCircular Indeterminate="true" Size="Size.Small" />
-                    <MudText>Loading @_currentPath.ToLinkPath()…</MudText>
+                    <MudText>Loading @_currentPath.Name.Title…</MudText>
                 </MudStack>
             }
             else if (_pageError is { } perr)
@@ -83,16 +152,16 @@ else
             }
             else if (_currentPage is { } loaded)
             {
-                <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-2">
+                <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-2" Spacing="2">
                     @if (_editMode)
                     {
                         <MudIconButton Icon="@(_treePinned ? Icons.Material.Filled.MenuOpen : Icons.Material.Filled.AccountTree)"
                                        Size="Size.Small" title="@(_treePinned ? "Hide page tree" : "Show page tree")"
                                        OnClick="@(() => _treePinned = !_treePinned)" />
                     }
-                    <MudStack Spacing="0">
+                    <MudStack Spacing="0" Style="min-width:0">
                         <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
-                            <MudText Typo="Typo.h4">@Wikidown.Core.PageTitle.For(loaded.Path, _editMode ? _draft : loaded.Markdown)</MudText>
+                            <MudText Typo="Typo.h4" Class="wd-ellipsis">@Wikidown.Core.PageTitle.For(loaded.Path, _editMode ? _draft : loaded.Markdown)</MudText>
                             @if (_editMode && HasChanges)
                             {
                                 <MudChip T="string" Color="Color.Warning" Size="Size.Small" Variant="Variant.Outlined">
@@ -100,91 +169,110 @@ else
                                 </MudChip>
                             }
                         </MudStack>
-                        <MudText Typo="Typo.caption" Color="Color.Default">@loaded.Path.ToLinkPath()</MudText>
+                        <MudText Typo="Typo.caption">@loaded.Path.ToLinkPath()</MudText>
                     </MudStack>
                     <MudSpacer />
                     @if (_editMode)
                     {
-                        <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Visibility"
-                                   OnClick="@(() => OnToggleEdit(false))">
-                            Done
+                        <MudToggleGroup T="EditView" Value="_view" ValueChanged="SetViewAsync" Size="Size.Small"
+                                        Color="Color.Primary" Outlined="true" Delimiters="true" Class="wd-view-toggle">
+                            <MudToggleItem Value="EditView.Editor" title="Editor only"><MudIcon Icon="@Icons.Material.Filled.EditNote" Size="Size.Small" /></MudToggleItem>
+                            <MudToggleItem Value="EditView.Split" title="Editor and preview"><MudIcon Icon="@Icons.Material.Filled.VerticalSplit" Size="Size.Small" /></MudToggleItem>
+                            <MudToggleItem Value="EditView.Preview" title="Preview only"><MudIcon Icon="@Icons.Material.Filled.Visibility" Size="Size.Small" /></MudToggleItem>
+                        </MudToggleGroup>
+                        <MudButton Variant="Variant.Text" OnClick="DiscardDraft" Disabled="@(!HasChanges || _saving)">
+                            Discard
                         </MudButton>
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Save"
+                                   Disabled="@(!HasChanges || _saving)" OnClick="SaveAsync">
+                            @(_saving ? "Saving…" : "Save")
+                        </MudButton>
+                        <MudButton Variant="Variant.Outlined" OnClick="@(() => SetEditAsync(false))">Done</MudButton>
                     }
                     else
                     {
+                        @if (_board is not null)
+                        {
+                            <MudToggleGroup T="bool" @bind-Value="_showBoard" Size="Size.Small" Color="Color.Primary"
+                                            Outlined="true" Delimiters="true" Class="wd-view-toggle">
+                                <MudToggleItem Value="true"><MudIcon Icon="@Icons.Material.Filled.ViewKanban" Size="Size.Small" Class="mr-1" />Board</MudToggleItem>
+                                <MudToggleItem Value="false"><MudIcon Icon="@Icons.Material.Filled.Article" Size="Size.Small" Class="mr-1" />Page</MudToggleItem>
+                            </MudToggleGroup>
+                        }
                         <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Edit"
-                                   OnClick="@(() => OnToggleEdit(true))">
+                                   Disabled="_busy" OnClick="@(() => SetEditAsync(true))">
                             Edit
                         </MudButton>
+                        <MudMenu Icon="@Icons.Material.Filled.MoreVert" Dense="true" title="Page actions" Disabled="_busy"
+                                 AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                            <MudMenuItem Icon="@Icons.Material.Filled.NoteAdd" OnClick="@(() => NewPageAsync(loaded.Path))">New subpage</MudMenuItem>
+                            <MudMenuItem Icon="@Icons.Material.Filled.DriveFileRenameOutline" OnClick="@(() => RenameAsync(loaded.Path))">Rename</MudMenuItem>
+                            <MudMenuItem Icon="@Icons.Material.Filled.DriveFileMove" OnClick="@(() => MoveAsync(loaded.Path))">Move to…</MudMenuItem>
+                            <MudDivider />
+                            <MudMenuItem Icon="@Icons.Material.Filled.Delete" IconColor="Color.Error" OnClick="@(() => DeleteAsync(loaded.Path))">Delete</MudMenuItem>
+                        </MudMenu>
                     }
                 </MudStack>
 
                 @if (_editMode)
                 {
-                    <MudPaper Outlined="true" Class="wd-toolbar mb-2">
-                        <EditorToolbar Editor="@_editor" Pages="@_tree" Current="@_currentPath" />
-                        <MudSpacer />
-                        <MudTextField T="string" @bind-Value="_commitMessage"
-                                      Variant="Variant.Outlined" Margin="Margin.Dense"
-                                      Placeholder="Commit message" Class="wd-commit" />
-                        <MudButton Variant="Variant.Text" OnClick="DiscardDraft"
-                                   Disabled="@(!HasChanges || _saving)">
-                            Discard
-                        </MudButton>
-                        <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                                   StartIcon="@Icons.Material.Filled.Save"
-                                   Disabled="@(!HasChanges || _saving)"
-                                   OnClick="SaveAsync">
-                            @(_saving ? "Saving…" : "Save")
-                        </MudButton>
-                    </MudPaper>
+                    @if (_view != EditView.Preview)
+                    {
+                        <MudPaper Outlined="true" Class="wd-toolbar mb-2">
+                            <EditorToolbar Editor="@_editor" Pages="@_tree" Current="@_currentPath" OnImage="OnImagePicked" />
+                            <MudSpacer />
+                            @if (_uploading)
+                            {
+                                <MudProgressCircular Indeterminate="true" Size="Size.Small" />
+                                <MudText Typo="Typo.caption">Uploading image…</MudText>
+                            }
+                            <MudTextField T="string" @bind-Value="_commitMessage"
+                                          Variant="Variant.Outlined" Margin="Margin.Dense"
+                                          Placeholder="Describe the change (optional)" Class="wd-commit" />
+                        </MudPaper>
+                    }
+                    @if (_draftRestored)
+                    {
+                        <MudAlert Severity="Severity.Info" ShowCloseIcon="true" Dense="true" Class="mb-2"
+                                  CloseIconClicked="@(() => _draftRestored = false)">
+                            Picked up your unsaved draft from this device.
+                            <MudLink OnClick="DiscardDraft" Class="ml-2">Discard it and use the saved page</MudLink>
+                        </MudAlert>
+                    }
+                    @if (_conflictMessage is { } conflict)
+                    {
+                        <MudAlert Severity="Severity.Warning" ShowCloseIcon="true" Dense="true" Class="mb-2"
+                                  CloseIconClicked="@(() => _conflictMessage = null)">
+                            @conflict
+                            <MudLink OnClick="ReloadFromRemote" Class="ml-2">Keep my text and save over it</MudLink>
+                        </MudAlert>
+                    }
                     <MudGrid Spacing="2">
-                        @if (_draftRestored)
+                        @if (_view != EditView.Preview)
                         {
-                            <MudItem xs="12">
-                                <MudAlert Severity="Severity.Info" ShowCloseIcon="true"
-                                          CloseIconClicked="@(() => _draftRestored = false)">
-                                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3">
-                                        <MudText>Restored an unsaved draft from this device.</MudText>
-                                        <MudSpacer />
-                                        <MudButton Size="Size.Small" Variant="Variant.Outlined"
-                                                   OnClick="DiscardDraft">
-                                            Use remote
-                                        </MudButton>
-                                    </MudStack>
-                                </MudAlert>
+                            <MudItem xs="12" md="@(_view == EditView.Split ? 6 : 12)">
+                                <MudPaper Outlined="true" Class="wd-editor-pane">
+                                    <StandaloneCodeEditor @ref="_editor" Id="wd-markdown-editor" CssClass="wd-monaco"
+                                                          ConstructionOptions="EditorOptions"
+                                                          OnDidInit="OnEditorReady"
+                                                          OnDidChangeModelContent="OnEditorChanged" />
+                                </MudPaper>
                             </MudItem>
                         }
-                        <MudItem xs="12" md="6">
-                            <MudPaper Outlined="true" Class="wd-editor-pane">
-                                <StandaloneCodeEditor @ref="_editor" Id="wd-markdown-editor" CssClass="wd-monaco"
-                                                      ConstructionOptions="EditorOptions"
-                                                      OnDidInit="OnEditorReady"
-                                                      OnDidChangeModelContent="OnEditorChanged" />
-                            </MudPaper>
-                        </MudItem>
-                        <MudItem xs="12" md="6">
-                            <MudPaper Outlined="true" Class="pa-3 wd-preview-pane">
-                                <div class="wd-preview content">@Preview.Render(_conn!, _currentPath!, _draft)</div>
-                            </MudPaper>
-                        </MudItem>
-                        @if (_conflictMessage is { } conflict)
+                        @if (_view != EditView.Editor)
                         {
-                            <MudItem xs="12">
-                                <MudAlert Severity="Severity.Warning" ShowCloseIcon="true"
-                                          CloseIconClicked="@(() => _conflictMessage = null)">
-                                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3">
-                                        <MudText>@conflict</MudText>
-                                        <MudSpacer />
-                                        <MudButton Size="Size.Small" Variant="Variant.Filled"
-                                                   Color="Color.Warning" OnClick="ReloadFromRemote">
-                                            Reload remote
-                                        </MudButton>
-                                    </MudStack>
-                                </MudAlert>
+                            <MudItem xs="12" md="@(_view == EditView.Split ? 6 : 12)">
+                                <MudPaper Outlined="true" Class="pa-4 wd-preview-pane">
+                                    <div class="wd-preview content">@Preview.Render(_conn!, _currentPath!, _draft)</div>
+                                </MudPaper>
                             </MudItem>
                         }
                     </MudGrid>
+                }
+                else if (_board is { } board && _showBoard)
+                {
+                    <KanbanBoardView Board="board" Busy="_busy" OnMove="MoveCardAsync" OnAdd="AddCardAsync"
+                                     OnDelete="DeleteCardAsync" OnAddColumn="AddColumnAsync" />
                 }
                 else
                 {
@@ -198,26 +286,39 @@ else
 }
 
 @code {
+    private const string ViewKey = "wikidown.editview";
+    private const int MaxImageBytes = 10 * 1024 * 1024;
+
     [Parameter] public string? Path { get; set; }
 
+    private bool _loaded;
     private WikiConnection? _conn;
     private IReadOnlyList<NavNode> _tree = Array.Empty<NavNode>();
     private readonly HashSet<string> _expanded = new(StringComparer.OrdinalIgnoreCase);
     private bool _loadingTree;
     private string? _treeError;
+    private string _filter = "";
+    private bool _busy;
 
     private PagePath? _currentPath;
     private RemotePage? _currentPage;
     private bool _loadingPage;
     private string? _pageError;
+    private KanbanBoard? _board;
+    private bool _showBoard = true;
 
     private bool _editMode;
+    private bool _editWhenLoaded;
+    private bool _cursorAtEnd;
+    private EditView _view = EditView.Split;
     private bool _treePinned;
     private string _draft = string.Empty;
     private StandaloneCodeEditor? _editor;
+    private DotNetObjectReference<Browse>? _self;
     private CancellationTokenSource? _typing;
     private string _commitMessage = string.Empty;
     private bool _saving;
+    private bool _uploading;
     private string? _conflictMessage;
     private bool _draftRestored;
 
@@ -227,21 +328,36 @@ else
     private bool HasChanges =>
         _currentPage is { } p && !string.Equals(_draft, p.Markdown, StringComparison.Ordinal);
 
+    private IWikiBackend Backend => Backends.For(_conn!.Provider);
+
     protected override async Task OnInitializedAsync()
     {
         _conn = await Store.LoadAsync();
-        if (_conn is not null) await LoadTreeAsync();
+        await Account.LoadAsync();
+        try
+        {
+            if (Enum.TryParse<EditView>(await JS.InvokeAsync<string?>("localStorage.getItem", ViewKey), out var view))
+                _view = view;
+        }
+        catch (JSException) { }
+        _loaded = true;
+        if (_conn is null) return;
+        await LoadTreeAsync();
+        // Land on the wiki's home page rather than an empty pane.
+        if (string.IsNullOrEmpty(Path) && _tree.FirstOrDefault(n => n.IsPage && n.Path.IsTopLevelHome) is { } home)
+            Nav.NavigateTo(Route(home.Path), replace: true);
     }
 
     protected override async Task OnParametersSetAsync()
     {
         if (_conn is null) return;
         var parsed = string.IsNullOrEmpty(Path) ? null : PagePath.Parse("/" + Path);
-        if (Equals(parsed, _currentPath)) return;
+        if (parsed?.ToLinkPath() == _currentPath?.ToLinkPath()) return;
         _currentPath = parsed;
         _editMode = false;
         _conflictMessage = null;
         _draftRestored = false;
+        _showBoard = true;
         ExpandCurrentPath();
         await LoadPageAsync();
     }
@@ -249,7 +365,6 @@ else
     private void ExpandCurrentPath()
     {
         if (_currentPath is null) return;
-        // Expand every ancestor (and the page itself, so its subpages show)
         for (var p = _currentPath; !p.IsRoot; p = p.Parent)
             _expanded.Add(p.ToLinkPath());
     }
@@ -261,14 +376,13 @@ else
         _treeError = null;
         try
         {
-            var backend = Backends.For(_conn.Provider);
-            var snapshot = await backend.WalkAsync(_conn);
+            var snapshot = await Backend.WalkAsync(_conn);
             _tree = NavTree.Build(snapshot.Pages, snapshot.OrderFor);
             ExpandCurrentPath();
         }
         catch (Exception ex)
         {
-            _treeError = $"Tree load failed: {ex.Message}";
+            _treeError = $"Couldn't load the wiki: {ex.Message}";
             _tree = Array.Empty<NavNode>();
         }
         finally
@@ -279,18 +393,26 @@ else
 
     private async Task LoadPageAsync()
     {
-        if (_conn is null || _currentPath is null) { _currentPage = null; _draft = string.Empty; return; }
+        if (_conn is null || _currentPath is null)
+        {
+            _currentPage = null;
+            _board = null;
+            _draft = string.Empty;
+            return;
+        }
+        var path = _currentPath;
         _loadingPage = true;
         _pageError = null;
-        _currentPage = null;
         _draftRestored = false;
         try
         {
-            var backend = Backends.For(_conn.Provider);
-            _currentPage = await backend.ReadPageAsync(_conn, _currentPath);
+            var page = await Backend.ReadPageAsync(_conn, path);
+            if (path.ToLinkPath() != _currentPath?.ToLinkPath()) return;
+            _currentPage = page;
+            _board = KanbanBoard.TryParse(path, page.Markdown);
 
-            var saved = await Drafts.LoadAsync(_conn, _currentPath);
-            if (saved is not null && !string.Equals(saved, _currentPage.Markdown, StringComparison.Ordinal))
+            var saved = await Drafts.LoadAsync(_conn, path);
+            if (saved is not null && !string.Equals(saved, page.Markdown, StringComparison.Ordinal))
             {
                 _draft = saved;
                 _draftRestored = true;
@@ -298,14 +420,18 @@ else
             }
             else
             {
-                _draft = _currentPage.Markdown;
+                _draft = page.Markdown;
+                if (_editWhenLoaded) _editMode = _cursorAtEnd = true;
             }
-            _commitMessage = $"Update {_currentPath.Name.Title}";
-            await Images.PrefetchAsync(_conn, _currentPath, _draft);
+            _editWhenLoaded = false;
+            _commitMessage = string.Empty;
+            await Images.PrefetchAsync(_conn, path, _draft);
         }
         catch (Exception ex)
         {
-            _pageError = ex.Message;
+            _currentPage = null;
+            _board = null;
+            _pageError = $"Couldn't open this page: {ex.Message}";
         }
         finally
         {
@@ -313,15 +439,329 @@ else
         }
     }
 
+    private async Task ResetSampleAsync()
+    {
+        await Demo.ResetAsync();
+        if (_currentPath is null) await RefreshAsync();
+        else { await LoadTreeAsync(); Nav.NavigateTo("browse"); }
+    }
+
+    private async Task RefreshAsync()
+    {
+        await LoadTreeAsync();
+        if (!_editMode) await LoadPageAsync();
+    }
+
+    // ---------- pages and folders
+
+    /// <summary>Runs a change through the workspace as one commit, then shows the wiki as it now is.</summary>
+    private async Task<bool> ChangeAsync(string message, Action<WikiRepository> change, string? navigateTo = null)
+    {
+        if (_conn is null) return false;
+        _busy = true;
+        StateHasChanged();
+        try
+        {
+            await Workspace.RunAsync(_conn, message, change);
+            await LoadTreeAsync();
+            if (navigateTo is not null && navigateTo != CurrentRoute) Nav.NavigateTo(navigateTo);
+            else await LoadPageAsync();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+            await RefreshAsync();
+            return false;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private string CurrentRoute => _currentPath is null ? "browse" : Route(_currentPath);
+
+    private static string Route(PagePath page) => "browse" + page.ToLinkPath();
+
+    private Task OnTreeAction(TreeAction action) => action.Kind switch
+    {
+        TreeActionKind.NewSubpage => NewPageAsync(action.Node.Path),
+        TreeActionKind.Rename => RenameAsync(action.Node.Path),
+        TreeActionKind.Move => MoveAsync(action.Node.Path),
+        TreeActionKind.MoveUp => ReorderAsync(action.Node.Path, -1),
+        TreeActionKind.MoveDown => ReorderAsync(action.Node.Path, +1),
+        TreeActionKind.Delete => DeleteAsync(action.Node.Path),
+        _ => Task.CompletedTask,
+    };
+
+    private async Task<PageDialog.Result?> AskAsync(string heading, DialogParameters<PageDialog> parameters)
+    {
+        parameters.Add(d => d.Nodes, _tree);
+        var dialog = await Dialogs.ShowAsync<PageDialog>(heading, parameters,
+            new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small });
+        var result = await dialog.Result;
+        return result is { Canceled: false, Data: PageDialog.Result answer } ? answer : null;
+    }
+
+    private async Task NewPageAsync(PagePath parent, string suggestion = "")
+    {
+        var answer = await AskAsync("New page", new DialogParameters<PageDialog>
+        {
+            { d => d.ShowParent, _tree.Count > 0 },
+            { d => d.Parent, parent },
+            { d => d.Title, suggestion },
+            { d => d.TitleLabel, "Page title" },
+            { d => d.Confirm, "Create" },
+            { d => d.LinkOption, "Add a link to it on the page it sits under" },
+        });
+        if (answer is null) return;
+
+        var page = answer.Parent.Append(PageName.FromTitle(answer.Title));
+        _editWhenLoaded = true;
+        var created = await ChangeAsync($"Add {answer.Title}", repo =>
+        {
+            repo.Write(new WikiPage(page, $"# {answer.Title}\n\n"));
+            if (answer.Link && repo.Exists(answer.Parent))
+                repo.Append(answer.Parent, $"- [{answer.Title}]({MarkdownCommands.RelativeLink(answer.Parent, page)})");
+        }, Route(page));
+        if (!created) _editWhenLoaded = false;
+    }
+
+    private async Task NewKanbanAsync()
+    {
+        var answer = await AskAsync("New kanban", new DialogParameters<PageDialog>
+        {
+            { d => d.ShowParent, _tree.Count > 0 },
+            { d => d.Title, "Kanban" },
+            { d => d.TitleLabel, "Board name" },
+            { d => d.Confirm, "Create" },
+            { d => d.LinkOption, "Add a link to it on the page it sits under" },
+        });
+        if (answer is null) return;
+
+        var board = answer.Parent.Append(PageName.FromTitle(answer.Title));
+        await ChangeAsync($"Add {answer.Title} kanban", repo =>
+        {
+            KanbanBoard.Create(repo, board);
+            if (answer.Link && repo.Exists(answer.Parent))
+                repo.Append(answer.Parent, $"- [{answer.Title}]({MarkdownCommands.RelativeLink(answer.Parent, board)})");
+        }, Route(board));
+    }
+
+    private async Task RenameAsync(PagePath page)
+    {
+        var answer = await AskAsync($"Rename {page.Name.Title}", new DialogParameters<PageDialog>
+        {
+            { d => d.Parent, page.Parent },
+            { d => d.Title, page.Name.Title },
+            { d => d.TitleLabel, "New name" },
+            { d => d.Subject, page },
+            { d => d.Confirm, "Rename" },
+        });
+        if (answer is null) return;
+        var target = page.Parent.Append(PageName.FromTitle(answer.Title));
+        if (target.ToLinkPath() == page.ToLinkPath()) return;
+
+        var oldTitle = page.Name.Title;
+        await RelocateAsync(page, target, $"Rename {oldTitle} to {answer.Title}", repo =>
+        {
+            // The heading is the page's displayed title; keep it in step when it was just the old name.
+            if (!repo.Exists(target)) return;
+            var markdown = repo.Read(target).Markdown;
+            if (Wikidown.Core.PageTitle.FromMarkdown(markdown) != oldTitle) return;
+            var lines = markdown.Split('\n');
+            var heading = Array.FindIndex(lines, l => l.TrimEnd('\r') == $"# {oldTitle}");
+            if (heading < 0) return;
+            lines[heading] = lines[heading].Replace($"# {oldTitle}", $"# {answer.Title}");
+            repo.Write(new WikiPage(target, string.Join('\n', lines)));
+        });
+    }
+
+    private async Task MoveAsync(PagePath page)
+    {
+        var answer = await AskAsync($"Move {page.Name.Title}", new DialogParameters<PageDialog>
+        {
+            { d => d.ShowTitle, false },
+            { d => d.ShowParent, true },
+            { d => d.Parent, page.Parent },
+            { d => d.Subject, page },
+            { d => d.Confirm, "Move" },
+        });
+        if (answer is null) return;
+        var target = answer.Parent.Append(page.Name);
+        if (target.ToLinkPath() == page.ToLinkPath()) return;
+        await RelocateAsync(page, target, $"Move {page.Name.Title} to {(answer.Parent.IsRoot ? "the top level" : answer.Parent.Name.Title)}");
+    }
+
+    private async Task RelocateAsync(PagePath from, PagePath to, string message, Action<WikiRepository>? then = null)
+    {
+        if (!await LeaveEditorAsync()) return;
+        string? follow = null;
+        if (_currentPath is { } current && IsWithin(current, from))
+            follow = Route(current.Segments.Skip(from.Segments.Count).Aggregate(to, (path, segment) => path.Append(segment)));
+
+        await ChangeAsync(message, repo =>
+        {
+            var rewrites = MoveLinkRewriter.MoveAndRewrite(repo, from, to);
+            then?.Invoke(repo);
+            if (from.Name.Title == to.Name.Title) return;
+
+            // Links that showed the old name as their text follow the rename too.
+            foreach (var rewrite in rewrites.DistinctBy(r => (r.Page.ToLinkPath(), r.NewTarget)))
+            {
+                var page = IsWithin(rewrite.Page, from)
+                    ? rewrite.Page.Segments.Skip(from.Segments.Count).Aggregate(to, (path, segment) => path.Append(segment))
+                    : rewrite.Page;
+                var old = $"[{from.Name.Title}]({rewrite.NewTarget})";
+                if (repo.Exists(page) && repo.Read(page).Markdown.Contains(old, StringComparison.Ordinal))
+                    repo.Edit(page, old, $"[{to.Name.Title}]({rewrite.NewTarget})", replaceAll: true);
+            }
+        }, follow);
+    }
+
+    private async Task ReorderAsync(PagePath page, int direction)
+    {
+        var siblings = SiblingsOf(_tree, page);
+        if (siblings is null) return;
+        var names = siblings.Select(n => n.Path.Name.FileBase).ToList();
+        var index = names.FindIndex(n => string.Equals(n, page.Name.FileBase, StringComparison.OrdinalIgnoreCase));
+        var swap = index + direction;
+        if (index < 0 || swap < 0 || swap >= names.Count) return;
+        (names[index], names[swap]) = (names[swap], names[index]);
+        await ChangeAsync($"Reorder {(page.Parent.IsRoot ? "top-level pages" : page.Parent.Name.Title)}",
+            repo => repo.WriteOrder(page.Parent, names));
+    }
+
+    private async Task DeleteAsync(PagePath page)
+    {
+        var node = Flatten(_tree).FirstOrDefault(n => n.Path.ToLinkPath() == page.ToLinkPath());
+        var below = node is null ? 0 : Flatten(node.Children).Count(n => n.IsPage);
+        var what = below == 0
+            ? $"“{page.Name.Title}” will be deleted."
+            : $"“{page.Name.Title}” and the {below} page{(below == 1 ? "" : "s")} under it will be deleted.";
+        var confirmed = await Dialogs.ShowMessageBox($"Delete {page.Name.Title}?",
+            what + " Links to it from other pages will stop working. You can get it back from the repository's history.",
+            yesText: "Delete", cancelText: "Cancel");
+        if (confirmed != true) return;
+
+        if (_currentPath is { } current && IsWithin(current, page))
+        {
+            if (!await LeaveEditorAsync(discard: true)) return;
+            await ChangeAsync($"Delete {page.Name.Title}", repo => repo.Delete(page, deleteSubpages: true),
+                page.Parent.IsRoot ? "browse" : Route(page.Parent));
+        }
+        else
+        {
+            await ChangeAsync($"Delete {page.Name.Title}", repo => repo.Delete(page, deleteSubpages: true));
+        }
+    }
+
+    // Structural changes rewrite the open page underneath the editor, so unsaved text is saved first.
+    private async Task<bool> LeaveEditorAsync(bool discard = false)
+    {
+        if (!_editMode) return true;
+        await FlushEditorAsync();
+        if (HasChanges && !discard)
+        {
+            await SaveAsync();
+            if (HasChanges) return false;
+        }
+        else if (HasChanges && _conn is not null && _currentPath is not null)
+        {
+            await Drafts.ClearAsync(_conn, _currentPath);
+        }
+        _editMode = false;
+        return true;
+    }
+
+    private async Task ChangeSettingsAsync()
+    {
+        if (_conn is null) return;
+        IReadOnlyList<string> branches = Array.Empty<string>();
+        if (_conn.Provider == WikiProvider.GitHub)
+        {
+            try { branches = await Account.ListBranchesAsync(_conn.Owner, _conn.Repo); }
+            catch (Exception) { }
+        }
+        var dialog = await Dialogs.ShowAsync<WikiSettingsDialog>("Branch and folder", new DialogParameters<WikiSettingsDialog>
+        {
+            { d => d.Branch, _conn.Branch },
+            { d => d.DocsPath, _conn.DocsPath },
+            { d => d.Branches, branches },
+        }, new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small });
+        if (await dialog.Result is not { Canceled: false, Data: WikiSettingsDialog.Result settings }) return;
+
+        _conn = _conn with { Branch = settings.Branch, DocsPath = settings.DocsPath };
+        await Store.SaveAsync(_conn);
+        _expanded.Clear();
+        await LoadTreeAsync();
+        if (_currentPath is null) await LoadPageAsync();
+        else Nav.NavigateTo("browse");
+    }
+
+    private static bool IsWithin(PagePath page, PagePath ancestor) =>
+        page.Segments.Count >= ancestor.Segments.Count
+        && page.Segments.Take(ancestor.Segments.Count).Select(s => s.FileBase)
+            .SequenceEqual(ancestor.Segments.Select(s => s.FileBase), StringComparer.OrdinalIgnoreCase);
+
+    private static IReadOnlyList<NavNode>? SiblingsOf(IReadOnlyList<NavNode> nodes, PagePath page)
+    {
+        if (nodes.Any(n => n.Path.ToLinkPath() == page.ToLinkPath())) return nodes;
+        return nodes.Select(n => SiblingsOf(n.Children, page)).FirstOrDefault(found => found is not null);
+    }
+
+    private static IEnumerable<NavNode> Flatten(IEnumerable<NavNode> nodes) =>
+        nodes.SelectMany(n => new[] { n }.Concat(Flatten(n.Children)));
+
+    private bool Matches(NavNode node) =>
+        node.Title.Contains(_filter.Trim(), StringComparison.OrdinalIgnoreCase)
+        || node.Path.ToLinkPath().Contains(_filter.Trim().Replace(' ', '-'), StringComparison.OrdinalIgnoreCase);
+
+    // ---------- kanban
+
+    private Task MoveCardAsync(KanbanBoardView.MoveRequest move) =>
+        ChangeAsync($"Move {move.Card.Name.Title} to {move.Column.Name.Title}",
+            repo => KanbanBoard.MoveCard(repo, _currentPath!, move.Card, move.Column, move.Index));
+
+    private Task AddCardAsync(KanbanBoardView.AddRequest add) =>
+        ChangeAsync($"Add {add.Title} to {add.Column.Name.Title}",
+            repo => KanbanBoard.AddCard(repo, _currentPath!, add.Column, add.Title));
+
+    private async Task DeleteCardAsync(KanbanCard card)
+    {
+        var confirmed = await Dialogs.ShowMessageBox($"Delete {card.Title}?",
+            "The card and its page will be deleted.", yesText: "Delete", cancelText: "Cancel");
+        if (confirmed == true)
+            await ChangeAsync($"Delete {card.Title}", repo => KanbanBoard.RemoveCard(repo, _currentPath!, card.Page));
+    }
+
+    private async Task AddColumnAsync()
+    {
+        var answer = await AskAsync("New column", new DialogParameters<PageDialog>
+        {
+            { d => d.Parent, _currentPath! },
+            { d => d.TitleLabel, "Column name" },
+            { d => d.Confirm, "Add" },
+        });
+        if (answer is not null)
+            await ChangeAsync($"Add {answer.Title} column", repo => KanbanBoard.AddColumn(repo, _currentPath!, answer.Title));
+    }
+
+    // ---------- editing
+
     private StandaloneEditorConstructionOptions EditorOptions(StandaloneCodeEditor editor) => new()
     {
         Language = "markdown",
-        Value = _draft,
+        Value = Breadcrumb.Strip(_draft),
         AutomaticLayout = true,
         WordWrap = "on",
+        LineNumbers = "off",
+        Folding = false,
         Minimap = new EditorMinimapOptions { Enabled = false },
         ScrollBeyondLastLine = false,
-        FontSize = 14,
+        RenderLineHighlight = "none",
+        FontSize = 15,
     };
 
     private async Task OnEditorReady()
@@ -332,28 +772,48 @@ else
             args => { _ = InvokeAsync(() => MarkdownCommands.Wrap(editor, "**", "**", "bold text")); });
         await editor.AddCommand(ctrl | (int)KeyCode.KeyI,
             args => { _ = InvokeAsync(() => MarkdownCommands.Wrap(editor, "_", "_", "italic text")); });
+        await editor.AddCommand(ctrl | (int)KeyCode.KeyK,
+            args => { _ = InvokeAsync(() => MarkdownCommands.Link(editor)); });
         await editor.AddCommand(ctrl | (int)KeyCode.KeyS, args => { _ = InvokeAsync(SaveFromEditor); });
+
+        _self ??= DotNetObjectReference.Create(this);
+        await JS.InvokeVoidAsync("wikidown.enhanceEditor", "wd-markdown-editor", _self, ".wd-preview-pane", _cursorAtEnd);
+        _cursorAtEnd = false;
+        await editor.Focus();
         StateHasChanged();
     }
 
     // Ctrl+S saves what's in the editor now, not what the debounce last saw.
     private async Task SaveFromEditor()
     {
-        _typing?.Cancel();
-        if (_editor is not null) await OnDraftChanged(await _editor.GetValue());
+        await FlushEditorAsync();
         await SaveAsync();
         StateHasChanged();
     }
 
-    // Re-render the preview and save the draft once typing pauses, as the
-    // old text field's DebounceInterval did.
+    private async Task FlushEditorAsync()
+    {
+        _typing?.Cancel();
+        if (_editMode && _view != EditView.Preview && _editor is not null)
+            await OnDraftChanged(FromEditor(await _editor.GetValue()));
+    }
+
+    // Re-render the preview and save the draft once typing pauses.
     private async Task OnEditorChanged(ModelContentChangedEvent _)
     {
         _typing?.Cancel();
         var typing = _typing = new CancellationTokenSource();
         try { await Task.Delay(200, typing.Token); }
         catch (TaskCanceledException) { return; }
-        if (_editor is not null) await OnDraftChanged(await _editor.GetValue());
+        if (_editor is not null) await OnDraftChanged(FromEditor(await _editor.GetValue()));
+    }
+
+    // The breadcrumb line is generated, so the editor doesn't show it; it is
+    // put back in front of whatever the editor holds.
+    private string FromEditor(string body)
+    {
+        var saved = _currentPage?.Markdown ?? "";
+        return saved[..(saved.Length - Breadcrumb.Strip(saved).Length)] + body;
     }
 
     private async Task OnDraftChanged(string value)
@@ -362,31 +822,33 @@ else
         if (_conn is null || _currentPath is null || _currentPage is null) return;
         await Images.PrefetchAsync(_conn, _currentPath, _draft);
         if (string.Equals(_draft, _currentPage.Markdown, StringComparison.Ordinal))
-        {
             await Drafts.ClearAsync(_conn, _currentPath);
-        }
         else
-        {
             await Drafts.SaveAsync(_conn, _currentPath, _draft);
-        }
     }
 
-    private void OnToggleEdit(bool value)
+    private async Task SetEditAsync(bool value)
     {
+        if (!value) await FlushEditorAsync();
         _editMode = value;
         _conflictMessage = null;
-        if (_editMode && _currentPage is { } p)
-        {
-            if (string.IsNullOrEmpty(_draft)) _draft = p.Markdown;
-            if (string.IsNullOrWhiteSpace(_commitMessage) && _currentPath is not null)
-                _commitMessage = $"Update {_currentPath.Name.Title}";
-        }
+        if (value && _currentPage is { } p && string.IsNullOrEmpty(_draft)) _draft = p.Markdown;
+        if (!value && !HasChanges) await LoadPageAsync();
+    }
+
+    private async Task SetViewAsync(EditView view)
+    {
+        await FlushEditorAsync();
+        _view = view;
+        try { await JS.InvokeVoidAsync("localStorage.setItem", ViewKey, view.ToString()); }
+        catch (JSException) { }
     }
 
     private async Task DiscardDraft()
     {
+        _typing?.Cancel();
         if (_currentPage is { } p) _draft = p.Markdown;
-        if (_editor is not null) await _editor.SetValue(_draft);
+        if (_editor is not null && _view != EditView.Preview) await _editor.SetValue(Breadcrumb.Strip(_draft));
         _conflictMessage = null;
         _draftRestored = false;
         if (_conn is not null && _currentPath is not null)
@@ -396,31 +858,33 @@ else
     private async Task SaveAsync()
     {
         if (_conn is null || _currentPath is null || _currentPage is null) return;
-        if (!HasChanges) return;
+        if (!HasChanges || _saving) return;
 
         _saving = true;
         _conflictMessage = null;
         try
         {
-            var backend = Backends.For(_conn.Provider);
             var msg = string.IsNullOrWhiteSpace(_commitMessage)
                 ? $"Update {_currentPath.Name.Title}"
                 : _commitMessage.Trim();
-            var result = await backend.WritePageAsync(_conn, new CommitRequest(
-                _currentPath, _draft, _currentPage.Sha, msg));
+            var saved = _draft;
+            var result = await Backend.WritePageAsync(_conn, new CommitRequest(
+                _currentPath, saved, _currentPage.Sha, msg));
 
-            _currentPage = _currentPage with { Markdown = _draft, Sha = result.NewSha };
-            await Drafts.ClearAsync(_conn, _currentPath);
+            _currentPage = _currentPage with { Markdown = saved, Sha = result.NewSha };
+            _board = KanbanBoard.TryParse(_currentPath, saved);
+            if (!HasChanges) await Drafts.ClearAsync(_conn, _currentPath);
             _draftRestored = false;
+            _commitMessage = string.Empty;
             Snackbar.Add($"Saved {_currentPath.Name.Title}", Severity.Success);
         }
-        catch (WikiConflictException conflict)
+        catch (WikiConflictException)
         {
-            _conflictMessage = conflict.Message;
+            _conflictMessage = "Someone else changed this page since you opened it, so it wasn't saved.";
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Save failed: {ex.Message}", Severity.Error);
+            Snackbar.Add($"Couldn't save: {ex.Message}", Severity.Error);
         }
         finally
         {
@@ -428,18 +892,97 @@ else
         }
     }
 
+    // After a conflict: take the server's version as the new base but keep
+    // what's in the editor, so the next Save goes through.
     private async Task ReloadFromRemote()
     {
-        var keep = _draft;
-        await LoadPageAsync();
-        // Keep the user's pending edits in the editor so they can hand-merge.
-        _draft = keep;
-        _conflictMessage = null;
+        if (_conn is null || _currentPath is null) return;
+        await FlushEditorAsync();
+        try
+        {
+            _currentPage = await Backend.ReadPageAsync(_conn, _currentPath);
+            _conflictMessage = null;
+            await SaveAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
     }
 
-    private static string RepoLabel(WikiConnection c) => c.Provider switch
+    // ---------- images
+
+    private async Task OnImagePicked(IBrowserFile? file)
     {
-        WikiProvider.AzureDevOps => $"{c.Owner}/{c.Project}/{c.Repo}",
-        _ => $"{c.Owner}/{c.Repo}",
-    };
+        if (file is null) return;
+        if (file.Size > MaxImageBytes)
+        {
+            Snackbar.Add("That image is over 10 MB.", Severity.Warning);
+            return;
+        }
+        using var buffer = new MemoryStream();
+        await file.OpenReadStream(MaxImageBytes).CopyToAsync(buffer);
+        await UploadImageAsync(file.Name, file.ContentType, buffer.ToArray());
+    }
+
+    [JSInvokable]
+    public async Task OnImageFile(string name, string contentType, string base64)
+    {
+        await UploadImageAsync(name, contentType, Convert.FromBase64String(base64));
+        StateHasChanged();
+    }
+
+    private async Task UploadImageAsync(string name, string contentType, byte[] bytes)
+    {
+        if (_conn is null || _currentPath is null || _editor is null) return;
+        if (bytes.Length > MaxImageBytes)
+        {
+            Snackbar.Add("That image is over 10 MB.", Severity.Warning);
+            return;
+        }
+
+        _uploading = true;
+        StateHasChanged();
+        try
+        {
+            var extension = System.IO.Path.GetExtension(name);
+            if (extension.Length == 0) extension = ".png";
+            var stem = Slug(System.IO.Path.GetFileNameWithoutExtension(name));
+            var alt = stem.Replace('-', ' ');
+            // Screenshots all arrive as "image.png"; name them after the page instead.
+            if (stem.Length == 0 || stem == "image")
+            {
+                stem = $"{_currentPath.Name.FileBase}-{DateTime.Now:yyyyMMdd-HHmmss}";
+                alt = "image";
+            }
+
+            var rel = $".attachments/{stem}{extension}";
+            if (await Backend.ReadBytesAsync(_conn, rel) is not null)
+                rel = $".attachments/{stem}-{DateTime.Now:HHmmss}{extension}";
+
+            await Backend.CommitAsync(_conn, [new FileChange(rel, bytes, IsNew: true)], $"Add {System.IO.Path.GetFileName(rel)}");
+
+            var link = string.Concat(Enumerable.Repeat("../", _currentPath.Segments.Count - 1)) + rel;
+            Images.Replace(_conn, _currentPath, link, $"data:{contentType};base64,{Convert.ToBase64String(bytes)}");
+            await MarkdownCommands.InsertText(_editor, $"![{alt}]({link})");
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Couldn't add the image: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _uploading = false;
+        }
+    }
+
+    private static string Slug(string name) =>
+        string.Join('-', new string(name.Select(c => char.IsLetterOrDigit(c) || c is '.' or '_' ? c : '-').ToArray())
+            .Split('-', StringSplitOptions.RemoveEmptyEntries));
+
+    public void Dispose()
+    {
+        _typing?.Cancel();
+        _self?.Dispose();
+    }
 }

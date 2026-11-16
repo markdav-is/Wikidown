@@ -102,6 +102,24 @@ Checks are ordered so you can stop early on a catastrophic failure
   subsequent normal reload is served partly from cache (Network panel
   shows some requests flagged `(ServiceWorker)` or `(disk cache)`).
 
+### Pages, images and kanban
+
+Run these in the sample wiki: on `/`, click **Try the sample wiki**. Nothing
+is committed anywhere. Sign out first if `/` redirects to `/repos`.
+
+- Tree header → **New page**, enter a name. The page appears in the tree
+  and opens; with the checkbox left on, its parent page links to it.
+- The new page's ⋮ menu → **Rename**. The tree, the page's `# heading` and
+  the link on the parent page all show the new name.
+- The page's ⋮ menu → **Delete**. A dialog asks first and says how many
+  pages will go; after confirming, the page leaves the tree.
+- Edit a page and paste an image from the clipboard. A relative
+  `![...](...)` link into `.attachments/` is inserted and the image shows
+  in the preview.
+- Tree header → **New kanban**. The dashboard opens as a board. Add a card,
+  then drag it to another column; it stays there after a reload, and the
+  **Page** view lists it under the new column's heading.
+
 ## API smoke tests — `/api/*`
 
 The `/api/*` routes are served by the linked Azure Functions app. These
@@ -122,7 +140,7 @@ are quick unauthenticated probes — they don't touch real OAuth.
   `{"error":"missing_code"}`.
 - `GET /oauth/github/return.html` → HTTP 200, serves the static relay
   page (briefly shows "Completing GitHub sign-in…" before redirecting to
-  `/connect#gh_error=missing_code` because no `code` is in the query
+  `/#gh_error=missing_code` (the home page) because no `code` is in the query
   string).
 - **Do not** add `?code=…` to any `/api/*` URL when probing — Azure
   Functions on ASWA's managed backend rejects `?code=` queries pre-dispatch
@@ -137,36 +155,40 @@ Only run if a throwaway GitHub account is available to approve the
 
 With throwaway credentials:
 
-- Navigate to `/connect`. The GitHub tab shows a **Sign in with GitHub**
-  button as the primary action, *not* a PAT field by default. A
-  "Use a PAT instead" toggle is visible.
-- Fill Owner + Repo for a repo the throwaway account can access.
+- Navigate to `/`. The home page shows a **Sign in with GitHub** button as
+  the primary action, *not* a token field by default. A
+  "Use a personal access token instead" button is visible. There are no
+  Owner or Repo fields.
 - Click **Sign in with GitHub**. Browser leaves the app and lands on
   `github.com/login/oauth/authorize?...` with the `Wikidown` app name
   visible on the consent screen.
 - Approve. Browser returns through
   `/oauth/github/return.html?code=...&state=...`, briefly shows
   "Completing GitHub sign-in…" while the relay page POSTs the code to
-  `/api/auth/github/exchange`, then lands on `/connect` with the hash
+  `/api/auth/github/exchange`, then lands on `/` with the hash
   immediately cleaned up by `history.replaceState` (inspect the address
   bar — no `#gh_token=` left behind after first paint).
-- The app auto-navigates to `/browse` and the snackbar reads
-  "Connected to `<owner>/<repo>`".
-- DevTools → Application → Local Storage has key
-  `wikidown.connection.v1` with a JSON value that includes `token`
-  (the access token) and `provider: "GitHub"`.
-- DevTools → Application → Session Storage is empty — `wikidown.gh_state`
-  and `wikidown.gh_pending` have been cleared.
-- Returning to `/connect` shows the "Connected: ..." banner with
-  **Browse** and **Disconnect** buttons.
-- Clicking **Disconnect** removes `wikidown.connection.v1` from Local
-  Storage and the connected banner disappears.
+- The app auto-navigates to `/repos` ("Open a wiki"), which lists the
+  account's repositories, most recently pushed first. Typing in the search
+  box filters the list.
+- DevTools → Application → Local Storage has key `wikidown.github.v1` with
+  a JSON value that includes the access token.
+- DevTools → Application → Session Storage has no `wikidown.gh_state`.
+- Click a repository. The app goes to `/browse`, the app bar shows the
+  wiki's name, and Local Storage now has key `wikidown.connection.v1`.
+- Return to `/repos`. The repository appears in the **Recent** row.
+- Account menu → **Sign out** removes `wikidown.github.v1` from Local
+  Storage and returns to the sign-in page at `/`.
 
 State-mismatch negative test:
 
 - Start a sign-in, then manually set `sessionStorage['wikidown.gh_state']`
-  to a different value before returning from GitHub. The `/connect` page
-  should show a "state mismatch" error and **not** store a connection.
+  to a different value before returning from GitHub. The home page (`/`)
+  should show a "state mismatch" error and **not** store a sign-in.
+
+GitLab and Azure DevOps:
+
+- `/connect` is titled "GitLab or Azure DevOps" and has no GitHub tab.
 
 ## ASWA default hostname — `https://victorious-wave-03164381e.7.azurestaticapps.net/`
 

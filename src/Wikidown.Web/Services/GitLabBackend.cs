@@ -17,6 +17,7 @@ public sealed class GitLabBackend(HttpClient http) : IWikiBackend
     private static readonly JsonSerializerOptions JsonOpts = new(JsonSerializerDefaults.Web)
     {
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
+        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
     };
 
     public WikiProvider Provider => WikiProvider.GitLab;
@@ -135,6 +136,56 @@ public sealed class GitLabBackend(HttpClient http) : IWikiBackend
         return new CommitResult(payload.Id);
     }
 
+    public async Task<WikiFiles> ReadAllAsync(WikiConnection conn, CancellationToken ct = default)
+    {
+        var docs = conn.DocsPath.Trim('/');
+        var prefix = docs.Length == 0 ? "" : docs + "/";
+        var wanted = (await GetTreeAsync(conn, docs, recursive: true, ct))
+            .Where(i => i.Type == "blob" && i.Path.StartsWith(prefix, StringComparison.Ordinal))
+            .Where(i => i.Name.EndsWith(".md", StringComparison.OrdinalIgnoreCase) || i.Name == ".order")
+            .ToList();
+
+        var files = new Dictionary<string, byte[]>(StringComparer.Ordinal);
+        using var gate = new SemaphoreSlim(6);
+        await Task.WhenAll(wanted.Select(async item =>
+        {
+            await gate.WaitAsync(ct);
+            try
+            {
+                var bytes = await ReadBytesAsync(conn, item.Path[prefix.Length..], ct);
+                if (bytes is not null) lock (files) files[item.Path[prefix.Length..]] = bytes;
+            }
+            finally { gate.Release(); }
+        }));
+        return new WikiFiles(null, files);
+    }
+
+    public async Task CommitAsync(
+        WikiConnection conn, IReadOnlyList<FileChange> changes, string message,
+        string? expectedHead = null, CancellationToken ct = default)
+    {
+        if (changes.Count == 0) return;
+        var actions = changes.Select(c => new GlAction(
+            c.Content is null ? "delete" : c.IsNew ? "create" : "update",
+            Combine(conn.DocsPath, c.Path),
+            c.Content is null ? null : Convert.ToBase64String(c.Content),
+            null,
+            c.Content is null ? null : "base64")).ToList();
+
+        var url = $"{ApiBase(conn)}/projects/{ProjectId(conn)}/repository/commits";
+        using var req = Authenticated(HttpMethod.Post, url, conn.Token);
+        req.Content = JsonContent.Create(new GlCommitRequest(conn.Branch, message, actions), options: JsonOpts);
+        using var res = await http.SendAsync(req, ct);
+        if (res.IsSuccessStatusCode) return;
+
+        var detail = await res.Content.ReadAsStringAsync(ct);
+        if (res.StatusCode == HttpStatusCode.BadRequest &&
+            (detail.Contains("already exists", StringComparison.OrdinalIgnoreCase) ||
+             detail.Contains("doesn't exist", StringComparison.OrdinalIgnoreCase)))
+            throw new WikiConflictException("The wiki changed on GitLab while you were working. Try again.");
+        throw new InvalidOperationException($"GitLab commit failed ({(int)res.StatusCode}): {Trim(detail)}");
+    }
+
     private async Task<List<GlTreeItem>> GetTreeAsync(
         WikiConnection conn, string path, bool recursive, CancellationToken ct)
     {
@@ -223,6 +274,6 @@ public sealed class GitLabBackend(HttpClient http) : IWikiBackend
     private sealed record GlTreeItem(string Id, string Name, string Type, string Path);
     private sealed record GlFile(string? Content, string? Encoding, string? BlobId, string? LastCommitId);
     private sealed record GlCommitRequest(string Branch, string CommitMessage, IReadOnlyList<GlAction> Actions);
-    private sealed record GlAction(string Action, string FilePath, string Content, string? LastCommitId);
+    private sealed record GlAction(string Action, string FilePath, string? Content, string? LastCommitId, string? Encoding = null);
     private sealed record GlCommit(string Id);
 }

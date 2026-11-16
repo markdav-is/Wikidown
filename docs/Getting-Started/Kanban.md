@@ -22,6 +22,20 @@ Pass `--path` to use a different name, e.g. `wikidown kanban init --path /Home-P
 
 There is nothing special about these pages. Each item is an ordinary sub-page of To Do, Doing or Done (for example `/Kanban/To-Do/Buy-Paint`), and every page follows the same rules as any other wiki page. You can edit any of them by hand.
 
+## In the web editor
+
+The [web editor](../Editor.md) shows a dashboard page as a board of columns and cards, so you can work the board without the commands below. A page counts as a dashboard when at least two of its `##` headings are links to its own direct sub-pages.
+
+- **Move a card:** drag it to another column, or to a new position in its column.
+- **Add a card:** choose "Add a card" at the bottom of a column.
+- **Open, move or delete a card:** use the card's ⋮ menu. It has Open, Move to *column*, and Delete.
+- **Add a column:** choose "Add a column" at the right of the board.
+- **Create a board:** choose "New kanban" in the tree header.
+
+Each action does every step that the CLI recipe on this page does, as one commit. Moving a card, for example, moves the card's page, and moves its line on the dashboard and on the column pages.
+
+A Board / Page toggle switches to the plain page when you want to edit the markdown.
+
 ## Add an item
 
 Create the item's page:

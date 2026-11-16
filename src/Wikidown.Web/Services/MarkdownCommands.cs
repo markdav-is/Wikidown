@@ -94,6 +94,29 @@ public static partial class MarkdownCommands
         await editor.Focus();
     }
 
+    /// <summary>Replaces the selection with text (an uploaded image's link, say) and leaves the cursor after it.</summary>
+    public static async Task InsertText(StandaloneCodeEditor editor, string text)
+    {
+        await Replace(editor, await editor.GetSelection(), text);
+        await editor.Focus();
+    }
+
+    /// <summary>Turns the selection into a link and selects the "url" placeholder to type over.</summary>
+    public static async Task Link(StandaloneCodeEditor editor)
+    {
+        var selection = await editor.GetSelection();
+        var model = await editor.GetModel();
+        var text = await model.GetValueInRange(selection, EndOfLinePreference.TextDefined);
+        if (text.Length == 0) text = "link text";
+        await Replace(editor, selection, $"[{text}](url)");
+        if (!text.Contains('\n'))
+        {
+            var url = selection.StartColumn + text.Length + 3;
+            await editor.SetSelection(new Range(selection.StartLineNumber, url, selection.StartLineNumber, url + 3), Source);
+        }
+        await editor.Focus();
+    }
+
     public static string RelativeLink(PagePath from, PagePath to)
     {
         var fromDir = "/" + Path.GetDirectoryName(from.ToFilePath())?.Replace('\\', '/');

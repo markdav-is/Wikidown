@@ -1,0 +1,132 @@
+@using Wikidown.Core
+
+<MudDropContainer T="Card" @ref="_container" Items="_cards"
+                  ItemsSelector="@((card, zone) => card.Column == zone)"
+                  ItemDropped="Dropped" Class="wd-board">
+    <ChildContent>
+        @foreach (var item in Board.Columns)
+        {
+            var column = item;
+            var zone = column.Page.ToLinkPath();
+            <MudPaper Outlined="true" Class="wd-board-column">
+                <MudStack Row="true" AlignItems="AlignItems.Center" Class="px-3 pt-2">
+                    <MudText Typo="Typo.subtitle1"><strong>@column.Title</strong></MudText>
+                    <MudChip T="string" Size="Size.Small">@_cards.Count(c => c.Column == zone)</MudChip>
+                    <MudSpacer />
+                    <MudTooltip Text="Open the column's page">
+                        <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" Size="Size.Small" Href="@($"browse{zone}")" />
+                    </MudTooltip>
+                </MudStack>
+                <MudDropZone T="Card" Identifier="@zone" AllowReorder="true" Class="wd-board-zone" />
+                @if (_addingTo == zone)
+                {
+                    <div class="pa-2">
+                        <MudTextField @bind-Value="_newTitle" Placeholder="Card title" Variant="Variant.Outlined"
+                                      Margin="Margin.Dense" AutoFocus="true" Immediate="true"
+                                      OnKeyDown="@(e => OnNewKey(e, column))" />
+                        <MudStack Row="true" Spacing="1" Class="mt-1">
+                            <MudButton Size="Size.Small" Variant="Variant.Filled" Color="Color.Primary"
+                                       Disabled="@string.IsNullOrWhiteSpace(_newTitle)" OnClick="@(() => AddAsync(column))">Add</MudButton>
+                            <MudButton Size="Size.Small" OnClick="@(() => _addingTo = null)">Cancel</MudButton>
+                        </MudStack>
+                    </div>
+                }
+                else
+                {
+                    <MudButton StartIcon="@Icons.Material.Filled.Add" Size="Size.Small" Class="ma-2" Disabled="Busy"
+                               OnClick="@(() => StartAdding(zone))">Add a card</MudButton>
+                }
+            </MudPaper>
+        }
+        <div>
+            <MudButton StartIcon="@Icons.Material.Filled.ViewColumn" Variant="Variant.Outlined" Disabled="Busy"
+                       OnClick="@(() => OnAddColumn.InvokeAsync())" Style="white-space:nowrap">Add a column</MudButton>
+        </div>
+    </ChildContent>
+    <ItemRenderer>
+        <MudPaper Elevation="1" Class="wd-board-card">
+            <MudLink Href="@($"browse{context.Page.ToLinkPath()}")" Color="Color.Inherit" Underline="Underline.Hover"
+                     Class="flex-grow-1">@context.Title</MudLink>
+            <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small" Dense="true"
+                     AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                <MudMenuItem Icon="@Icons.Material.Filled.OpenInNew" Href="@($"browse{context.Page.ToLinkPath()}")">Open</MudMenuItem>
+                @foreach (var other in Board.Columns.Where(c => c.Page.ToLinkPath() != context.Column))
+                {
+                    var target = other;
+                    var card = context;
+                    <MudMenuItem Icon="@Icons.Material.Filled.ArrowForward"
+                                 OnClick="@(() => MoveAsync(card, target.Page.ToLinkPath(), int.MaxValue))">Move to @target.Title</MudMenuItem>
+                }
+                <MudDivider />
+                <MudMenuItem Icon="@Icons.Material.Filled.Delete" IconColor="Color.Error"
+                             OnClick="@(() => OnDelete.InvokeAsync(new KanbanCard(context.Title, context.Page)))">Delete</MudMenuItem>
+            </MudMenu>
+        </MudPaper>
+    </ItemRenderer>
+</MudDropContainer>
+
+@code {
+    public sealed record MoveRequest(PagePath Card, PagePath Column, int Index);
+    public sealed record AddRequest(PagePath Column, string Title);
+
+    private sealed class Card
+    {
+        public required string Title { get; init; }
+        public required PagePath Page { get; init; }
+        public required string Column { get; set; }
+    }
+
+    [Parameter, EditorRequired] public KanbanBoard Board { get; set; } = default!;
+    [Parameter] public bool Busy { get; set; }
+    [Parameter] public EventCallback<MoveRequest> OnMove { get; set; }
+    [Parameter] public EventCallback<AddRequest> OnAdd { get; set; }
+    [Parameter] public EventCallback<KanbanCard> OnDelete { get; set; }
+    [Parameter] public EventCallback OnAddColumn { get; set; }
+
+    private MudDropContainer<Card>? _container;
+    private KanbanBoard? _shown;
+    private List<Card> _cards = new();
+    private string? _addingTo;
+    private string _newTitle = "";
+
+    protected override void OnParametersSet()
+    {
+        if (ReferenceEquals(_shown, Board)) return;
+        _shown = Board;
+        _cards = Board.Columns
+            .SelectMany(c => c.Cards.Select(k => new Card { Title = k.Title, Page = k.Page, Column = c.Page.ToLinkPath() }))
+            .ToList();
+        _container?.Refresh();
+    }
+
+    // The card lands where it was dropped straight away; the commit follows.
+    private Task Dropped(MudItemDropInfo<Card> drop) =>
+        drop.Item is null ? Task.CompletedTask : MoveAsync(drop.Item, drop.DropzoneIdentifier, drop.IndexInZone);
+
+    private async Task MoveAsync(Card card, string zone, int index)
+    {
+        card.Column = zone;
+        _container?.Refresh();
+        await OnMove.InvokeAsync(new MoveRequest(card.Page, PagePath.Parse(zone), index));
+    }
+
+    private void StartAdding(string zone)
+    {
+        _addingTo = zone;
+        _newTitle = "";
+    }
+
+    private Task OnNewKey(KeyboardEventArgs e, KanbanColumn column) => e.Key switch
+    {
+        "Enter" when !string.IsNullOrWhiteSpace(_newTitle) => AddAsync(column),
+        "Escape" => Task.FromResult(_addingTo = null),
+        _ => Task.CompletedTask,
+    };
+
+    private async Task AddAsync(KanbanColumn column)
+    {
+        var title = _newTitle.Trim();
+        _newTitle = "";
+        await OnAdd.InvokeAsync(new AddRequest(column.Page, title));
+    }
+}

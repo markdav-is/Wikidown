@@ -1,48 +1,200 @@
 @page "/"
+@inject ConnectionStore Store
+@inject GitHubAccount Account
+@inject NavigationManager Nav
+@inject HttpClient Http
+@inject IJSRuntime JS
+@using Wikidown.Web.Services
 
 <PageTitle>Wikidown</PageTitle>
 
-<MudStack Spacing="6">
-    <MudPaper Class="pa-6" Elevation="0">
-        <MudText Typo="Typo.h3" GutterBottom="true">Wikidown</MudText>
-        <MudText Typo="Typo.subtitle1" Class="mb-4" Color="Color.Default">
-            An Azure-DevOps-Wiki-compatible wiki that lives in <code>/docs</code> of your
-            code repo. Edit in the browser, commit straight to GitHub, GitLab, or Azure DevOps.
-        </MudText>
-        <MudButton Href="connect" Variant="Variant.Filled" Color="Color.Primary"
-                   StartIcon="@Icons.Material.Filled.Link" Size="Size.Large">
-            Open a wiki
-        </MudButton>
-    </MudPaper>
+@if (_ready)
+{
+    <MudContainer MaxWidth="MaxWidth.Small" Class="mt-6">
+        <MudPaper Class="pa-8" Outlined="true">
+            <MudStack Spacing="4" AlignItems="AlignItems.Stretch">
+                <MudStack AlignItems="AlignItems.Center" Spacing="2">
+                    <img src="logo.png" alt="" height="64" />
+                    <MudText Typo="Typo.h4">Wikidown</MudText>
+                    <MudText Align="Align.Center">
+                        Edit the Markdown wiki in your repository's <code>docs</code> folder.
+                        Every save is a commit to your repo.
+                    </MudText>
+                </MudStack>
 
-    <MudPaper Class="pa-6" Elevation="0" Outlined="true">
-        <MudText Typo="Typo.h5" GutterBottom="true">How it works</MudText>
-        <MudList T="string" Dense="true">
-            <MudListItem T="string" Icon="@Icons.Material.Filled.Key">
-                Sign in with a GitHub, GitLab, or Azure DevOps personal access token.
-            </MudListItem>
-            <MudListItem T="string" Icon="@Icons.Material.Filled.FolderOpen">
-                Pick the repo (and branch) that holds your <code>/docs</code> folder.
-            </MudListItem>
-            <MudListItem T="string" Icon="@Icons.Material.Filled.Edit">
-                Browse, edit, and save pages — the app commits via REST.
-            </MudListItem>
-        </MudList>
-        <MudText Typo="Typo.caption" Class="mt-3" Color="Color.Default">
-            Your token stays in the browser. No backend; everything runs client-side.
-        </MudText>
-    </MudPaper>
-    <MudPaper Class="pa-6" Elevation="0" Outlined="true">
-        <MudText Typo="Typo.h5" GutterBottom="true">Visual Studio extension</MudText>
-        <MudText Class="mb-3">
-            Add a <strong>Wikidown Wiki</strong> project to any Visual Studio 2022+ solution.
-            Your <code>docs/</code> folder appears in Solution Explorer — display-only, never in the build.
-        </MudText>
-        <MudButton Href="https://marketplace.visualstudio.com/items?itemName=MarkDavis.Wikidown"
-                   Target="_blank" Variant="Variant.Outlined" Color="Color.Primary"
-                   StartIcon="@Icons.Material.Filled.Extension">
-            Install from Marketplace
-        </MudButton>
-    </MudPaper>
+                @if (Store.Current is { } open)
+                {
+                    <MudButton Href="browse" Variant="Variant.Outlined" Color="Color.Primary"
+                               EndIcon="@Icons.Material.Filled.ArrowForward">
+                        Continue with @open.Label
+                    </MudButton>
+                }
 
-</MudStack>
+                @if (_error is { } error)
+                {
+                    <MudAlert Severity="Severity.Error" Dense="true">@error</MudAlert>
+                }
+
+                @if (_oauthReady)
+                {
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large"
+                               StartIcon="@Icons.Custom.Brands.GitHub" OnClick="SignInWithGitHubAsync" Disabled="_busy">
+                        Sign in with GitHub
+                    </MudButton>
+                }
+
+                @if (_showToken)
+                {
+                    <MudStack Spacing="2">
+                        <MudTextField @bind-Value="_token" Label="GitHub personal access token"
+                                      InputType="InputType.Password" Variant="Variant.Outlined"
+                                      Immediate="true" OnKeyDown="OnTokenKey" />
+                        <MudText Typo="Typo.caption">
+                            <MudLink Href="https://github.com/settings/tokens/new?scopes=repo&description=Wikidown"
+                                     Target="_blank" Typo="Typo.caption">Create a token</MudLink>
+                            with the <code>repo</code> scope, or a fine-grained token with
+                            <em>Contents: Read and write</em>.
+                        </MudText>
+                        <MudButton Variant="@(_oauthReady ? Variant.Outlined : Variant.Filled)" Color="Color.Primary"
+                                   StartIcon="@Icons.Custom.Brands.GitHub" OnClick="SignInWithTokenAsync"
+                                   Disabled="@(_busy || string.IsNullOrWhiteSpace(_token))">
+                            @(_busy ? "Signing in…" : "Sign in with token")
+                        </MudButton>
+                    </MudStack>
+                }
+                else
+                {
+                    <MudButton Variant="Variant.Text" Size="Size.Small" OnClick="@(() => _showToken = true)">
+                        Use a personal access token instead
+                    </MudButton>
+                }
+
+                <MudDivider />
+
+                <MudStack Row="true" Justify="Justify.Center" Spacing="2" Wrap="Wrap.Wrap">
+                    <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.PlayArrow" OnClick="OpenSampleAsync">
+                        Try the sample wiki
+                    </MudButton>
+                    <MudButton Variant="Variant.Text" Href="connect">GitLab or Azure DevOps</MudButton>
+                </MudStack>
+
+                <MudText Typo="Typo.caption" Align="Align.Center">
+                    Your sign-in stays in this browser. Pages go straight from here to your repository.
+                </MudText>
+            </MudStack>
+        </MudPaper>
+    </MudContainer>
+}
+
+@code {
+    private const string StateKey = "wikidown.gh_state";
+
+    private bool _ready;
+    private bool _busy;
+    private bool _oauthReady;
+    private bool _showToken;
+    private string? _clientId;
+    private string _token = "";
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Store.LoadAsync();
+        await Account.LoadAsync();
+
+        if (await TryCompleteGitHubSignInAsync()) return;
+        if (Account.SignedIn && _error is null)
+        {
+            Nav.NavigateTo(Store.Current is null ? "repos" : "browse", replace: true);
+            return;
+        }
+
+        try
+        {
+            _clientId = (await Http.GetFromJsonAsync<GitHubConfig>("api/config/github"))?.ClientId;
+        }
+        catch (Exception)
+        {
+            // No Functions app behind this host (local run, the fallback hostname): token sign-in only.
+        }
+        _oauthReady = !string.IsNullOrWhiteSpace(_clientId);
+        _showToken = !_oauthReady;
+        _ready = true;
+    }
+
+    private async Task SignInWithGitHubAsync()
+    {
+        var state = Guid.NewGuid().ToString("N");
+        await JS.InvokeVoidAsync("sessionStorage.setItem", StateKey, state);
+
+        var redirectUri = $"{Nav.BaseUri.TrimEnd('/')}/oauth/github/return.html";
+        Nav.NavigateTo(
+            "https://github.com/login/oauth/authorize"
+            + "?client_id=" + Uri.EscapeDataString(_clientId!)
+            + "&redirect_uri=" + Uri.EscapeDataString(redirectUri)
+            + "&scope=" + Uri.EscapeDataString("repo read:user")
+            + "&state=" + Uri.EscapeDataString(state),
+            forceLoad: true);
+    }
+
+    // oauth/github/return.html lands here with #gh_token=…&gh_state=… (or gh_error).
+    private async Task<bool> TryCompleteGitHubSignInAsync()
+    {
+        var values = new Uri(Nav.Uri).Fragment.TrimStart('#').Split('&', StringSplitOptions.RemoveEmptyEntries)
+            .Select(p => p.Split('=', 2)).Where(kv => kv.Length == 2)
+            .ToDictionary(kv => kv[0], kv => Uri.UnescapeDataString(kv[1]));
+        values.TryGetValue("gh_token", out var token);
+        values.TryGetValue("gh_error", out var error);
+        if (token is null && error is null) return false;
+
+        var expected = await JS.InvokeAsync<string?>("sessionStorage.getItem", StateKey);
+        await JS.InvokeVoidAsync("sessionStorage.removeItem", StateKey);
+        await JS.InvokeVoidAsync("history.replaceState", null, "", Nav.Uri.Split('#')[0]);
+
+        if (error is not null)
+        {
+            _error = $"GitHub sign-in failed: {error}";
+            return false;
+        }
+        if (string.IsNullOrEmpty(expected) || expected != values.GetValueOrDefault("gh_state"))
+        {
+            _error = "GitHub sign-in was rejected (state mismatch). Try again.";
+            return false;
+        }
+        return await SignInAsync(token!);
+    }
+
+    private Task OnTokenKey(KeyboardEventArgs e) =>
+        e.Key == "Enter" && !string.IsNullOrWhiteSpace(_token) ? SignInWithTokenAsync() : Task.CompletedTask;
+
+    private async Task SignInWithTokenAsync() => await SignInAsync(_token);
+
+    private async Task<bool> SignInAsync(string token)
+    {
+        _busy = true;
+        _error = null;
+        try
+        {
+            await Account.SignInAsync(token);
+            Nav.NavigateTo("repos");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            return false;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task OpenSampleAsync()
+    {
+        await Store.SaveAsync(DemoBackend.Connection);
+        Nav.NavigateTo("browse");
+    }
+
+    private sealed record GitHubConfig(string? ClientId);
+}

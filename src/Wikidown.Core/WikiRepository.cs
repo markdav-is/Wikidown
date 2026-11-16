@@ -135,7 +135,9 @@ public sealed class WikiRepository
     {
         if (from.IsRoot || to.IsRoot)
             throw new InvalidOperationException("Cannot move to/from root.");
-        if (!Exists(from))
+        // A folder with no page of its own still moves, taking its subpages.
+        var isPage = Exists(from);
+        if (!isPage && !Directory.Exists(ResolveFolder(from)))
             throw new FileNotFoundException($"Page not found: {from.ToLinkPath()}");
         EnsurePortable(to);
 
@@ -148,10 +150,10 @@ public sealed class WikiRepository
         var caseOnlyRename =
             string.Equals(from.ToLinkPath(), to.ToLinkPath(), StringComparison.OrdinalIgnoreCase)
             && !PathCase.ExistsExact(toFile);
-        if (Exists(to) && !caseOnlyRename)
+        if ((Exists(to) || (!isPage && Directory.Exists(ResolveFolder(to)))) && !caseOnlyRename)
             throw new InvalidOperationException($"Destination exists: {to.ToLinkPath()}");
         Directory.CreateDirectory(System.IO.Path.GetDirectoryName(toFile)!);
-        File.Move(fromFile, toFile);
+        if (isPage) File.Move(fromFile, toFile);
 
         var fromDir = ResolveFolder(from);
         var toDir = ResolveFolder(to);
@@ -161,10 +163,21 @@ public sealed class WikiRepository
             Directory.Move(fromDir, toDir);
         }
 
-        RemoveFromOrder(from);
-        EnsureOrderIncludes(to);
+        var order = ReadOrder(from.Parent).ToList();
+        var position = order.FindIndex(e => string.Equals(e, from.Name.FileBase, StringComparison.OrdinalIgnoreCase));
+        if (position >= 0 && string.Equals(from.Parent.ToLinkPath(), to.Parent.ToLinkPath(), StringComparison.OrdinalIgnoreCase))
+        {
+            // A rename keeps the page's place among its siblings.
+            order[position] = to.Name.FileBase;
+            WriteOrder(from.Parent, order);
+        }
+        else
+        {
+            RemoveFromOrder(from);
+            if (isPage || position >= 0) EnsureOrderIncludes(to);
+        }
 
-        RefreshBreadcrumb(to);
+        if (isPage) RefreshBreadcrumb(to);
         foreach (var descendant in Walk(to)) RefreshBreadcrumb(descendant);
     }
 

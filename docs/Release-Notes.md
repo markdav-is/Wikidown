@@ -6,6 +6,44 @@ What changed in each Wikidown release, and where to get it. Newest first.
 For how to update an existing install, see
 [Updating](Getting-Started/Updating.md).
 
+## Unreleased
+
+Not in a release yet. The web editor changes go live when the editor at
+`https://wikidown.app/` is next deployed; the `move` changes ship with the
+next CLI version.
+
+### What changed
+
+- **Web editor: sign in, then pick a repository.** The home page is the
+  sign-in page: Sign in with GitHub, or a personal access token. After
+  that, "Open a wiki" lists your repositories with a search box and the
+  wikis you opened recently. A repository opens on its default branch with
+  the `docs` folder; change either from the wiki's ⋮ menu. GitLab and
+  Azure DevOps still connect with a token on `/connect`. See
+  [Editor](Editor.md#sign-in-and-open-a-wiki).
+- **Web editor: create, rename, move, reorder and delete pages and
+  folders.** The tree header has New page and New kanban, and every page in
+  the tree has a ⋮ menu. Each change is one commit and uses the same code
+  as the CLI, so `.order`, breadcrumbs and links from other pages stay
+  correct. See [Pages and folders](Editor.md#pages-and-folders).
+- **Web editor: a better editor.** The Monaco editor gains three
+  views (editor only, side by side, preview only), more toolbar buttons,
+  keyboard shortcuts, lists that continue on Enter, and a "Link to page…"
+  picker. Paste, drop or pick an image and it is committed to
+  `.attachments/` with a relative link inserted. See
+  [Browse and edit](Editor.md#browse-and-edit).
+- **Web editor: kanban board.** A kanban dashboard page opens as a board.
+  Drag cards between columns, and add cards and columns; each action is one
+  commit. See [Kanban](Getting-Started/Kanban.md#in-the-web-editor).
+- **Web editor: sample wiki.** "Try the sample wiki" on the home page opens
+  a wiki stored only in your browser, so you can try the editor without
+  signing in or committing anything.
+- **`wikidown move` moves a folder that has no page of its own.** Its
+  subpages go with it.
+- **`wikidown move` keeps a renamed page in place.** Renaming a page within
+  the same folder keeps its position in `.order`; before, it went to the
+  end.
+
 ## 0.14.1 — 14 November 2026
 
 The agent files that `wikidown init` installs now cover everything

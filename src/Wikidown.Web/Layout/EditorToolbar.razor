@@ -2,11 +2,22 @@
 @using Wikidown.Web.Services
 
 <div class="wd-toolbar-group">
+    <MudTooltip Text="Undo (Ctrl+Z)">
+        <MudIconButton Icon="@Icons.Material.Filled.Undo" Size="Size.Small" OnClick="@(() => Run(e => e.Trigger("toolbar", "undo", null)))" />
+    </MudTooltip>
+    <MudTooltip Text="Redo (Ctrl+Y)">
+        <MudIconButton Icon="@Icons.Material.Filled.Redo" Size="Size.Small" OnClick="@(() => Run(e => e.Trigger("toolbar", "redo", null)))" />
+    </MudTooltip>
+</div>
+<div class="wd-toolbar-group">
     <MudTooltip Text="Bold (Ctrl+B)">
         <MudIconButton Icon="@Icons.Material.Filled.FormatBold" Size="Size.Small" OnClick="@(() => Run(e => MarkdownCommands.Wrap(e, "**", "**", "bold text")))" />
     </MudTooltip>
     <MudTooltip Text="Italic (Ctrl+I)">
         <MudIconButton Icon="@Icons.Material.Filled.FormatItalic" Size="Size.Small" OnClick="@(() => Run(e => MarkdownCommands.Wrap(e, "_", "_", "italic text")))" />
+    </MudTooltip>
+    <MudTooltip Text="Strikethrough">
+        <MudIconButton Icon="@Icons.Material.Filled.StrikethroughS" Size="Size.Small" OnClick="@(() => Run(e => MarkdownCommands.Wrap(e, "~~", "~~", "struck text")))" />
     </MudTooltip>
     <MudMenu Icon="@Icons.Material.Filled.Title" Size="Size.Small" Dense="true" title="Heading">
         <MudMenuItem OnClick="@(() => Run(e => MarkdownCommands.ToggleLinePrefix(e, "## ")))">Heading 2</MudMenuItem>
@@ -20,6 +31,9 @@
     </MudTooltip>
     <MudTooltip Text="Numbered list">
         <MudIconButton Icon="@Icons.Material.Filled.FormatListNumbered" Size="Size.Small" OnClick="@(() => Run(e => MarkdownCommands.ToggleLinePrefix(e, "1. ")))" />
+    </MudTooltip>
+    <MudTooltip Text="Task list">
+        <MudIconButton Icon="@Icons.Material.Filled.Checklist" Size="Size.Small" OnClick="@(() => Run(e => MarkdownCommands.ToggleLinePrefix(e, "- [ ] ")))" />
     </MudTooltip>
     <MudTooltip Text="Quote">
         <MudIconButton Icon="@Icons.Material.Filled.FormatQuote" Size="Size.Small" OnClick="@(() => Run(e => MarkdownCommands.ToggleLinePrefix(e, "> ")))" />
@@ -38,6 +52,21 @@
         <MudMenuItem OnClick="@(() => Run(e => MarkdownCommands.InsertBlock(e, MarkdownCommands.Table(4, 3))))">4 × 3 table</MudMenuItem>
     </MudMenu>
 </div>
+<div class="wd-toolbar-group">
+    <MudTooltip Text="Link (Ctrl+K)">
+        <MudIconButton Icon="@Icons.Material.Filled.Link" Size="Size.Small" OnClick="@(() => Run(MarkdownCommands.Link))" />
+    </MudTooltip>
+    <MudFileUpload T="IBrowserFile" Accept="image/*" FilesChanged="@(file => OnImage.InvokeAsync(file))" Class="ma-0">
+        <ActivatorContent>
+            <MudTooltip Text="Insert an image (or paste / drop one into the editor)">
+                <MudIconButton Icon="@Icons.Material.Filled.Image" Size="Size.Small" />
+            </MudTooltip>
+        </ActivatorContent>
+    </MudFileUpload>
+    <MudTooltip Text="Horizontal line">
+        <MudIconButton Icon="@Icons.Material.Filled.HorizontalRule" Size="Size.Small" OnClick="@(() => Run(e => MarkdownCommands.InsertBlock(e, "---")))" />
+    </MudTooltip>
+</div>
 <MudAutocomplete T="NavNode" @ref="_pagePicker" Value="@_picked" ValueChanged="LinkTo"
                  SearchFunc="SearchPages" ToStringFunc="@(n => n?.Title)"
                  Placeholder="Link to page…" Dense="true" Margin="Margin.Dense"
@@ -53,6 +82,7 @@
     [Parameter] public StandaloneCodeEditor? Editor { get; set; }
     [Parameter] public IReadOnlyList<NavNode> Pages { get; set; } = Array.Empty<NavNode>();
     [Parameter] public PagePath? Current { get; set; }
+    [Parameter] public EventCallback<IBrowserFile> OnImage { get; set; }
 
     private MudAutocomplete<NavNode>? _pagePicker;
     private NavNode? _picked;

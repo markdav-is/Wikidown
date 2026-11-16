@@ -1,0 +1,48 @@
+<MudDialog>
+    <DialogContent>
+        <MudStack Spacing="3" Style="min-width:min(24rem, 80vw)">
+            @if (Branches.Count > 0)
+            {
+                <MudSelect T="string" @bind-Value="_branch" Label="Branch" Variant="Variant.Outlined">
+                    @foreach (var branch in Branches)
+                    {
+                        <MudSelectItem Value="@branch">@branch</MudSelectItem>
+                    }
+                </MudSelect>
+            }
+            else
+            {
+                <MudTextField @bind-Value="_branch" Label="Branch" Variant="Variant.Outlined" />
+            }
+            <MudTextField @bind-Value="_docs" Label="Wiki folder" Variant="Variant.Outlined"
+                          HelperText="The folder that holds the pages. Leave empty to use the whole repository." />
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@(() => Dialog.Cancel())">Cancel</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled"
+                   OnClick="@(() => Dialog.Close(DialogResult.Ok(new Result(_branch.Trim(), _docs.Trim().Trim('/')))))"
+                   Disabled="@string.IsNullOrWhiteSpace(_branch)">
+            Open
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    public sealed record Result(string Branch, string DocsPath);
+
+    [CascadingParameter] private IMudDialogInstance Dialog { get; set; } = default!;
+
+    [Parameter] public string Branch { get; set; } = "";
+    [Parameter] public string DocsPath { get; set; } = "";
+    [Parameter] public IReadOnlyList<string> Branches { get; set; } = Array.Empty<string>();
+
+    private string _branch = "";
+    private string _docs = "";
+
+    protected override void OnInitialized()
+    {
+        _branch = Branch;
+        _docs = DocsPath;
+    }
+}

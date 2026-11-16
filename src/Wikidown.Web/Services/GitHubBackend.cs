@@ -84,7 +84,7 @@ public sealed class GitHubBackend(HttpClient http) : IWikiBackend
             var tree = await treeRes.Content.ReadFromJsonAsync<GhTree>(cancellationToken: ct)
                        ?? throw new InvalidOperationException("tree missing");
 
-            var docsPrefix = conn.DocsPath.TrimEnd('/') + "/";
+            var docsPrefix = DocsPrefix(conn);
             var pages = new List<PagePath>();
             var orderBlobs = new List<(string FolderLink, string Sha)>();
             foreach (var entry in tree.Tree)
@@ -157,6 +157,123 @@ public sealed class GitHubBackend(HttpClient http) : IWikiBackend
         return new CommitResult(payload.Content.Sha ?? string.Empty);
     }
 
+    private readonly Dictionary<string, byte[]> _blobs = new(StringComparer.Ordinal);
+
+    public async Task<WikiFiles> ReadAllAsync(WikiConnection conn, CancellationToken ct = default)
+    {
+        var repo = $"{ApiBase}/repos/{conn.Owner}/{conn.Repo}";
+        var branch = await GetAsync<GhBranch>(conn, $"{repo}/branches/{Uri.EscapeDataString(conn.Branch)}", ct);
+        var tree = await GetAsync<GhTree>(conn, $"{repo}/git/trees/{branch.Commit.Sha}?recursive=1", ct);
+
+        var prefix = DocsPrefix(conn);
+        var wanted = tree.Tree
+            .Where(e => e.Type == "blob" && e.Path.StartsWith(prefix, StringComparison.Ordinal))
+            .Select(e => (Rel: e.Path[prefix.Length..], e.Sha))
+            .Where(e => e.Rel.EndsWith(".md", StringComparison.OrdinalIgnoreCase)
+                        || e.Rel == ".order" || e.Rel.EndsWith("/.order", StringComparison.Ordinal))
+            .ToList();
+
+        // Blobs are immutable, so only what changed since the last read is fetched.
+        using var gate = new SemaphoreSlim(8);
+        await Task.WhenAll(wanted.Where(w => !_blobs.ContainsKey(w.Sha)).Select(w => w.Sha).Distinct().Select(async sha =>
+        {
+            await gate.WaitAsync(ct);
+            try
+            {
+                var blob = await GetAsync<GhContent>(conn, $"{repo}/git/blobs/{sha}", ct);
+                _blobs[sha] = Convert.FromBase64String((blob.Content ?? "").Replace("\n", ""));
+            }
+            finally { gate.Release(); }
+        }));
+
+        return new WikiFiles(branch.Commit.Sha, wanted.ToDictionary(w => w.Rel, w => _blobs[w.Sha], StringComparer.Ordinal));
+    }
+
+    // The Git Data API rather than the Contents API: one commit for any
+    // number of files, so a move never leaves the wiki half-renamed.
+    public async Task CommitAsync(
+        WikiConnection conn, IReadOnlyList<FileChange> changes, string message,
+        string? expectedHead = null, CancellationToken ct = default)
+    {
+        if (changes.Count == 0) return;
+        var repo = $"{ApiBase}/repos/{conn.Owner}/{conn.Repo}";
+        var refPath = "heads/" + EscapePath(conn.Branch);
+
+        var head = expectedHead
+                   ?? (await GetAsync<GhRef>(conn, $"{repo}/git/ref/{refPath}", ct)).Object.Sha;
+        var parent = await GetAsync<GhGitCommit>(conn, $"{repo}/git/commits/{head}", ct);
+
+        var entries = new List<Dictionary<string, object?>>();
+        foreach (var change in changes)
+        {
+            string? sha = null;
+            if (change.Content is not null)
+            {
+                var blob = await SendAsync<GhSha>(conn, HttpMethod.Post, $"{repo}/git/blobs",
+                    new { content = Convert.ToBase64String(change.Content), encoding = "base64" }, ct);
+                sha = blob.Sha;
+                _blobs[sha] = change.Content;
+            }
+            entries.Add(new()
+            {
+                ["path"] = Combine(conn.DocsPath, change.Path),
+                ["mode"] = "100644",
+                ["type"] = "blob",
+                ["sha"] = sha,
+            });
+        }
+
+        var tree = await SendAsync<GhSha>(conn, HttpMethod.Post, $"{repo}/git/trees",
+            new Dictionary<string, object?> { ["base_tree"] = parent.Tree.Sha, ["tree"] = entries }, ct);
+        var commit = await SendAsync<GhSha>(conn, HttpMethod.Post, $"{repo}/git/commits",
+            new { message, tree = tree.Sha, parents = new[] { head } }, ct);
+
+        using var req = Authenticated(HttpMethod.Patch, $"{repo}/git/refs/{refPath}", conn.Token);
+        req.Content = JsonContent.Create(new { sha = commit.Sha, force = false });
+        using var res = await http.SendAsync(req, ct);
+        if (res.StatusCode is HttpStatusCode.UnprocessableEntity or HttpStatusCode.Conflict)
+            throw new WikiConflictException("The wiki changed on GitHub while you were working. Try again.");
+        await EnsureOkAsync(res, ct);
+    }
+
+    private async Task<T> GetAsync<T>(WikiConnection conn, string url, CancellationToken ct)
+    {
+        using var req = Authenticated(HttpMethod.Get, url, conn.Token);
+        using var res = await http.SendAsync(req, ct);
+        await EnsureOkAsync(res, ct);
+        return await res.Content.ReadFromJsonAsync<T>(cancellationToken: ct)
+               ?? throw new InvalidOperationException("empty response");
+    }
+
+    private async Task<T> SendAsync<T>(WikiConnection conn, HttpMethod method, string url, object body, CancellationToken ct)
+    {
+        using var req = Authenticated(method, url, conn.Token);
+        req.Content = JsonContent.Create(body);
+        using var res = await http.SendAsync(req, ct);
+        await EnsureOkAsync(res, ct);
+        return await res.Content.ReadFromJsonAsync<T>(cancellationToken: ct)
+               ?? throw new InvalidOperationException("empty response");
+    }
+
+    private static async Task EnsureOkAsync(HttpResponseMessage res, CancellationToken ct)
+    {
+        if (res.IsSuccessStatusCode) return;
+        var detail = await res.Content.ReadAsStringAsync(ct);
+        throw new InvalidOperationException(res.StatusCode switch
+        {
+            HttpStatusCode.Unauthorized => "GitHub needs you to sign in (again) before this repository can be changed.",
+            HttpStatusCode.Forbidden or HttpStatusCode.NotFound =>
+                $"GitHub refused ({(int)res.StatusCode}). Check that you can write to this repository: {Trim(detail)}",
+            _ => $"GitHub request failed ({(int)res.StatusCode}): {Trim(detail)}",
+        });
+    }
+
+    private static string DocsPrefix(WikiConnection conn)
+    {
+        var docs = conn.DocsPath.Trim('/');
+        return docs.Length == 0 ? "" : docs + "/";
+    }
+
     public async Task<byte[]?> ReadBytesAsync(
         WikiConnection conn, string docsRelPath, CancellationToken ct = default)
     {
@@ -201,6 +318,9 @@ public sealed class GitHubBackend(HttpClient http) : IWikiBackend
     private sealed record GhCommit(string Sha);
     private sealed record GhTree(string Sha, List<GhTreeEntry> Tree, bool Truncated);
     private sealed record GhTreeEntry(string Path, string Type, string Sha);
+    private sealed record GhRef(GhSha Object);
+    private sealed record GhSha(string Sha);
+    private sealed record GhGitCommit(string Sha, GhSha Tree);
     private sealed record GhPutRequest(string Message, string Content, string Branch, string? Sha);
     private sealed record GhPutResponse(GhContent Content);
 }

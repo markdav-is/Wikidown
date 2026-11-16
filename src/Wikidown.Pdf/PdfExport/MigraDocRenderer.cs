@@ -1,6 +1,8 @@
 using MigraDoc.DocumentObjectModel;
+using MigraDoc.DocumentObjectModel.Shapes;
 using MigraDoc.DocumentObjectModel.Tables;
 using MigraDoc.Rendering;
+using PdfSharp.Drawing;
 using PdfSharp.Fonts;
 using Wikidown.Core;
 using Wikidown.Core.PdfExport;
@@ -157,6 +159,12 @@ public static class MigraDocRenderer
     // usable width instead of a guessed value that silently falls outside
     // the printable area for some paragraphs and not others.
     private static readonly Unit PageContentWidth = Unit.FromCentimeter(17);
+    private static readonly Unit PageContentHeight = Unit.FromCentimeter(25.7);
+
+    // Images are placed at their natural size (pixels at the file's DPI,
+    // 72 when it has none), which puts a phone photo or a screenshot many
+    // pages wide. Anything bigger than this box is scaled down to fit it.
+    private const double MaxImageFraction = 0.8;
 
     private static Document NewDocument()
     {
@@ -381,7 +389,7 @@ public static class MigraDocRenderer
     {
         if (image.ResolvedPath is not null)
         {
-            section.AddImage(image.ResolvedPath);
+            AddImage(section.AddParagraph(), image.ResolvedPath, image.LinkUrl);
         }
         else
         {
@@ -389,6 +397,42 @@ public static class MigraDocRenderer
             AddText(placeholder, $"[image not found: {image.RawTarget}]");
             placeholder.Format.Font.Italic = true;
             placeholder.Format.Borders.Width = Unit.FromPoint(0.5);
+        }
+    }
+
+    private static void AddImage(Paragraph paragraph, string name, string? linkUrl)
+    {
+        var image = linkUrl is null
+            ? paragraph.AddImage(name)
+            : paragraph.AddHyperlink(linkUrl, HyperlinkType.Web).AddImage(name);
+        FitImage(image, name);
+    }
+
+    private static void FitImage(Image image, string name)
+    {
+        if (NaturalSize(name) is not var (width, height) || width <= 0 || height <= 0) return;
+        var scale = Math.Min(1.0, Math.Min(
+            MaxImageFraction * PageContentWidth.Point / width,
+            MaxImageFraction * PageContentHeight.Point / height));
+        image.LockAspectRatio = true;
+        image.Width = Unit.FromPoint(width * scale);
+        image.Height = Unit.FromPoint(height * scale);
+    }
+
+    // Same "base64:" convention MigraDoc's own image loader accepts.
+    private static (double Width, double Height)? NaturalSize(string name)
+    {
+        try
+        {
+            using var image = name.StartsWith("base64:", StringComparison.Ordinal)
+                ? XImage.FromStream(new MemoryStream(Convert.FromBase64String(name["base64:".Length..])))
+                : XImage.FromFile(name);
+            return (image.PointWidth, image.PointHeight);
+        }
+        catch (Exception)
+        {
+            // Unreadable here means MigraDoc can't load it either; it draws its own placeholder.
+            return null;
         }
     }
 
@@ -433,7 +477,7 @@ public static class MigraDocRenderer
                     break;
 
                 case IrInlineImage img when img.ResolvedPath is not null:
-                    paragraph.AddImage(img.ResolvedPath);
+                    AddImage(paragraph, img.ResolvedPath, img.LinkUrl);
                     break;
 
                 case IrInlineImage img:

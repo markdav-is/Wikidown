@@ -86,7 +86,8 @@ public static class MarkdownIrBuilder
     {
         var alt = ExtractPlainText(img);
         var target = img.Url ?? string.Empty;
-        return new IrImage(alt, target, ResolveImagePath(ctx, target));
+        var resolved = ResolveImagePath(ctx, target);
+        return new IrImage(alt, target, resolved, ImageLinkUrl(ctx, target, resolved));
     }
 
     // Null covers two very different cases: an external image (not a wiki
@@ -104,6 +105,9 @@ public static class MarkdownIrBuilder
         ctx.Warnings.Add(new PdfExportWarning(ctx.Page, target));
         return null;
     }
+
+    private static string? ImageLinkUrl(BuildContext ctx, string target, string? resolved) =>
+        resolved is null ? null : ctx.Source.ImageLinkUrl(ctx.Page, target.Split('#')[0]);
 
     private static IrBlock BuildHtml(HtmlBlock html, BuildContext ctx) =>
         ctx.AllowHtmlSkip
@@ -181,7 +185,8 @@ public static class MarkdownIrBuilder
                 {
                     var alt = ExtractPlainText(img);
                     var target = img.Url ?? string.Empty;
-                    result.Add(new IrInlineImage(alt, target, ResolveImagePath(ctx, target)));
+                    var resolved = ResolveImagePath(ctx, target);
+                    result.Add(new IrInlineImage(alt, target, resolved, ImageLinkUrl(ctx, target, resolved)));
                     break;
                 }
 
