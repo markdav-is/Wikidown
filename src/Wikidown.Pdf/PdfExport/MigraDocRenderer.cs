@@ -35,8 +35,9 @@ public static class MigraDocRenderer
         EnsureFontResolverRegistered();
         var document = NewDocument();
 
-        if (options.IncludeCover) RenderCover(document, options.Title);
-        if (options.IncludeToc) RenderToc(document, content.Nav);
+        var includeToc = options.IncludeToc && content.Nav.Count > 0;
+        var cover = options.IncludeCover ? RenderCover(document, options.Title, compact: includeToc) : null;
+        if (includeToc) RenderToc(cover ?? AddSection(document), content.Nav);
 
         var depths = ComputePageDepths(content.Nav);
         foreach (var page in content.Pages)
@@ -57,7 +58,9 @@ public static class MigraDocRenderer
     public static void Render(PageIr page, Stream output) =>
         Render(new PdfExportContent(new[] { page }, Array.Empty<NavNode>(), Array.Empty<PdfExportWarning>()), output);
 
-    private static void RenderCover(Document document, string title)
+    // A title alone leaves the cover page mostly blank, so when a TOC
+    // follows the title moves up and the TOC starts on the same page.
+    private static Section RenderCover(Document document, string title, bool compact)
     {
         var section = AddSection(document);
 
@@ -66,13 +69,15 @@ public static class MigraDocRenderer
         titleParagraph.Format.Font.Size = 28;
         titleParagraph.Format.Font.Bold = true;
         titleParagraph.Format.Alignment = ParagraphAlignment.Center;
-        titleParagraph.Format.SpaceBefore = Unit.FromCentimeter(8);
+        titleParagraph.Format.SpaceBefore = Unit.FromCentimeter(compact ? 3 : 8);
 
         var subtitle = section.AddParagraph($"Generated {DateTime.Now:yyyy-MM-dd}");
         subtitle.Format.Alignment = ParagraphAlignment.Center;
         subtitle.Format.SpaceBefore = Unit.FromCentimeter(1);
+        subtitle.Format.SpaceAfter = Unit.FromCentimeter(compact ? 1.5 : 0);
         subtitle.Format.Font.Size = 11;
         subtitle.Format.Font.Color = Color.FromRgb(0x66, 0x66, 0x66);
+        return section;
     }
 
     // Depth of each page in the nav tree (1 = top level), used as the
@@ -94,11 +99,8 @@ public static class MigraDocRenderer
         return result;
     }
 
-    private static void RenderToc(Document document, IReadOnlyList<NavNode> nav)
+    private static void RenderToc(Section section, IReadOnlyList<NavNode> nav)
     {
-        if (nav.Count == 0) return;
-
-        var section = AddSection(document);
         var title = section.AddParagraph("Table of Contents");
         ApplyHeadingFormat(title, semanticLevel: 1, outlineDepth: 1);
 
@@ -161,10 +163,15 @@ public static class MigraDocRenderer
     private static readonly Unit PageContentWidth = Unit.FromCentimeter(17);
     private static readonly Unit PageContentHeight = Unit.FromCentimeter(25.7);
 
-    // Images are placed at their natural size (pixels at the file's DPI,
-    // 72 when it has none), which puts a phone photo or a screenshot many
-    // pages wide. Anything bigger than this box is scaled down to fit it.
-    private const double MaxImageFraction = 0.8;
+    // A file's natural size (pixels at its DPI, 72 when it has none) says
+    // little about how big it should print: a phone photo is many pages
+    // wide, an icon-sized PNG is a speck. Block images are set to a fixed
+    // share of the text width instead, and shrink only when that would make
+    // them taller than BlockImageMaxHeight. Inline images sit in a line of
+    // text, so they keep their natural size unless it overflows the page.
+    private const double BlockImageWidthFraction = 0.75;
+    private const double BlockImageMaxHeightFraction = 0.75;
+    private const double InlineImageMaxFraction = 0.8;
 
     private static Document NewDocument()
     {
@@ -389,7 +396,11 @@ public static class MigraDocRenderer
     {
         if (image.ResolvedPath is not null)
         {
-            AddImage(section.AddParagraph(), image.ResolvedPath, image.LinkUrl);
+            var paragraph = section.AddParagraph();
+            paragraph.Format.Alignment = ParagraphAlignment.Center;
+            paragraph.Format.SpaceBefore = Unit.FromPoint(6);
+            paragraph.Format.SpaceAfter = Unit.FromPoint(10);
+            AddImage(paragraph, image.ResolvedPath, image.LinkUrl, block: true);
         }
         else
         {
@@ -400,20 +411,24 @@ public static class MigraDocRenderer
         }
     }
 
-    private static void AddImage(Paragraph paragraph, string name, string? linkUrl)
+    private static void AddImage(Paragraph paragraph, string name, string? linkUrl, bool block)
     {
         var image = linkUrl is null
             ? paragraph.AddImage(name)
             : paragraph.AddHyperlink(linkUrl, HyperlinkType.Web).AddImage(name);
-        FitImage(image, name);
+        FitImage(image, name, block);
     }
 
-    private static void FitImage(Image image, string name)
+    private static void FitImage(Image image, string name, bool block)
     {
         if (NaturalSize(name) is not var (width, height) || width <= 0 || height <= 0) return;
-        var scale = Math.Min(1.0, Math.Min(
-            MaxImageFraction * PageContentWidth.Point / width,
-            MaxImageFraction * PageContentHeight.Point / height));
+        var scale = block
+            ? Math.Min(
+                BlockImageWidthFraction * PageContentWidth.Point / width,
+                BlockImageMaxHeightFraction * PageContentHeight.Point / height)
+            : Math.Min(1.0, Math.Min(
+                InlineImageMaxFraction * PageContentWidth.Point / width,
+                InlineImageMaxFraction * PageContentHeight.Point / height));
         image.LockAspectRatio = true;
         image.Width = Unit.FromPoint(width * scale);
         image.Height = Unit.FromPoint(height * scale);
@@ -477,7 +492,7 @@ public static class MigraDocRenderer
                     break;
 
                 case IrInlineImage img when img.ResolvedPath is not null:
-                    AddImage(paragraph, img.ResolvedPath, img.LinkUrl);
+                    AddImage(paragraph, img.ResolvedPath, img.LinkUrl, block: false);
                     break;
 
                 case IrInlineImage img:

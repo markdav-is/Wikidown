@@ -119,20 +119,66 @@ public class MigraDocRendererTests : IDisposable
     }
 
     [Theory]
-    [InlineData(3000, 1000, 385.51, 128.50)]  // too wide: 80% of the 17cm content width
-    [InlineData(400, 3000, 77.71, 582.80)]    // too tall: 80% of the 25.7cm content height
-    [InlineData(200, 100, 200, 100)]          // small images keep their natural size
-    public void Render_ScalesImagesDownToFitKeepingAspectRatio(int width, int height, double expectedWidth, double expectedHeight)
+    [InlineData(3000, 1000, 361.42, 120.47)]  // 75% of the 17cm content width
+    [InlineData(200, 100, 361.42, 180.71)]    // small images scale up to the same width
+    [InlineData(400, 3000, 72.851, 546.38)]    // too tall: capped at 75% of the 25.7cm content height
+    public void Render_SizesBlockImagesToThreeQuartersWidthKeepingAspectRatio(int width, int height, double expectedWidth, double expectedHeight)
     {
         File.WriteAllBytes(Path.Combine(_root, "pic.png"), SolidPng(width, height));
         var path = PagePath.Parse("/A");
         _repo.Write(new WikiPage(path, "# A\n\n![pic](pic.png)\n"));
         var blocks = MarkdownIrBuilder.Build(_repo.Read(path).Markdown, path, _repo);
 
-        var (drawnWidth, drawnHeight) = DrawnImageSize(new PageIr(path, "A", blocks));
+        var (drawnWidth, drawnHeight, _) = DrawnImage(new PageIr(path, "A", blocks));
 
         Assert.Equal(expectedWidth, drawnWidth, 1);
         Assert.Equal(expectedHeight, drawnHeight, 1);
+    }
+
+    [Fact]
+    public void Render_CentersBlockImages()
+    {
+        File.WriteAllBytes(Path.Combine(_root, "pic.png"), SolidPng(200, 100));
+        var path = PagePath.Parse("/A");
+        _repo.Write(new WikiPage(path, "# A\n\n![pic](pic.png)\n"));
+        var blocks = MarkdownIrBuilder.Build(_repo.Read(path).Markdown, path, _repo);
+
+        var (width, _, x) = DrawnImage(new PageIr(path, "A", blocks));
+
+        var margin = 2 / 2.54 * 72;
+        var contentWidth = 17 / 2.54 * 72;
+        Assert.Equal(margin + (contentWidth - width) / 2, x, 1);
+    }
+
+    [Fact]
+    public void Render_InlineImagesKeepTheirNaturalSize()
+    {
+        File.WriteAllBytes(Path.Combine(_root, "pic.png"), SolidPng(20, 10));
+        var path = PagePath.Parse("/A");
+        _repo.Write(new WikiPage(path, "# A\n\nAn icon ![pic](pic.png) in a sentence.\n"));
+        var blocks = MarkdownIrBuilder.Build(_repo.Read(path).Markdown, path, _repo);
+
+        var (width, height, _) = DrawnImage(new PageIr(path, "A", blocks));
+
+        Assert.Equal(20, width, 1);
+        Assert.Equal(10, height, 1);
+    }
+
+    [Fact]
+    public void Render_WithCoverAndToc_PutsTheTocOnTheCoverPage()
+    {
+        var a = PagePath.Parse("/A");
+        var content = new PdfExportContent(
+            new[] { new PageIr(a, "A", Array.Empty<IrBlock>()) },
+            new[] { new NavNode(a, "A", true, Array.Empty<NavNode>()) },
+            Array.Empty<PdfExportWarning>());
+
+        using var stream = new MemoryStream();
+        MigraDocRenderer.Render(content, stream, new PdfExportOptions("Title"));
+        stream.Position = 0;
+        using var pdf = PdfSharp.Pdf.IO.PdfReader.Open(stream, PdfSharp.Pdf.IO.PdfDocumentOpenMode.Import);
+
+        Assert.Equal(2, pdf.PageCount);
     }
 
     [Fact]
@@ -153,7 +199,7 @@ public class MigraDocRendererTests : IDisposable
 
     // The image's placement matrix ("w 0 0 h x y cm" right before "/I0 Do")
     // from the rendered page's content stream.
-    private static (double Width, double Height) DrawnImageSize(PageIr page)
+    private static (double Width, double Height, double X) DrawnImage(PageIr page)
     {
         using var stream = new MemoryStream();
         MigraDocRenderer.Render(page, stream);
@@ -162,10 +208,11 @@ public class MigraDocRendererTests : IDisposable
         var content = string.Concat(pdf.Pages.Cast<PdfSharp.Pdf.PdfPage>().Select(p =>
             System.Text.Encoding.Latin1.GetString(p.Contents.CreateSingleContent().Stream.UnfilteredValue)));
         var match = System.Text.RegularExpressions.Regex.Match(content,
-            @"([\d.]+) 0 0 (-?[\d.]+) [-\d.]+ [-\d.]+ cm\s*/I\d+ Do");
+            @"([\d.]+) 0 0 (-?[\d.]+) ([-\d.]+) [-\d.]+ cm\s*/I\d+ Do");
         Assert.True(match.Success, "no image drawn");
         var inv = System.Globalization.CultureInfo.InvariantCulture;
-        return (double.Parse(match.Groups[1].Value, inv), Math.Abs(double.Parse(match.Groups[2].Value, inv)));
+        return (double.Parse(match.Groups[1].Value, inv), Math.Abs(double.Parse(match.Groups[2].Value, inv)),
+            double.Parse(match.Groups[3].Value, inv));
     }
 
     // An uncompressed-DPI (so 72 dpi, 1px = 1pt) single-colour RGB PNG.

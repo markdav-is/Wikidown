@@ -237,9 +237,9 @@ The CLI behaves the same on Windows, macOS, and Linux:
   PDF:
   - an optional cover page (title defaults to the repo's folder name,
     override with `--title`, skip with `--no-cover`);
-  - an optional in-document table of contents page with page numbers and
+  - an optional in-document table of contents with page numbers and
     clickable entries, indented to match the nav hierarchy (skip with
-    `--no-toc`);
+    `--no-toc`), on the cover page when there is one;
   - one section per wiki page, with each page's own leading `# Title`
     heading placed at its nav depth, so the PDF's bookmark/outline panel
     mirrors the wiki's folder structure instead of listing every page flat;
@@ -248,7 +248,7 @@ The CLI behaves the same on Windows, macOS, and Linux:
     in-PDF jumps, not dead hrefs;
   - full markdown fidelity: headings, bold/italic, inline code, nested
     bullet/numbered lists, fenced code blocks, block quotes, pipe tables,
-    and images (embedded when the relative path resolves).
+    and images (embedded when the relative path resolves; an image on its own line is centered at 75% of the text width, smaller if that would make it taller than three-quarters of a page).
 
   A missing/broken image renders a visible placeholder and prints
   `warning: {page}: image not found: {target}` (mirroring `check-links`);
