@@ -57,7 +57,7 @@
 
     <section id="getting-started" class="container section">
       <h2>Getting started</h2>
-      <p class="section-lead">Add Wikidown to any repo in two commands — no .NET installation required either way.</p>
+      <p class="section-lead">Add Wikidown to any repo in two commands.</p>
       <div class="gs-grid">
         <div class="gs-lane gs-lane-agent">
           <span class="card-kicker">Using Claude Code</span>
@@ -85,7 +85,7 @@
         <div class="gs-lane">
           <span class="card-kicker">From a terminal</span>
           <h3>Two commands</h3>
-          <pre><code># Installs a self-contained CLI, no .NET required:
+          <pre><code># macOS / Linux:
 curl -fsSL https://wikidown.org/install.sh | sh
 wikidown init</code></pre>
           <pre><code># Windows (PowerShell):
@@ -111,8 +111,8 @@ wikidown init</code></pre>
           <p>Title-form links, <code>.order</code> files, and subpages — all enforced by the Wikidown spec. Edit in a side-by-side markdown editor with live preview.</p>
         </div>
         <div class="card">
-          <h3>3. Commit via REST</h3>
-          <p>Save commits directly to your repo through the host's REST API. File-level conflict detection keeps concurrent edits safe.</p>
+          <h3>3. Save as a commit</h3>
+          <p>Each save commits straight to your repo through the GitHub, GitLab, or Azure DevOps API — no clone, no server in between. If someone changed the page since you opened it, the save stops instead of overwriting their edit.</p>
         </div>
       </div>
     </section>
@@ -148,7 +148,7 @@ git add .github docs &amp;&amp; git commit -m "Publish wiki" &amp;&amp; git push
               <span class="card-kicker">CLI</span>
               <h3>wikidown</h3>
             </div>
-            <p>Reads, writes, moves, reorders, and searches pages while keeping <code>.order</code> consistent. The install script auto-detects .NET — no runtime required either way.</p>
+            <p>Reads, writes, moves, reorders, and searches pages while keeping <code>.order</code> consistent.</p>
             <pre><code>curl -fsSL https://wikidown.org/install.sh | sh
 wikidown list
 wikidown new --path Getting-Started/Format</code></pre>
