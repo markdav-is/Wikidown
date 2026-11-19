@@ -2,13 +2,11 @@
 
 # Editor
 
-Wikidown ships a Blazor WebAssembly PWA that lets you browse and edit any
-Wikidown wiki straight from the browser. It's hosted on Azure Static Web Apps
-at `https://wikidown.app/` (default hostname
-`https://victorious-wave-03164381e.7.azurestaticapps.net/` still serves the
-editor, but OAuth sign-in only completes on `wikidown.app`), with a small
-Functions app at `/api/*` that only exists to complete OAuth token exchange —
-page commits still go directly to your provider's REST API from the browser.
+Wikidown ships a Blazor WebAssembly PWA at `https://wikidown.app/` that lets
+you browse and edit any Wikidown wiki straight from the browser. Page commits
+go directly from the browser to your provider's REST API; the only
+server-side piece is a small endpoint at `/api/*` that completes OAuth
+sign-in.
 
 ## Sign in and open a wiki
 
