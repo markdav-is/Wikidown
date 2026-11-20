@@ -1,7 +1,7 @@
 # Home
 
 **Wikidown** is a structured markdown wiki that lives in `/docs` of any git
-repo — a CLI (the surface AI agents use too), a browser editor, and a
+repo — a CLI (great for agents), a browser editor, and a
 published site, all working on the same pages. This wiki (the one
 you're reading) is itself a Wikidown wiki, dogfooding the format and tools
 it documents — including this site, which is the wiki published with
