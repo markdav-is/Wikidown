@@ -28,7 +28,7 @@ Welcome to Wikidown. This folder is itself a Wikidown-format wiki.
 - [Site Templates](Site-Templates.md) — publish the wiki as a docs site or a marketing site: custom layouts, landing pages, and data-driven templates
 - [Kanban](Getting-Started/Kanban.md) — keep a simple To Do / Doing / Done board in your wiki with `wikidown kanban init`
 - [Clickable Maps](Getting-Started/Clickable-Maps.md) — turn an image into a map whose areas link to pages, with inline SVG and no JavaScript
-- [CLI](CLI.md) — `wikidown` dotnet tool
-- [Editor](Editor.md) — Blazor WASM browser editor
+- [CLI](CLI.md) — the `wikidown` command
+- [Editor](Editor.md) — browser editor
 - [Agents](Agents.md) — drop-in Claude + Copilot configs
 - [Handy Prompts](Handy-Prompts.md) — example prompts for everyday wiki work: adding pages, editing content, reordering, and committing changes

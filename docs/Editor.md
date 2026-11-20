@@ -2,7 +2,7 @@
 
 # Editor
 
-Wikidown ships a Blazor WebAssembly PWA at `https://wikidown.app/` that lets
+Wikidown ships an editor at `https://wikidown.app/` that lets
 you browse and edit any Wikidown wiki straight from the browser. Page commits
 go directly from the browser to your provider's REST API; the only
 server-side piece is a small endpoint at `/api/*` that completes OAuth

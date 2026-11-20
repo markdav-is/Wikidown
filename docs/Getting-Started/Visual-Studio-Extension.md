@@ -88,6 +88,6 @@ EndProject
 
 ## Related
 
-- [CLI](../CLI.md) — `wikidown` dotnet tool for editing from the terminal, a CI pipeline, or an AI agent.
+- [CLI](../CLI.md) — the `wikidown` command for editing from the terminal, a CI pipeline, or an AI agent.
 - [Agents](../Agents.md) — drop-in Claude Code and GitHub Copilot configs that drive the CLI.
-- [Editor](../Editor.md) — browser-based Blazor editor that commits directly to your repo.
+- [Editor](../Editor.md) — browser-based editor that commits directly to your repo.
